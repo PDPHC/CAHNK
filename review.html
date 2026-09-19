@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>งานส่งตรวจธุรการชั้นเรียน</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body class="cloud-protected">
+<div class="admin-page">
+  <div class="classroom-page-head">
+    <div>
+      <h1 style="margin:0">📨 งานส่งตรวจธุรการชั้นเรียน</h1>
+      <div class="sub">สิทธิ์ปัจจุบัน: <b id="reviewRole"></b></div>
+    </div>
+    <div class="actions">
+      <a class="btn gray" href="classrooms.html">← ห้องเรียน</a>
+      <a class="btn gray" href="admin.html">จัดการผู้ใช้/สิทธิ์</a>
+      <button class="btn danger" onclick="cloudLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="admin-hint">
+    ขั้นตอนการตรวจ: Teacher ส่งงาน → Academic ตรวจและคอมเมนต์ → Academic ส่งต่อ Deputy Director → Deputy Director ตรวจ/อนุมัติ
+  </div>
+
+  <div id="reviewList">
+    <div class="empty-room-state">กำลังโหลดงานส่งตรวจ...</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/cloud.js"></script>
+<script>startReviewPage()</script>
+</body>
+</html>
