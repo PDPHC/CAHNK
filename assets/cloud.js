@@ -88,12 +88,44 @@
     if(error)throw error;
     return data?.permission||null;
   }
+  function reportMonthValue(value){return String(value||"").slice(0,7)}
+  function reportMonthDate(ym){return /^\d{4}-\d{2}$/.test(String(ym||""))?ym+"-01":String(ym||"")}
+  function reportMonthLabel(ym){
+    const names=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    const m=String(ym||"").match(/^(\d{4})-(\d{2})$/);
+    if(!m)return ym||"-";
+    return names[Number(m[2])-1]+" "+(Number(m[1])+543);
+  }
+  function reportDueDate(ym){
+    const m=String(ym||"").match(/^(\d{4})-(\d{2})$/);if(!m)return "";
+    const d=new Date(Number(m[1]),Number(m[2]),5);
+    return d.toISOString().slice(0,10);
+  }
+  function reportMonthsForClassroom(c,readyOnly=false){
+    if(!c?.open_date||!c?.close_date)return [];
+    const open=new Date(c.open_date+"T00:00:00"),close=new Date(c.close_date+"T00:00:00"),today=new Date();
+    const out=[],d=new Date(open.getFullYear(),open.getMonth(),1);
+    while(d<=close){
+      const ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+      const monthEnd=new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59);
+      const periodEnd=monthEnd<close?monthEnd:close;
+      if(!readyOnly||today>=periodEnd)out.push(ym);
+      d.setMonth(d.getMonth()+1);
+    }
+    return out;
+  }
+  function defaultReportMonth(c){
+    const months=reportMonthsForClassroom(c,true);
+    return months[months.length-1]||reportMonthsForClassroom(c,false)[0]||new Date().toISOString().slice(0,7);
+  }
   async function syncWorkflowApproval(cid){
     const {data,error}=await sb.from("classroom_submissions")
-      .select("status,academic_approved_name,academic_approved_at,approved_name,approved_at")
-      .eq("classroom_id",cid).maybeSingle();
+      .select("report_month,status,academic_approved_name,academic_approved_at,academic_signature_data,approved_name,approved_at,deputy_signature_data")
+      .eq("classroom_id",cid).order("report_month");
     if(error)throw error;
-    hset("workflow_approval",data||{});
+    const map={};
+    (data||[]).forEach(x=>{map[reportMonthValue(x.report_month)]=x});
+    hset("workflow_approvals",map);
   }
   window.cloudRefreshApprovalSignature=async function(){
     if(state.classroom && state.classroom.id)await syncWorkflowApproval(state.classroom.id);
@@ -218,7 +250,8 @@
       <div class="cloud-user-actions">
       ${isManagementRole(p?.role)?`<a class="btn gray" href="${rootPath()}admin.html">จัดการผู้ใช้/สิทธิ์</a>`:""}
       ${roleDashboardPath(p?.role)?`<a class="btn gray" href="${rootPath()}${roleDashboardPath(p?.role)}">แดชบอร์ดภาพรวม</a>`:""}
-      <a class="btn gray" href="${rootPath()}classrooms.html">เปลี่ยนห้อง</a>
+      ${["director","deputy_director","admin","academic"].includes(p?.role)?`<a class="btn gray" href="${rootPath()}signature.html">ลายเซ็นของฉัน</a>`:""}
+      <a class="btn gray" href="${rootPath()}classrooms.html?rooms=1">เปลี่ยนห้อง</a>
       <button class="btn danger cloud-allow" type="button" onclick="cloudLogout()">ออกจากระบบ</button></div>`;
     content.insertBefore(bar,content.firstChild);
   }
@@ -576,51 +609,103 @@
     await adminReload();
   };
 
-  async function getCurrentSubmission(){
-    if(!state.classroom?.id)return null;
-    const {data,error}=await sb.from("classroom_submissions").select("*").eq("classroom_id",state.classroom.id).maybeSingle();
+  async function getCurrentSubmission(ym){
+    if(!state.classroom?.id||!ym)return null;
+    const {data,error}=await sb.from("classroom_submissions").select("*")
+      .eq("classroom_id",state.classroom.id)
+      .eq("report_month",reportMonthDate(ym)).maybeSingle();
     if(error)throw error;
     return data||null;
   }
 
+  window.cloudChangeReportMonth=async ym=>{
+    state.reportMonth=ym;
+    await renderCurrentSubmission();
+  };
+
   async function renderCurrentSubmission(){
     const box=document.getElementById("submissionWorkflowBox");
     if(!box||!state.classroom?.id)return;
-    const sub=await getCurrentSubmission();
+    const months=reportMonthsForClassroom(state.classroom,true);
+    const allMonths=reportMonthsForClassroom(state.classroom,false);
+    const choices=months.length?months:allMonths.slice(0,1);
+    if(!state.reportMonth||!choices.includes(state.reportMonth))state.reportMonth=defaultReportMonth(state.classroom);
+    if(!choices.includes(state.reportMonth)&&choices.length)state.reportMonth=choices[choices.length-1];
+
+    const ym=state.reportMonth;
+    const sub=await getCurrentSubmission(ym);
     const role=state.profile?.role;
-    const teacherCanSubmit=role==="teacher" && state.permission && state.permission!=="viewer";
+    const teacherEditable=role==="teacher" && state.permission && state.permission!=="viewer";
+    const teacherCanSubmit=teacherEditable && (!sub||sub.status==="returned_by_academic");
+    const due=reportDueDate(ym);
+    const late=!sub?.submitted_at && due && new Date()>new Date(due+"T23:59:59");
+    const submittedLate=!!sub?.submitted_at && !!sub?.due_date && new Date(sub.submitted_at)>new Date(sub.due_date+"T23:59:59");
     let comments=[];
     if(sub){
-      const {data}=await sb.from("submission_comments").select("id,comment,created_at,author_id").eq("submission_id",sub.id).order("created_at",{ascending:false});
+      const {data}=await sb.from("submission_comments").select("id,comment,created_at,author_id")
+        .eq("submission_id",sub.id).order("created_at",{ascending:false});
       comments=data||[];
     }
+
     box.innerHTML=`
       <div class="workflow-head">
-        <div><h2>ส่งธุรการชั้นเรียน</h2><div class="sub">สถานะ: <b>${esc(statusLabel(sub?.status||"draft"))}</b></div></div>
-        ${teacherCanSubmit?`<button class="btn primary" onclick="cloudSubmitClassroomBook()">📤 ส่งให้วิชาการตรวจ</button>`:""}
+        <div>
+          <h2>ส่งธุรการชั้นเรียนรายเดือน</h2>
+          <div class="sub">กำหนดส่งภายในวันที่ 5 ของเดือนถัดไป</div>
+        </div>
+        <div class="workflow-month-picker">
+          <label>เดือนที่รายงาน</label>
+          <select onchange="cloudChangeReportMonth(this.value)">
+            ${choices.map(m=>`<option value="${m}" ${m===ym?"selected":""}>${esc(reportMonthLabel(m))}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="workflow-month-summary">
+        <div><span>สถานะ</span><b>${esc(statusLabel(sub?.status||"draft"))}</b></div>
+        <div><span>กำหนดส่ง</span><b>5 ${esc(reportMonthLabel(reportMonthValue(due)).replace(/^\S+\s/,""))}</b></div>
+        <div><span>การส่ง</span><b class="${late||submittedLate?"workflow-late":"workflow-ok"}">${sub?.submitted_at?(submittedLate?"ส่งล่าช้า":"ส่งตรงเวลา"):(late?"เกินกำหนด":"ยังไม่ส่ง")}</b></div>
+      </div>
+      ${sub?.status==="approved"?`<div class="notice workflow-approved-note">✓ เดือนนี้ผ่านการอนุมัติขั้นสุดท้ายแล้ว และบันทึกเข้าคลังฐานข้อมูลปีการศึกษาเรียบร้อย</div>`:""}
+      <div class="actions">
+        ${teacherCanSubmit?`<button class="btn primary" onclick="cloudSubmitClassroomBook()">📤 ${sub?"ส่งแก้ไข":"ส่ง"} ${esc(reportMonthLabel(ym))} ให้ Academic ตรวจ</button>`:""}
+        ${ym?`<button class="btn gray" onclick="cloudPrintMonthlyBook('${ym}')">🖨 พิมพ์เล่มเดือนนี้</button>`:""}
       </div>
       ${comments.length?`<div class="workflow-comments"><b>ความคิดเห็นล่าสุด</b>${comments.slice(0,5).map(x=>`<div class="workflow-comment"><span>${esc(x.comment)}</span><small>${new Date(x.created_at).toLocaleString("th-TH")}</small></div>`).join("")}</div>`:"<div class='sub'>ยังไม่มีความคิดเห็นจากผู้ตรวจ</div>"}
     `;
   }
 
+  window.cloudPrintMonthlyBook=async ym=>{
+    const target=rootPath()+"print/form.html?module=book&month="+encodeURIComponent(ym);
+    const win=window.open("about:blank","_blank");
+    try{await syncWorkflowApproval(state.classroom.id)}catch(e){console.error(e)}
+    if(win)win.location.href=target;else window.open(target,"_blank");
+  };
+
   window.cloudSubmitClassroomBook=async()=>{
     if(state.profile?.role!=="teacher")return alert("ปุ่มนี้สำหรับ Teacher");
     if(!state.classroom?.id)return;
-    if(!confirm("ยืนยันส่งธุรการชั้นเรียนห้องนี้ให้ฝ่ายวิชาการตรวจ?"))return;
+    const ym=state.reportMonth||defaultReportMonth(state.classroom);
+    const existing=await getCurrentSubmission(ym);
+    if(existing && existing.status!=="returned_by_academic")return alert("รายการเดือนนี้อยู่ระหว่างการตรวจหรืออนุมัติแล้ว");
+    if(!confirm("ยืนยันส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic ตรวจ?"))return;
     await window.cloudFlushPending?.();
     const now=new Date().toISOString();
     const payload={
       classroom_id:state.classroom.id,
+      report_month:reportMonthDate(ym),
+      due_date:reportDueDate(ym),
       status:"submitted_to_academic",
       submitted_by:state.user.id,
       submitted_at:now,
       forwarded_by:null,forwarded_at:null,
-      academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,
-      approved_by:null,approved_at:null,approved_name:null,updated_at:now
+      academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,academic_signature_data:null,
+      approved_by:null,approved_at:null,approved_name:null,deputy_signature_data:null,updated_at:now
     };
-    const {error}=await sb.from("classroom_submissions").upsert(payload,{onConflict:"classroom_id"});
+    const {error}=await sb.from("classroom_submissions")
+      .upsert(payload,{onConflict:"classroom_id,report_month"});
     if(error)return alert("ส่งไม่สำเร็จ: "+error.message);
-    alert("ส่งให้ฝ่ายวิชาการเรียบร้อย");
+    alert("ส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic เรียบร้อย");
+    await syncWorkflowApproval(state.classroom.id);
     await renderCurrentSubmission();
   };
 
@@ -718,6 +803,82 @@
       if(dash){location.href=dash;return}
       location.href="classrooms.html?rooms=1";
     }catch(e){console.error(e);fatal(e.message||String(e))}
+  };
+
+  function signatureAllowedRole(role){
+    return ["director","deputy_director","admin","academic"].includes(role);
+  }
+
+  window.startSignaturePage=async()=>{
+    try{
+      const user=await getSessionUser();if(!user){location.href="login.html";return}
+      await loadProfile();
+      if(!signatureAllowedRole(state.profile.role)){location.href="classrooms.html";return}
+      document.getElementById("signatureUserName").textContent=state.profile.display_name||state.profile.email||"";
+      document.getElementById("signatureUserRole").textContent=roleLabel(state.profile.role);
+      const {data,error}=await sb.from("user_signatures").select("signature_data,updated_at").eq("user_id",state.user.id).maybeSingle();
+      if(error)throw error;
+      const preview=document.getElementById("signaturePreview");
+      if(data?.signature_data){
+        preview.src=data.signature_data;preview.style.display="";
+        document.getElementById("signatureStatus").textContent="มีลายเซ็นในระบบแล้ว • แก้ไขล่าสุด "+new Date(data.updated_at).toLocaleString("th-TH");
+      }else{
+        document.getElementById("signatureStatus").textContent="ยังไม่ได้อัปโหลดลายเซ็น";
+      }
+      const back=document.getElementById("signatureBackLink");
+      back.href=roleDashboardPath(state.profile.role)||"classrooms.html?rooms=1";
+      showBody();
+    }catch(e){console.error(e);fatal(e.message||String(e))}
+  };
+
+  async function signatureFileToData(file){
+    if(!file||!/^image\/(png|jpeg|webp)$/.test(file.type))throw new Error("รองรับเฉพาะ PNG, JPG หรือ WebP");
+    const source=await new Promise((resolve,reject)=>{
+      const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error("อ่านไฟล์ไม่สำเร็จ"));r.readAsDataURL(file);
+    });
+    const img=await new Promise((resolve,reject)=>{
+      const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error("เปิดรูปไม่สำเร็จ"));i.src=source;
+    });
+    const maxW=900,maxH=320,scale=Math.min(1,maxW/img.width,maxH/img.height);
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+    const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    let data=canvas.toDataURL("image/png");
+    if(data.length>1450000)data=canvas.toDataURL("image/jpeg",0.88);
+    if(data.length>1450000)throw new Error("ไฟล์ลายเซ็นยังมีขนาดใหญ่เกินไป กรุณาครอปภาพให้เหลือเฉพาะลายเซ็น");
+    return data;
+  }
+
+  window.cloudPreviewSignature=async input=>{
+    const file=input.files?.[0];if(!file)return;
+    try{
+      const data=await signatureFileToData(file);
+      input.dataset.signatureData=data;
+      const preview=document.getElementById("signaturePreview");preview.src=data;preview.style.display="";
+      document.getElementById("signatureStatus").textContent="พร้อมบันทึก";
+    }catch(e){alert(e.message||String(e));input.value=""}
+  };
+
+  window.cloudSaveSignature=async()=>{
+    const input=document.getElementById("signatureFile");
+    const data=input?.dataset.signatureData;
+    if(!data)return alert("เลือกรูปลายเซ็นก่อน");
+    const mime=data.slice(5,data.indexOf(";"))||"image/png";
+    const {error}=await sb.from("user_signatures").upsert({
+      user_id:state.user.id,signature_data:data,mime_type:mime,updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+    if(error)return alert("บันทึกลายเซ็นไม่สำเร็จ: "+error.message);
+    input.dataset.signatureData="";
+    document.getElementById("signatureStatus").textContent="บันทึกลายเซ็นเรียบร้อย";
+    alert("บันทึกลายเซ็นเรียบร้อย");
+  };
+
+  window.cloudDeleteSignature=async()=>{
+    if(!confirm("ยืนยันลบลายเซ็นของคุณออกจากระบบ?"))return;
+    const {error}=await sb.from("user_signatures").delete().eq("user_id",state.user.id);
+    if(error)return alert("ลบไม่สำเร็จ: "+error.message);
+    const preview=document.getElementById("signaturePreview");preview.removeAttribute("src");preview.style.display="none";
+    document.getElementById("signatureStatus").textContent="ยังไม่ได้อัปโหลดลายเซ็น";
   };
 
 })();
