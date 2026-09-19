@@ -19,7 +19,7 @@ const months=["มกราคม","กุมภาพันธ์","มีน�
 const q=new URLSearchParams(location.search),mod=q.get("module"),requestedMonth=q.get("month")||new Date().toISOString().slice(0,7),all=q.get("all")==="1";
 const SETTINGS_DEFAULTS={school:"โรงเรียนห้วยน้ำขุ่นวิทยา",office:"สำนักงานเขตพื้นที่การศึกษาประถมศึกษาเชียงราย เขต 2",classLevel:"มัธยมศึกษาปีที่ 1",room:"1",academicYear:"2569",term:"1",teacher1:"",teacher2:"",academicHead:"",deputy:"",openDate:"2026-05-18",closeDate:"2026-10-12",targetDays:"100",targetWeeks:"20",useThaiHolidays:true};
 const S={...SETTINGS_DEFAULTS,...(get("settings",{})||{})};
-const APPROVAL=get("workflow_approval",{})||{};
+const APPROVALS=get("workflow_approvals",{})||{};
 const R=(get("students",[])||[]).map((x,i)=>({...x,no:i+1}));
 const H=(get("holidays",[])||[]),HM=Object.fromEntries(H.map(h=>[h.date,h]));
 const store=k=>get("module_"+k,{});
@@ -50,28 +50,30 @@ function approvalThaiDate(value){
  if(Number.isNaN(d.getTime()))return "";
  return d.toLocaleString("th-TH",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
-function approvedSignature(name,at,fallbackName,roleHtml){
+function approvedSignature(name,at,signatureData,fallbackName,roleHtml){
  const approved=!!at;
  const display=String(name||fallbackName||"").trim();
  if(!approved){
   return `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(display)}</div><div class="signature-role">${roleHtml}</div></div>`;
  }
+ const image=signatureData?`<img class="electronic-signature-image" src="${esc(signatureData)}" alt="ลายเซ็น">`:`<div class="electronic-signature-mark">✓ ลงนามอิเล็กทรอนิกส์</div>`;
  return `<div class="approved-signature-block">
    <div class="signature-space electronic-signature">
-     <div class="electronic-signature-mark">✓ ลงนามอิเล็กทรอนิกส์</div>
+     ${image}
      <div class="electronic-signature-person">${esc(display||"ผู้อนุมัติ")}</div>
    </div>
    <div class="signature-name">${spacedSignatureName(display)}</div>
    <div class="signature-role">${roleHtml}<div class="signature-approved-date">อนุมัติ ${esc(approvalThaiDate(at))}</div></div>
  </div>`;
 }
-const signatures=()=>{
+const signatures=(ym)=>{
+ const approval=APPROVALS[ym]||{};
  const hasTeacher2=String(S.teacher2||"").trim()!=="";
  const blocks=[
   `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.teacher1)}</div><div class="signature-role">ครูประจำชั้น</div></div>`,
   ...(hasTeacher2?[`<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.teacher2)}</div><div class="signature-role">ครูประจำชั้น</div></div>`]:[]),
-  approvedSignature(APPROVAL.academic_approved_name,APPROVAL.academic_approved_at,S.academicHead,"วิชาการระดับมัธยมศึกษา"),
-  approvedSignature(APPROVAL.approved_name,APPROVAL.approved_at,S.deputy,"รองผู้อำนวยการ<br>ฝ่ายบริหารงานวิชาการ")
+  approvedSignature(approval.academic_approved_name,approval.academic_approved_at,approval.academic_signature_data,S.academicHead,"วิชาการระดับมัธยมศึกษา"),
+  approvedSignature(approval.approved_name,approval.approved_at,approval.deputy_signature_data,S.deputy,"รองผู้อำนวยการ<br>ฝ่ายบริหารงานวิชาการ")
  ];
  return `<div class="signature-section"><div class="signatures ${hasTeacher2?"four":"three"}">${blocks.join("")}</div></div>`;
 };
@@ -112,12 +114,12 @@ function monthly(kind,title,ym){
    }).join("");
    return `<tr><td class="no">${r.no}</td><td class="sid">${esc(r.id)}</td><td class="name">${esc(r.name)}</td>${dayCells}<td>${total||""}</td></tr>`
  }).join("") || `<tr><td colspan="${inf.days+4}" style="height:150mm"></td></tr>`}</tbody></table>
- <div class="term-note">ช่องสีเทา = เสาร์/อาทิตย์/วันหยุด/นอกช่วงเปิดเรียน${kind==="attendance"?" • / = มา • ข = ขาด • ล = ลา • น = หนี • ส = สาย":""}${isSavings?" • รวมสะสม = ยอดเดือนก่อนทั้งหมด + เดือนปัจจุบัน":""}</div>${signatures()}</div>`;
+ <div class="term-note">ช่องสีเทา = เสาร์/อาทิตย์/วันหยุด/นอกช่วงเปิดเรียน${kind==="attendance"?" • / = มา • ข = ขาด • ล = ลา • น = หนี • ส = สาย":""}${isSavings?" • รวมสะสม = ยอดเดือนก่อนทั้งหมด + เดือนปัจจุบัน":""}</div>${signatures(ym)}</div>`;
 }
 function rosterTemplate(kind,title,heads,ym){
  const inf=mi(ym),d=store(kind)[ym]||{};
  return `<div class="month-page"><div class="center title">${title}</div><div class="center meta">นักเรียนชั้น ${esc(cls())} &nbsp;&nbsp; เดือน ${inf.name} &nbsp;&nbsp; พ.ศ. ${inf.be}</div>
- <table class="print-table"><thead>${heads}</thead><tbody>${R.map(r=>rowFor(kind,r,d[r.uid]||{})).join("")||`<tr><td colspan="11" style="height:170mm"></td></tr>`}</tbody></table>${signatures()}</div>`;
+ <table class="print-table"><thead>${heads}</thead><tbody>${R.map(r=>rowFor(kind,r,d[r.uid]||{})).join("")||`<tr><td colspan="11" style="height:170mm"></td></tr>`}</tbody></table>${signatures(ym)}</div>`;
 }
 function rowFor(kind,r,x){
  if(kind==="health")return `<tr><td class="no">${r.no}</td><td class="sid">${esc(r.id)}</td><td class="name">${esc(r.name)}</td><td>${esc(x.age)}</td><td>${esc(x.weight)}</td><td>${esc(x.height)}</td><td>${esc(x.hair)}</td><td>${esc(x.nails)}</td><td>${esc(x.clothes)}</td><td>${esc(x.mouth)}</td><td>${esc(x.note)}</td></tr>`;
@@ -173,7 +175,7 @@ function literacyPrint(ym){
        }).join("")}
      </tbody>
    </table>
-   ${signatures()}
+   ${signatures(ym)}
  </div>`;
 }
 
@@ -231,7 +233,7 @@ function healthPrint(ym){
      </tbody>
    </table>
    <div class="health-print-legend">เกณฑ์การประเมิน: 3 = ดีมาก &nbsp;&nbsp; 2 = ปานกลาง &nbsp;&nbsp; 1 = ปรับปรุง</div>
-   ${signatures()}
+   ${signatures(ym)}
  </div>`;
 }
 
@@ -278,7 +280,7 @@ function behaviorPrint(ym){
        }).join("")||`<tr><td colspan="8" style="height:160mm"></td></tr>`}
      </tbody>
    </table>
-   ${signatures()}
+   ${signatures(ym)}
  </div>`;
 }
 
@@ -359,7 +361,7 @@ function scholarship(ym){
        }).join("")}
      </tbody>
    </table>
-   ${signatures()}
+   ${signatures(ym)}
  </div>`;
 }
 
@@ -375,7 +377,7 @@ function volunteerData(ym){
 }
 function volunteer(ym){
  const inf=mi(ym),m=volunteerData(ym),heads=m.headers||Array(10).fill(""),data=m.data||{};
- return `<div class="month-page"><div class="center title">แบบบันทึกกิจกรรมจิตอาสาเพื่อสังคมและสาธารณประโยชน์</div><div class="center subtitle">ชั้น ${esc(cls())} &nbsp; เดือน ${inf.name} พ.ศ. ${inf.be} &nbsp; ภาคเรียนที่ ${esc(S.term)} ปีการศึกษา ${esc(S.academicYear)}</div><table class="print-table vol-table"><thead><tr><th class="no"><div class="vtext">เลขที่</div></th><th class="id"><div class="vtext">เลขประจำตัว</div></th><th class="name-head">ชื่อ - สกุล</th>${heads.map(h=>`<th class="act"><div class="vtext">${esc(h)}</div></th>`).join("")}</tr></thead><tbody>${R.map(r=>`<tr><td class="no">${r.no}</td><td class="sid">${esc(r.id)}</td><td class="name">${esc(r.name)}</td>${heads.map((h,i)=>`<td class="vol-status-print">${esc(volunteerPrintStatus((data[r.uid]||{})[i]||""))}</td>`).join("")}</tr>`).join("")}</tbody></table>${signatures()}</div>`
+ return `<div class="month-page"><div class="center title">แบบบันทึกกิจกรรมจิตอาสาเพื่อสังคมและสาธารณประโยชน์</div><div class="center subtitle">ชั้น ${esc(cls())} &nbsp; เดือน ${inf.name} พ.ศ. ${inf.be} &nbsp; ภาคเรียนที่ ${esc(S.term)} ปีการศึกษา ${esc(S.academicYear)}</div><table class="print-table vol-table"><thead><tr><th class="no"><div class="vtext">เลขที่</div></th><th class="id"><div class="vtext">เลขประจำตัว</div></th><th class="name-head">ชื่อ - สกุล</th>${heads.map(h=>`<th class="act"><div class="vtext">${esc(h)}</div></th>`).join("")}</tr></thead><tbody>${R.map(r=>`<tr><td class="no">${r.no}</td><td class="sid">${esc(r.id)}</td><td class="name">${esc(r.name)}</td>${heads.map((h,i)=>`<td class="vol-status-print">${esc(volunteerPrintStatus((data[r.uid]||{})[i]||""))}</td>`).join("")}</tr>`).join("")}</tbody></table>${signatures(ym)}</div>`
 }
 
 
