@@ -601,7 +601,7 @@ function homeroomPage(ym,week,rows,showSignatures=false,weekMonday=""){
        }).join("")}
      </tbody>
    </table>
-   ${showSignatures?signatures():""}
+   ${showSignatures?signatures(ym):""}
  </div>`;
 }
 function homeroomPagesForPrint(monthList){
