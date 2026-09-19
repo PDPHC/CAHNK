@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ลายเซ็นของฉัน</title>
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/workflow.css">
+</head>
+<body class="cloud-protected">
+<main class="signature-page">
+  <div class="classroom-page-head">
+    <div>
+      <h1 style="margin:0">✍ ลายเซ็นของฉัน</h1>
+      <div class="sub"><b id="signatureUserName"></b> • <span id="signatureUserRole"></span></div>
+    </div>
+    <div class="actions"><a class="btn gray" id="signatureBackLink" href="classrooms.html">← กลับ</a><button class="btn danger" onclick="cloudLogout()">ออกจากระบบ</button></div>
+  </div>
+  <section class="signature-card">
+    <h2 style="margin-top:0">อัปโหลดลายเซ็น</h2>
+    <div class="sub">แนะนำไฟล์ PNG พื้นหลังโปร่งใส หรือ JPG/WebP ที่ครอปเหลือเฉพาะลายเซ็น เมื่ออนุมัติ ระบบจะบันทึกภาพลายเซ็น ณ เวลานั้นไว้กับรายการอนุมัติ</div>
+    <div class="signature-preview-wrap"><img id="signaturePreview" alt="ตัวอย่างลายเซ็น" style="display:none"></div>
+    <div id="signatureStatus" class="sub">กำลังโหลด...</div>
+    <div class="field" style="margin-top:14px">
+      <label>เลือกรูปลายเซ็น</label>
+      <input id="signatureFile" type="file" accept="image/png,image/jpeg,image/webp" onchange="cloudPreviewSignature(this)">
+    </div>
+    <div class="actions" style="margin-top:14px">
+      <button class="btn primary" onclick="cloudSaveSignature()">บันทึกลายเซ็น</button>
+      <button class="btn danger" onclick="cloudDeleteSignature()">ลบลายเซ็น</button>
+    </div>
+    <div class="notice" style="margin-top:14px">Academic และ Deputy Director ต้องมีลายเซ็นในระบบก่อนกดอนุมัติ เพื่อให้ลายเซ็นปรากฏในเล่มธุรการอัตโนมัติ</div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/cloud.js"></script>
+<script>startSignaturePage()</script>
+</body>
+</html>
