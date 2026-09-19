@@ -1,0 +1,1723 @@
+
+*{box-sizing:border-box}
+body{font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;color:#000;background:#ececec;margin:0}
+.printbar{position:sticky;top:0;background:#1e293b;color:#fff;padding:9px 14px;display:flex;gap:8px;align-items:center;justify-content:space-between;z-index:10}
+.printbar button{border:0;border-radius:6px;padding:8px 12px;font-weight:700;cursor:pointer}
+.sheet{width:210mm;min-height:297mm;margin:10mm auto;background:#fff;padding:10mm 9mm;box-shadow:0 2px 18px #bbb}
+h1,h2,h3,p{margin:0}.center{text-align:center}.title{font-size:20pt;font-weight:700;line-height:1.45}.subtitle{font-size:16pt;font-weight:600;line-height:1.45}.meta{font-size:15pt;line-height:1.65}
+.print-table{border-collapse:collapse;width:100%;margin-top:8px;table-layout:fixed}
+.print-table th,.print-table td{border:1px solid #000;padding:3px 4px;font-size:12pt;vertical-align:middle}
+.print-table th{text-align:center;font-weight:700}
+.print-table td.name{text-align:left}.small{font-size:8pt}.tiny{font-size:6.6pt}
+.month-grid th,.month-grid td{padding:1px;text-align:center;height:20px;font-size:9pt}
+.month-grid .cno{width:6mm}.month-grid .cid{width:11mm}.month-grid .cname{width:33mm}.month-grid .day{width:4.1mm}.month-grid .sum{width:8mm}
+.signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin-top:13mm;text-align:center;font-size:14pt;line-height:1.45}
+.signatures.four{grid-template-columns:repeat(4,1fr);gap:4mm}
+.sigline{border-top:1px dotted #000;padding-top:3px;margin:0 auto;width:90%}
+.home-table th,.home-table td{font-size:13pt;vertical-align:top}.home-table td{height:34mm}
+.home-date{width:26%}.home-topic{width:40%}.home-abs{width:22%}.home-note{width:12%}
+.vtext{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;height:42mm}
+.vol-table .act{width:9mm}.vol-table .name{width:42mm}.vol-table .no{width:10mm}.vol-table .id{width:14mm}
+.cover-gap{height:4mm}
+.no-border{border:0!important}
+@media print{
+ body{background:#fff}.printbar{display:none}.sheet{box-shadow:none;margin:0;width:auto;min-height:auto;padding:0}
+ @page{size:A4 portrait;margin:9mm}
+}
+/* V3 */
+.page-break{break-after:page;page-break-after:always}
+.page-break:last-child{break-after:auto;page-break-after:auto}
+.off-print{background:#ddd!important;color:#666!important}
+.out-print{background:#eee!important;color:#999!important}
+.checkmark{font-size:13pt;font-weight:700;text-align:center}
+.term-note{font-size:11pt;text-align:right;margin-top:2mm}
+@media print{
+ .page-break{break-after:page;page-break-after:always}
+ .sheet.multi{padding:0}
+ .month-page{min-height:275mm}
+}
+
+/* V4.2 signatures + TH Sarabun */
+.signature-section{margin-top:10mm;break-inside:avoid;page-break-inside:avoid}
+.signatures.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin-top:10mm;text-align:center;font-size:14pt;line-height:1.45}
+.signature-space{height:13mm}
+.signature-name{border-top:1px dotted #000;padding-top:2mm;width:90%;margin:0 auto}
+.signature-role{margin-top:1mm}
+@media print{
+ body,.sheet,.print-table,.signatures{font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif!important}
+ .signature-section{break-inside:avoid;page-break-inside:avoid}
+}
+
+/* V4.3: รองรับครูประจำชั้น 1 หรือ 2 คน */
+.signatures.four{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4mm;
+  margin-top:10mm;
+  text-align:center;
+  font-size:13pt;
+  line-height:1.35;
+}
+.signatures.four .signature-name{width:96%}
+.signatures.four .signature-role{min-height:12mm}
+@media print{
+  .signatures.four{font-size:13pt;gap:3mm}
+}
+
+
+/* =========================================================
+   V4.6 — table proportions + preview same as print
+   ========================================================= */
+
+body{
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+/* preview window should use same paper geometry as actual print */
+.sheet{
+  width:210mm;
+  min-height:297mm;
+  margin:10mm auto;
+  background:#fff;
+  padding:10mm 9mm;
+  box-shadow:0 2px 16px rgba(0,0,0,.12);
+}
+
+.print-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.print-table th,
+.print-table td{
+  vertical-align:middle;
+  text-align:center;
+}
+.print-table td.name,
+.print-table th.name{
+  text-align:left;
+}
+.print-table td.no,
+.print-table td.sid,
+.print-table th.no,
+.print-table th.sid{
+  text-align:center !important;
+}
+
+/* improve volunteer print layout */
+.vol-table{
+  width:100%;
+  table-layout:fixed;
+}
+.vol-table th,
+.vol-table td{
+  font-size:10pt;
+  line-height:1.1;
+  padding:2px 3px;
+}
+.vol-table .no{width:10mm}
+.vol-table .id{width:16mm}
+.vol-table .sid{width:16mm}
+.vol-table .name{width:47mm}
+.vol-table .act{width:9.5mm}
+.vol-table thead th{
+  font-weight:700;
+}
+.vol-table tbody td{
+  height:9mm;
+}
+.vol-table td:nth-child(1),
+.vol-table td:nth-child(2),
+.vol-table th:nth-child(1),
+.vol-table th:nth-child(2){
+  text-align:center !important;
+}
+.vol-table td:nth-child(3){
+  text-align:left;
+  padding-left:4px;
+}
+.vtext{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  display:inline-block;
+  line-height:1;
+}
+
+/* make preview and printed output match closely */
+@media screen{
+  .sheet{
+    width:210mm;
+    min-height:297mm;
+  }
+  .print-table{
+    border-collapse:collapse;
+  }
+}
+
+@media print{
+  .sheet{
+    box-shadow:none;
+    margin:0;
+    width:auto;
+    min-height:auto;
+    padding:0;
+  }
+}
+
+
+/* =========================================================
+   V4.7 — volunteer first 3 headers vertical like sample
+   ========================================================= */
+.vol-table .name-head{
+  width:47mm;
+  text-align:center !important;
+  vertical-align:middle !important;
+}
+.vol-table thead th.name-head{
+  padding:0;
+}
+.vol-table thead th.name-head .vtext{
+  margin:auto;
+}
+.vol-table thead th:nth-child(1),
+.vol-table thead th:nth-child(2),
+.vol-table thead th:nth-child(3){
+  height:56mm;
+}
+.vol-table thead th:nth-child(1),
+.vol-table thead th:nth-child(2){
+  width:10mm;
+}
+.vol-table thead th:nth-child(2){
+  width:16mm;
+}
+.vol-table thead th:nth-child(3){
+  width:47mm;
+}
+.vol-table tbody td:nth-child(3){
+  text-align:left !important;
+  padding-left:4px;
+}
+
+
+/* =========================================================
+   V4.8 — Volunteer table header matched to original DOCX
+   Original grid (approx):
+   no 10.5mm | student id 13.5mm | name 46.4mm | 10 activity cols ~11mm each
+   header height ~47.4mm
+   ========================================================= */
+
+.vol-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+
+/* Exact-ish column proportions from the source DOCX */
+.vol-table .no{
+  width:10.5mm !important;
+}
+.vol-table .id,
+.vol-table .sid{
+  width:13.5mm !important;
+}
+.vol-table .name,
+.vol-table .name-head{
+  width:46.4mm !important;
+}
+.vol-table .act{
+  width:11mm !important;
+}
+
+/* Header row height from source document: 2685 twips ≈ 47.4 mm */
+.vol-table thead tr{
+  height:47.4mm !important;
+}
+.vol-table thead th{
+  height:47.4mm !important;
+  padding:0 2px !important;
+  vertical-align:middle !important;
+  text-align:center !important;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:14pt !important;
+  font-weight:400 !important;
+  line-height:1.05;
+}
+
+/* Only first two headings are vertical in the original */
+.vol-table thead th.no .vtext,
+.vol-table thead th.id .vtext{
+  writing-mode:vertical-rl !important;
+  transform:rotate(180deg) !important;
+  white-space:nowrap;
+  display:inline-block;
+  height:auto !important;
+  margin:auto;
+  line-height:1;
+}
+
+/* Name heading is horizontal and centered in the original */
+.vol-table thead th.name-head{
+  writing-mode:horizontal-tb !important;
+  transform:none !important;
+  white-space:normal;
+  text-align:center !important;
+  vertical-align:middle !important;
+  padding:0 4px !important;
+}
+
+/* Activity columns keep the system's labels only when entered.
+   If no label exists, they remain blank just like the original form. */
+.vol-table thead th.act{
+  text-align:center !important;
+  vertical-align:middle !important;
+  overflow:hidden;
+}
+.vol-table thead th.act .vtext{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  display:inline-block;
+  max-height:44mm;
+  line-height:1;
+}
+
+/* Body alignment follows original */
+.vol-table tbody td.no,
+.vol-table tbody td.sid,
+.vol-table tbody td:nth-child(1),
+.vol-table tbody td:nth-child(2){
+  text-align:center !important;
+  vertical-align:middle !important;
+}
+.vol-table tbody td.name,
+.vol-table tbody td:nth-child(3){
+  text-align:left !important;
+  vertical-align:middle !important;
+  padding-left:4px !important;
+}
+
+/* Keep the exact same geometry on preview and print */
+@media screen{
+  .vol-table thead tr,
+  .vol-table thead th{
+    height:47.4mm !important;
+  }
+}
+@media print{
+  .vol-table thead tr,
+  .vol-table thead th{
+    height:47.4mm !important;
+  }
+}
+
+
+/* =========================================================
+   V4.9 — Binding margin + vertical identity headers on ALL forms
+   ========================================================= */
+
+/*
+  Binding margin:
+  left 18 mm gives room for punch/binding.
+  right 5 mm preserves enough printable width for 31-day ledgers.
+*/
+.sheet{
+  width:210mm;
+  min-height:297mm;
+  padding:8mm 5mm 8mm 18mm !important;
+}
+
+/* Generic vertical key headers added by print.js */
+.print-table th.vertical-key-header{
+  height:38mm;
+  min-height:38mm;
+  padding:0 2px !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  overflow:hidden;
+}
+.print-table th.vertical-key-header .vertical-key-label{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  display:inline-block;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:13pt;
+  font-weight:700;
+  line-height:1;
+  margin:auto;
+}
+
+/* Volunteer original-style header stays taller */
+.vol-table th.vertical-key-header{
+  height:47.4mm !important;
+  min-height:47.4mm !important;
+}
+
+/* Monthly ledger: enough height for vertical labels but keep day row compact */
+.month-grid thead tr:first-child th.vertical-key-header{
+  height:34mm;
+  min-height:34mm;
+}
+.month-grid thead tr:nth-child(2){
+  height:7mm;
+}
+
+/* Preserve alignment of body values */
+.print-table td.no,
+.print-table td.sid,
+.print-table tbody td:first-child,
+.month-grid tbody td:nth-child(2){
+  text-align:center !important;
+}
+
+/* Print uses the same geometry as preview */
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:8mm 5mm 8mm 18mm;
+  }
+  .sheet{
+    width:auto;
+    min-height:auto;
+    margin:0;
+    padding:0 !important;
+    box-shadow:none;
+  }
+  .print-table th.vertical-key-header{
+    height:38mm;
+    min-height:38mm;
+  }
+  .vol-table th.vertical-key-header{
+    height:47.4mm !important;
+    min-height:47.4mm !important;
+  }
+  .month-grid thead tr:first-child th.vertical-key-header{
+    height:34mm;
+    min-height:34mm;
+  }
+}
+
+/* Screen preview mirrors the printable paper margins */
+@media screen{
+  .sheet{
+    width:210mm;
+    min-height:297mm;
+    padding:8mm 5mm 8mm 18mm !important;
+  }
+}
+
+
+/* =========================================================
+   V4.10 — Special/public holiday vertical band label
+   ========================================================= */
+.month-grid th.holiday-special{
+  position:relative;
+  background:#d9d9d9 !important;
+  color:#000 !important;
+  overflow:visible;
+  vertical-align:top !important;
+  height:42mm !important;
+}
+.month-grid td.holiday-special{
+  background:#e0e0e0 !important;
+}
+.month-grid th.holiday-special .day-number{
+  display:block;
+  font-size:8pt;
+  line-height:1;
+  margin-top:1mm;
+}
+.month-grid th.holiday-special .holiday-vertical-label{
+  position:absolute;
+  left:50%;
+  top:7mm;
+  bottom:1mm;
+  transform:translateX(-50%) rotate(180deg);
+  writing-mode:vertical-rl;
+  white-space:nowrap;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:9pt;
+  font-weight:700;
+  line-height:1;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+@media print{
+  .month-grid th.holiday-special{
+    height:42mm !important;
+  }
+}
+
+
+/* =========================================================
+   V4.11 — holiday label as long vertical band below day number
+   ========================================================= */
+
+/* print monthly grid: keep day number in header cell, extend holiday label downward */
+.month-grid th.holiday-special{
+  position:relative;
+  background:#d9d9d9 !important;
+  color:#000 !important;
+  overflow:visible !important;
+  vertical-align:middle !important;
+  height:7mm !important;        /* same height as normal day number row */
+  min-height:7mm !important;
+  padding:0 !important;
+}
+.month-grid th.holiday-special .day-number{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  font-size:8pt;
+  line-height:1;
+  position:relative;
+  z-index:3;
+  background:#d9d9d9;
+}
+.month-grid th.holiday-special .holiday-vertical-label{
+  position:absolute;
+  left:50%;
+  top:100%;
+  transform:translateX(-50%) rotate(180deg);
+  writing-mode:vertical-rl;
+  white-space:nowrap;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:9pt;
+  font-weight:700;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:175mm;                 /* long band through body rows */
+  width:auto;
+  pointer-events:none;
+  z-index:2;
+}
+.month-grid td.holiday-special{
+  background:#e0e0e0 !important;
+}
+.month-grid td.holiday-special::before{
+  content:"";
+  position:absolute;
+  inset:0;
+}
+.month-grid td.holiday-special{
+  position:relative;
+}
+@media print{
+  .month-grid th.holiday-special{
+    height:7mm !important;
+    min-height:7mm !important;
+  }
+  .month-grid th.holiday-special .holiday-vertical-label{
+    height:175mm;
+  }
+}
+
+
+/* =========================================================
+   V4.12 — real merged holiday cell (rowspan)
+   ========================================================= */
+.month-grid td.holiday-merged-cell{
+  background:#d9d9d9 !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  position:relative;
+  overflow:hidden;
+}
+.month-grid td.holiday-merged-cell .holiday-merged-label{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  min-height:45mm;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:10pt;
+  font-weight:700;
+  line-height:1;
+  text-align:center;
+  margin:auto;
+}
+.month-grid th.holiday-special{
+  height:7mm !important;
+  min-height:7mm !important;
+  background:#d9d9d9 !important;
+  vertical-align:middle !important;
+  padding:0 !important;
+}
+.month-grid th.holiday-special .holiday-vertical-label{
+  display:none !important;
+}
+
+
+/* =========================================================
+   V4.13 — date number stays as a separate, unmerged header cell
+   ========================================================= */
+
+/* Holiday date header: normal independent cell */
+.month-grid thead th.holiday-special{
+  height:7mm !important;
+  min-height:7mm !important;
+  background:#f2f2f2 !important;
+  color:#000 !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  position:static !important;
+  overflow:hidden !important;
+}
+.month-grid thead th.holiday-special .day-number{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100%;
+  height:100%;
+  font-size:8pt;
+  line-height:1;
+  background:transparent !important;
+  position:static !important;
+}
+
+/* Any legacy floating label in the header is disabled */
+.month-grid thead th.holiday-special .holiday-vertical-label{
+  display:none !important;
+}
+
+/* Merged holiday cell starts strictly in tbody */
+.month-grid tbody td.holiday-merged-cell{
+  background:#d9d9d9 !important;
+  vertical-align:middle !important;
+  text-align:center !important;
+  padding:0 !important;
+}
+
+/* Clear visual separator between the day number and merged holiday body */
+.month-grid tbody tr:first-child td.holiday-merged-cell{
+  border-top:1px solid #000 !important;
+}
+
+
+/* =========================================================
+   V4.14 — normalize all date numbers to identical style
+   ========================================================= */
+
+/* monthly date header cells */
+.month-grid thead tr:nth-child(2) th,
+.month-grid thead th.day,
+.month-grid thead th.holiday-special,
+.month-grid thead th.off-print,
+.month-grid thead th.out-print{
+  color:#000 !important;
+  font-weight:400 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  padding:0 !important;
+}
+
+/* the actual date number */
+.month-grid thead th .day-number{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  height:100% !important;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif !important;
+  font-size:10pt !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  color:#000 !important;
+  letter-spacing:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:center !important;
+}
+
+/* keep the date row height equal in all columns */
+.month-grid thead tr:nth-child(2){
+  height:7mm !important;
+}
+.month-grid thead tr:nth-child(2) th{
+  height:7mm !important;
+  min-height:7mm !important;
+}
+
+
+/* V4.15 — deputy signature role split into 2 neat lines */
+.signature-role{
+  white-space:normal !important;
+  line-height:1.25 !important;
+}
+
+
+/* =========================================================
+   V4.16 — Home room form matched to supplied sample
+   ========================================================= */
+
+.homeroom-page .title{
+  margin-bottom:1mm;
+}
+.homeroom-page .subtitle{
+  line-height:1.3;
+}
+.homeroom-week{
+  margin-top:2mm;
+  margin-bottom:2mm;
+}
+
+.home-original-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+  margin-top:2mm;
+}
+
+.home-original-table .home-col-date{width:25%}
+.home-original-table .home-col-topic{width:40%}
+.home-original-table .home-col-absent{width:22%}
+.home-original-table .home-col-note{width:13%}
+
+.home-original-table th{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:14pt !important;
+  font-weight:700;
+  text-align:center !important;
+  vertical-align:middle !important;
+  height:10mm;
+  padding:2mm 1mm !important;
+}
+
+.home-original-table td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:13.5pt !important;
+  line-height:1.35;
+  vertical-align:top !important;
+  padding:4mm 3mm !important;
+  height:34mm !important;
+}
+
+.home-date-cell{
+  text-align:left !important;
+}
+.home-date-cell > div + div{
+  margin-top:2mm;
+}
+
+.home-topic-cell{
+  text-align:left !important;
+}
+.home-options{
+  padding-left:5mm;
+  line-height:1.55;
+}
+.home-options > div{
+  margin-bottom:.5mm;
+}
+.home-inline-dots{
+  display:inline-block;
+  min-width:38mm;
+}
+.home-write-line{
+  height:7mm;
+  border-bottom:1px dotted #000;
+  width:88%;
+  margin-left:0;
+}
+
+.home-absent-cell,
+.home-note-cell{
+  text-align:left !important;
+  white-space:pre-wrap;
+}
+
+@media print{
+  .home-original-table th{
+    font-size:14pt !important;
+  }
+  .home-original-table td{
+    font-size:13.5pt !important;
+    height:34mm !important;
+  }
+}
+
+
+/* V4.18 — "อื่น ๆ" uses the same dotted line as entered text */
+.home-other-row{
+  display:flex;
+  align-items:flex-end;
+  gap:2mm;
+  width:100%;
+  margin-top:.5mm;
+}
+.home-other-row > span:first-child{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+.home-other-line{
+  flex:1 1 auto;
+  min-width:30mm;
+  min-height:6mm;
+  border-bottom:1px dotted #000;
+  padding:0 1mm .5mm 1mm;
+  line-height:1.2;
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+/* old extra writing lines are no longer used for the "อื่น ๆ" row */
+.home-inline-dots{
+  display:none;
+}
+
+
+/* V4.19 — Home room "อื่น ๆ" reserves 2 writing lines */
+.home-other-block{
+  width:100%;
+}
+.home-other-second-line{
+  height:6mm;
+  border-bottom:1px dotted #000;
+  width:100%;
+  margin-top:.5mm;
+}
+
+
+/* V4.20 — home room long "อื่น ๆ" wraps to line 2, dates stay one line */
+.home-other-second-line{
+  min-height:6mm;
+  border-bottom:1px dotted #000;
+  width:100%;
+  margin-top:.5mm;
+  padding:0 1mm .5mm 1mm;
+  line-height:1.2;
+  text-align:left;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.home-date-one-line{
+  white-space:nowrap !important;
+  font-size:12.5pt;
+  line-height:1.2;
+}
+.home-time-line{
+  white-space:nowrap !important;
+  margin-top:2mm;
+  font-size:12.5pt;
+}
+
+
+/* =========================================================
+   V4.21 — center home-room date cell and keep print = preview
+   ========================================================= */
+
+/* Home room: make date column centered like the preview/form reference */
+.home-original-table td.home-date-cell{
+  text-align:center !important;
+  vertical-align:middle !important;
+  padding-left:2mm !important;
+  padding-right:2mm !important;
+}
+.home-date-cell .home-date-one-line,
+.home-date-cell .home-time-line{
+  display:block;
+  width:100%;
+  text-align:center !important;
+}
+.home-date-cell .home-date-one-line{
+  white-space:nowrap !important;
+}
+.home-date-cell .home-time-line{
+  white-space:nowrap !important;
+}
+
+/* Lock home-room print geometry to the same values seen on screen preview */
+@media screen{
+  .homeroom-page .home-original-table th{
+    font-size:14pt !important;
+    height:10mm !important;
+  }
+  .homeroom-page .home-original-table td{
+    font-size:13.5pt !important;
+    height:34mm !important;
+  }
+}
+@media print{
+  .homeroom-page .home-original-table{
+    table-layout:fixed !important;
+    width:100% !important;
+    border-collapse:collapse !important;
+  }
+  .homeroom-page .home-original-table th{
+    font-size:14pt !important;
+    height:10mm !important;
+    padding:2mm 1mm !important;
+  }
+  .homeroom-page .home-original-table td{
+    font-size:13.5pt !important;
+    height:34mm !important;
+    padding:4mm 3mm !important;
+    line-height:1.35 !important;
+  }
+  .homeroom-page .home-options{
+    line-height:1.55 !important;
+  }
+  .homeroom-page .home-other-line,
+  .homeroom-page .home-other-second-line{
+    border-bottom:1px dotted #000 !important;
+  }
+}
+
+
+/* =========================================================
+   V4.22 — actual print uses same page box as preview
+   ========================================================= */
+
+/* Home room date cell centered in both axes */
+.home-original-table td.home-date-cell{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  text-align:center !important;
+}
+.home-date-cell .home-date-one-line,
+.home-date-cell .home-time-line{
+  width:100%;
+  text-align:center !important;
+}
+
+/* Make printed page use the same 210×297 mm sheet box and same padding as preview */
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:0 !important;
+  }
+
+  html,body{
+    width:210mm;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+
+  .sheet{
+    width:210mm !important;
+    min-height:297mm !important;
+    margin:0 !important;
+    padding:8mm 5mm 8mm 18mm !important;
+    box-shadow:none !important;
+    background:#fff !important;
+    overflow:hidden !important;
+  }
+
+  .page-break{
+    break-after:page;
+    page-break-after:always;
+  }
+  .page-break:last-child{
+    break-after:auto;
+    page-break-after:auto;
+  }
+
+  /* Lock homeroom form metrics so print and preview match */
+  .homeroom-page{
+    width:100% !important;
+  }
+  .homeroom-page .title{
+    font-size:20pt !important;
+    line-height:1.45 !important;
+  }
+  .homeroom-page .subtitle{
+    font-size:16pt !important;
+    line-height:1.45 !important;
+  }
+  .homeroom-page .home-original-table{
+    width:100% !important;
+    table-layout:fixed !important;
+    border-collapse:collapse !important;
+    margin-top:2mm !important;
+  }
+  .homeroom-page .home-original-table th{
+    font-size:14pt !important;
+    height:10mm !important;
+    padding:2mm 1mm !important;
+  }
+  .homeroom-page .home-original-table td{
+    font-size:13.5pt !important;
+    height:34mm !important;
+    padding:4mm 3mm !important;
+    line-height:1.35 !important;
+    vertical-align:top !important;
+  }
+  .homeroom-page .signature-section{
+    margin-top:10mm !important;
+  }
+}
+
+/* Keep screen preview on the exact same geometry */
+@media screen{
+  .sheet{
+    width:210mm !important;
+    min-height:297mm !important;
+    padding:8mm 5mm 8mm 18mm !important;
+  }
+}
+
+
+/* =========================================================
+   V4.23 — fix shifted table + keep signatures on same page
+   ========================================================= */
+
+/* Home room page should not inherit large min-height that pushes signatures away */
+.homeroom-page{
+  min-height:auto !important;
+  break-inside:avoid;
+  page-break-inside:avoid;
+}
+
+/* Revert td from flex; use inner wrapper to center content instead */
+.home-original-table td.home-date-cell{
+  display:table-cell !important;
+  vertical-align:middle !important;
+  text-align:center !important;
+  padding:3mm 2.5mm !important;
+}
+.home-date-wrap{
+  min-height:24mm;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+.home-date-cell .home-date-one-line,
+.home-date-cell .home-time-line{
+  width:100%;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+.home-date-cell .home-date-one-line{
+  line-height:1.2;
+}
+.home-date-cell .home-time-line{
+  line-height:1.2;
+  margin-top:2mm;
+}
+
+/* tighten homeroom geometry so signatures remain on the same A4 page */
+.homeroom-page .title{
+  line-height:1.25 !important;
+  margin-bottom:.5mm !important;
+}
+.homeroom-page .subtitle{
+  line-height:1.25 !important;
+}
+.homeroom-week{
+  margin-top:1mm !important;
+  margin-bottom:1.5mm !important;
+}
+.homeroom-page .home-original-table{
+  margin-top:1.5mm !important;
+}
+.homeroom-page .home-original-table th{
+  height:9mm !important;
+  padding:1.5mm 1mm !important;
+}
+.homeroom-page .home-original-table td{
+  height:30mm !important;
+  padding:3mm 2.5mm !important;
+  line-height:1.28 !important;
+}
+.homeroom-page .home-options{
+  line-height:1.45 !important;
+}
+.homeroom-page .home-other-second-line{
+  min-height:5.5mm !important;
+}
+.homeroom-page .signature-section{
+  margin-top:5mm !important;
+  break-inside:avoid !important;
+  page-break-inside:avoid !important;
+}
+.homeroom-page .signatures,
+.homeroom-page .signatures.three,
+.homeroom-page .signatures.four{
+  margin-top:5mm !important;
+}
+.homeroom-page .signature-space{
+  height:10mm !important;
+}
+.homeroom-page .signature-role{
+  line-height:1.15 !important;
+}
+
+/* print must use same compact layout */
+@media print{
+  .homeroom-page{
+    min-height:auto !important;
+    break-inside:avoid !important;
+    page-break-inside:avoid !important;
+  }
+  .homeroom-page .home-original-table th{
+    height:9mm !important;
+    padding:1.5mm 1mm !important;
+  }
+  .homeroom-page .home-original-table td{
+    height:30mm !important;
+    padding:3mm 2.5mm !important;
+    line-height:1.28 !important;
+  }
+  .homeroom-page .signature-section{
+    margin-top:5mm !important;
+  }
+  .homeroom-page .signatures,
+  .homeroom-page .signatures.three,
+  .homeroom-page .signatures.four{
+    margin-top:5mm !important;
+  }
+  .homeroom-page .signature-space{
+    height:10mm !important;
+  }
+}
+
+
+/* =========================================================
+   V4.24 — same top margin on every printed page
+   + perfectly centered monthly date numbers
+   ========================================================= */
+
+/* Monthly date-number row: force exact centering */
+.month-grid thead tr:nth-child(2) th{
+  height:7mm !important;
+  min-height:7mm !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  line-height:1 !important;
+}
+.month-grid thead tr:nth-child(2) th .day-number{
+  width:100% !important;
+  height:7mm !important;
+  display:grid !important;
+  place-items:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  line-height:1 !important;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif !important;
+  font-size:10pt !important;
+  font-weight:400 !important;
+  color:#000 !important;
+}
+
+/*
+  Print pages:
+  @page has zero margin so every page uses our own padding.
+  The sheet keeps left/right binding geometry, while EACH page-break
+  receives its own top/bottom spacing.
+*/
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:0 !important;
+  }
+
+  html,body{
+    width:210mm !important;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+
+  .sheet{
+    width:210mm !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 5mm 0 18mm !important;
+    box-shadow:none !important;
+    background:#fff !important;
+    overflow:visible !important;
+  }
+
+  .page-break{
+    box-sizing:border-box !important;
+    width:100% !important;
+    padding-top:8mm !important;
+    padding-bottom:8mm !important;
+    break-after:page !important;
+    page-break-after:always !important;
+  }
+
+  .page-break:last-child{
+    break-after:auto !important;
+    page-break-after:auto !important;
+  }
+
+  /* keep the report heading away from the top edge on every page */
+  .page-break > .month-page{
+    margin-top:0 !important;
+  }
+
+  /* reinforce monthly date centering in actual print */
+  .month-grid thead tr:nth-child(2) th,
+  .month-grid thead tr:nth-child(2) th .day-number{
+    height:7mm !important;
+    min-height:7mm !important;
+    text-align:center !important;
+    vertical-align:middle !important;
+  }
+}
+
+/* Screen preview: visually show similar top breathing room after page breaks */
+@media screen{
+  .page-break + .page-break{
+    padding-top:8mm;
+  }
+}
+
+
+/* =========================================================
+   V4.25 — center the week number with more breathing room
+   ========================================================= */
+.homeroom-week{
+  text-align:center !important;
+  white-space:nowrap;
+}
+.home-week-number{
+  display:inline-block;
+  min-width:14mm;
+  text-align:center;
+  margin:0 2.5mm;
+  padding:0 1mm;
+  font-weight:700;
+}
+@media print{
+  .home-week-number{
+    min-width:14mm;
+    margin:0 2.5mm;
+    text-align:center;
+  }
+}
+
+
+/* =========================================================
+   V4.28 — Behavior print form
+   ========================================================= */
+.behavior-print-page{
+  width:100%;
+}
+.behavior-print-title{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18pt;
+  font-weight:700;
+  line-height:1.25;
+  margin-bottom:4mm;
+}
+.behavior-print-meta{
+  text-align:left;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:14pt;
+  font-weight:600;
+  line-height:1.4;
+  margin-bottom:3mm;
+  white-space:nowrap;
+}
+.behavior-meta-line{
+  display:inline-block;
+  min-width:22mm;
+  text-align:center;
+  border-bottom:1px dotted #000;
+  padding:0 1mm;
+}
+.behavior-print-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+  margin-top:0;
+}
+.behavior-print-table .bp-no{width:9mm}
+.behavior-print-table .bp-id{width:14mm}
+.behavior-print-table .bp-name{width:39mm}
+.behavior-print-table .bp-rate{width:14mm}
+.behavior-print-table .bp-advice{width:auto}
+.behavior-print-table th,
+.behavior-print-table td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  border:1px solid #000;
+  font-size:11.5pt;
+  line-height:1.15;
+  padding:1.5mm 1mm;
+  vertical-align:middle;
+}
+.behavior-print-table th{
+  text-align:center !important;
+  font-weight:700;
+}
+.behavior-print-table tbody td{
+  height:7.5mm;
+}
+.behavior-print-table td.no,
+.behavior-print-table td.sid{
+  text-align:center !important;
+}
+.behavior-print-table td.name{
+  text-align:left !important;
+  padding-left:2mm;
+}
+.behavior-mark{
+  text-align:center !important;
+  font-size:13pt !important;
+  font-weight:700;
+}
+.behavior-advice{
+  text-align:left !important;
+  white-space:pre-wrap;
+}
+.behavior-print-page .signature-section{
+  margin-top:8mm !important;
+}
+
+@media print{
+  .behavior-print-title{font-size:18pt !important}
+  .behavior-print-meta{font-size:14pt !important}
+  .behavior-print-table th,
+  .behavior-print-table td{font-size:11.5pt !important}
+  .behavior-print-table tbody td{height:7.5mm !important}
+}
+
+
+/* =========================================================
+   V4.30 — Health print form
+   ========================================================= */
+.health-print-page{
+  width:100%;
+}
+.health-print-title{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18pt;
+  font-weight:700;
+  line-height:1.25;
+  margin-bottom:2mm;
+}
+.health-print-meta{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:14pt;
+  font-weight:600;
+  line-height:1.35;
+  margin-bottom:3mm;
+}
+.health-meta-line{
+  display:inline-block;
+  min-width:25mm;
+  text-align:center;
+  border-bottom:1px dotted #000;
+  padding:0 1mm;
+  margin:0 1mm;
+}
+.health-print-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.health-print-table .hp-no{width:9mm}
+.health-print-table .hp-id{width:12mm}
+.health-print-table .hp-name{width:45mm}
+.health-print-table .hp-small{width:9mm}
+.health-print-table .hp-rate{width:9mm}
+.health-print-table .hp-note{width:auto}
+.health-print-table th,
+.health-print-table td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  border:1px solid #000;
+  font-size:11pt;
+  line-height:1.1;
+  padding:1mm .8mm;
+  vertical-align:middle;
+}
+.health-print-table th{
+  text-align:center !important;
+  font-weight:700;
+}
+.health-print-table th.use-own-vertical{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  letter-spacing:.2px;
+  padding:.8mm .5mm !important;
+}
+.health-print-table td.center{text-align:center !important}
+.health-print-table td.left{text-align:left !important; padding-left:1.5mm}
+.health-print-table tbody td{
+  height:7.2mm;
+}
+.health-print-legend{
+  margin-top:2mm;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:12pt;
+}
+.health-print-page .signature-section{
+  margin-top:7mm !important;
+}
+
+@media print{
+  .health-print-table th,
+  .health-print-table td{font-size:11pt !important}
+  .health-print-table tbody td{height:7.2mm !important}
+}
+
+/* V4.32 — scholarship print */
+.scholarship-print-table th,
+.scholarship-print-table td{
+  font-size:11pt;
+}
+.scholarship-print-table tbody td{
+  height:8mm;
+}
+
+/* V4.33 — scholarship report all students */
+.scholarship-month-line{
+  font-size:14pt;
+  margin:1mm 0 3mm;
+}
+.sch-dots{
+  display:inline-block;
+  min-width:28mm;
+  text-align:center;
+  border-bottom:1px dotted #000;
+  padding:0 1mm;
+}
+.scholarship-print-table td{
+  vertical-align:top;
+}
+
+
+/* =========================================================
+   V4.34 — Scholarship table fitted to A4
+   ========================================================= */
+.scholarship-print-table{
+  width:100% !important;
+  table-layout:fixed !important;
+  border-collapse:collapse !important;
+}
+
+/* Total ≈ 185 mm within the printable area */
+.scholarship-print-table .sch-col-no{width:8mm}
+.scholarship-print-table .sch-col-id{width:14mm}
+.scholarship-print-table .sch-col-name{width:42mm}
+.scholarship-print-table .sch-col-fund{width:24mm}
+.scholarship-print-table .sch-col-type{width:17mm}
+.scholarship-print-table .sch-col-amount{width:14mm}
+.scholarship-print-table .sch-col-date{width:18mm}
+.scholarship-print-table .sch-col-org{width:31mm}
+
+.scholarship-print-table th,
+.scholarship-print-table td{
+  font-size:10.5pt !important;
+  line-height:1.15 !important;
+  padding:1.2mm .8mm !important;
+  vertical-align:middle !important;
+}
+
+.scholarship-print-table th{
+  text-align:center !important;
+  font-weight:700 !important;
+}
+
+.scholarship-print-table .sch-name-cell{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+  font-size:10pt !important;
+  text-align:left !important;
+  padding-left:1.2mm !important;
+}
+
+.scholarship-print-table .sch-org-head{
+  white-space:normal !important;
+  line-height:1.2 !important;
+  text-align:center !important;
+}
+
+.scholarship-print-table tbody td{
+  height:8mm !important;
+}
+
+@media print{
+  .scholarship-print-table th,
+  .scholarship-print-table td{
+    font-size:10.5pt !important;
+    padding:1.2mm .8mm !important;
+  }
+  .scholarship-print-table .sch-name-cell{
+    font-size:10pt !important;
+    white-space:nowrap !important;
+  }
+}
+
+
+/* V4.35 — Volunteer status symbols in print */
+.vol-table td.vol-status-print{
+  text-align:center !important;
+  vertical-align:middle !important;
+  font-size:12pt !important;
+  font-weight:700;
+}
+
+
+/* =========================================================
+   V4.36 — Literacy print form
+   ========================================================= */
+.literacy-print-page{
+  width:100%;
+}
+.literacy-print-title{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18pt;
+  font-weight:700;
+  line-height:1.25;
+  margin-bottom:2mm;
+}
+.literacy-print-meta{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:14pt;
+  font-weight:600;
+  line-height:1.35;
+  margin-bottom:3mm;
+}
+.literacy-meta-line{
+  display:inline-block;
+  min-width:25mm;
+  text-align:center;
+  border-bottom:1px dotted #000;
+  padding:0 1mm;
+  margin:0 1mm;
+}
+.literacy-print-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.literacy-print-table .lp-no{width:9mm}
+.literacy-print-table .lp-id{width:12mm}
+.literacy-print-table .lp-name{width:42mm}
+.literacy-print-table .lp-skill{width:20mm}
+.literacy-print-table .lp-note{width:auto}
+.literacy-print-table th,
+.literacy-print-table td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  border:1px solid #000;
+  font-size:11pt;
+  line-height:1.1;
+  padding:1mm .8mm;
+  vertical-align:middle;
+}
+.literacy-print-table th{
+  text-align:center !important;
+  font-weight:700;
+}
+.literacy-print-table td.center{text-align:center !important}
+.literacy-print-table td.left{text-align:left !important; padding-left:1.5mm}
+.literacy-name-print{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+.literacy-mark{
+  text-align:center !important;
+  font-size:13pt !important;
+  font-weight:700;
+}
+.literacy-print-table tbody td{
+  height:7.5mm;
+}
+.literacy-print-page .signature-section{
+  margin-top:8mm !important;
+}
+
+@media print{
+  .literacy-print-table th,
+  .literacy-print-table td{font-size:11pt !important}
+  .literacy-print-table tbody td{height:7.5mm !important}
+  .literacy-name-print{white-space:nowrap !important}
+}
+
+
+/* =========================================================
+   V4.37 — Literacy print vertical "เลขที่ / เลขประจำตัว"
+   ========================================================= */
+.literacy-print-table th.use-own-vertical{
+  writing-mode:vertical-rl !important;
+  transform:rotate(180deg) !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  height:35mm !important;
+  padding:.8mm .5mm !important;
+  line-height:1 !important;
+}
+
+
+/* =========================================================
+   V4.39 — Combined classroom book: keep signatures on same page
+   ========================================================= */
+
+/* Combined book only: remove old minimum heights that can push signatures */
+.sheet.book-print .month-page,
+.sheet.book-print .homeroom-page,
+.sheet.book-print .behavior-print-page,
+.sheet.book-print .health-print-page,
+.sheet.book-print .scholarship-print-page,
+.sheet.book-print .literacy-print-page{
+  min-height:0 !important;
+}
+
+/* Compact signature block only in combined book */
+.sheet.book-print .signature-section{
+  margin-top:3mm !important;
+  break-inside:avoid !important;
+  page-break-inside:avoid !important;
+}
+.sheet.book-print .signatures,
+.sheet.book-print .signatures.three,
+.sheet.book-print .signatures.four{
+  margin-top:2mm !important;
+  gap:3mm !important;
+  font-size:11.5pt !important;
+  line-height:1.2 !important;
+}
+.sheet.book-print .signature-space{
+  height:6mm !important;
+}
+.sheet.book-print .signature-name{
+  padding-top:1mm !important;
+}
+.sheet.book-print .signature-role{
+  margin-top:.5mm !important;
+  min-height:0 !important;
+  line-height:1.1 !important;
+}
+
+/* Slightly compact generic tables in the combined book */
+.sheet.book-print .print-table th,
+.sheet.book-print .print-table td{
+  line-height:1.05 !important;
+}
+.sheet.book-print .month-grid tbody td{
+  height:5.8mm !important;
+}
+.sheet.book-print .behavior-print-table tbody td,
+.sheet.book-print .health-print-table tbody td,
+.sheet.book-print .scholarship-print-table tbody td,
+.sheet.book-print .vol-table tbody td{
+  height:6.2mm !important;
+}
+
+/* Keep the page container from splitting the signature unnecessarily */
+.sheet.book-print .page-break{
+  break-inside:avoid-page;
+  page-break-inside:avoid;
+}
+
+/* If a page is still tall, prioritize fitting content rather than sending signature away */
+@media print{
+  .sheet.book-print .signature-section{
+    margin-top:3mm !important;
+  }
+  .sheet.book-print .signatures,
+  .sheet.book-print .signatures.three,
+  .sheet.book-print .signatures.four{
+    margin-top:2mm !important;
+    font-size:11.5pt !important;
+  }
+  .sheet.book-print .signature-space{
+    height:6mm !important;
+  }
+  .sheet.book-print .month-page{
+    min-height:0 !important;
+  }
+}
+
+
+/* =========================================================
+   V4.40 — Homeroom signatures only on the month's final week
+   ========================================================= */
+/* No placeholder space is reserved when the signature block is omitted. */
+.homeroom-page .signature-section:empty{
+  display:none !important;
+}
+
+
+/* =========================================================
+   V4.43 — Section cover pages in combined classroom book
+   ========================================================= */
+.classroom-book-cover{
+  min-height:255mm;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  page-break-inside:avoid;
+  break-inside:avoid;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.book-cover-inner{
+  width:88%;
+  border:2px solid #111;
+  padding:22mm 12mm;
+  box-sizing:border-box;
+}
+.book-cover-number{
+  font-size:18pt;
+  font-weight:600;
+  margin-bottom:8mm;
+}
+.book-cover-title{
+  font-size:30pt;
+  font-weight:700;
+  line-height:1.3;
+}
+.book-cover-subtitle{
+  font-size:18pt;
+  margin-top:4mm;
+}
+.book-cover-rule{
+  width:60%;
+  margin:12mm auto 10mm;
+  border-top:1px solid #111;
+}
+.book-cover-class{
+  font-size:20pt;
+  font-weight:600;
+  margin-top:3mm;
+}
+.book-cover-term{
+  font-size:18pt;
+  margin-top:4mm;
+}
+.book-cover-school{
+  font-size:18pt;
+  margin-top:5mm;
+}
+
+@media print{
+  .sheet.book-print .classroom-book-cover{
+    min-height:255mm !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  .sheet.book-print .book-cover-inner{
+    padding:22mm 12mm !important;
+  }
+}

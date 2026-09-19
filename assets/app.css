@@ -1,0 +1,1343 @@
+
+:root{
+ --bg:#f4f6fb;--card:#fff;--line:#e2e8f0;--text:#1e293b;--muted:#64748b;
+ --primary:#5b4bdb;--primary2:#7c3aed;--danger:#dc2626;--ok:#059669;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif}
+a{text-decoration:none;color:inherit}
+.app{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+.sidebar{background:#171a2b;color:white;padding:22px 16px;position:sticky;top:0;height:100vh}
+.brand{font-size:19px;font-weight:800;line-height:1.4;margin-bottom:18px}
+.brand small{display:block;font-size:11px;color:#adb5c8;font-weight:400;margin-top:5px}
+.nav a{display:block;padding:11px 12px;border-radius:10px;color:#d5d9e7;margin:3px 0;font-size:13px}
+.nav a:hover,.nav a.active{background:#2c3050;color:white}
+.content{padding:24px;min-width:0}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:25px;margin:0}.sub{font-size:16px;color:var(--muted);margin-top:5px}
+.card,.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 8px 25px rgba(15,23,42,.05)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.module{transition:.15s}.module:hover{transform:translateY(-2px);border-color:#c4b5fd}
+.module .icon{font-size:27px}.module h3{font-size:15px;margin:9px 0 5px}.module p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat strong{font-size:25px;display:block}.stat span{font-size:11px;color:var(--muted)}
+.panel{margin-bottom:16px}
+.toolbar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;padding:9px 13px;font-weight:700;cursor:pointer;background:#eef2ff;color:#3730a3}
+.btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:white}
+.btn.gray{background:#f1f5f9;color:#334155}.btn.danger{background:#fee2e2;color:#991b1b}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;font:inherit;background:#fff}
+textarea{resize:vertical;min-height:80px}
+.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.field label{display:block;font-size:14px;font-weight:700;color:#475569;margin-bottom:5px}
+.field.full{grid-column:1/-1}.field.span2{grid-column:span 2}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table.data{width:100%;border-collapse:collapse;min-width:780px}
+table.data th,table.data td{border-bottom:1px solid var(--line);padding:8px 9px;font-size:12px;text-align:left;vertical-align:middle}
+table.data th{background:#f8fafc;white-space:nowrap}
+table.data td input, table.data td select{padding:6px 7px;border-radius:6px;font-size:12px}
+.matrix{border-collapse:collapse;min-width:1100px;width:100%}
+.matrix th,.matrix td{border:1px solid #cbd5e1;padding:3px;text-align:center;font-size:11px}
+.matrix th{background:#f8fafc}.matrix .name{text-align:left;min-width:170px}.matrix .sid{min-width:65px}.matrix .no{min-width:35px}
+.matrix input,.matrix select{border:0;border-radius:0;padding:4px 2px;text-align:center;min-width:31px;background:transparent}
+.notice{border-left:4px solid #7c3aed;background:#f5f3ff;padding:11px 13px;border-radius:8px;font-size:12px;color:#4c1d95;margin-bottom:14px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:14px;font-weight:700}
+footer{font-size:11px;color:var(--muted);margin-top:20px}
+@media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative}.nav{display:grid;grid-template-columns:repeat(2,1fr)}.content{padding:14px}.grid,.stats,.form-grid{grid-template-columns:1fr}.field.span2{grid-column:auto}.top{flex-direction:column}}
+/* V3 */
+.day-off{background:#e5e7eb!important;color:#64748b!important}
+.out-term{background:#f1f5f9!important;color:#94a3b8!important}
+.today-col{box-shadow:inset 0 0 0 2px #7c3aed}
+.day-note{font-size:8px;line-height:1.1;display:block;max-width:55px;white-space:normal}
+.daily-status{display:flex;gap:4px;flex-wrap:wrap}
+.status-btn{border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px}
+.status-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.status-btn.off{pointer-events:none;background:#e5e7eb;color:#94a3b8}
+.summary-box{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+.summary-box div{border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center;background:#fff}
+.summary-box strong{display:block;font-size:18px}
+.checkbox-big{width:20px;height:20px;cursor:pointer}
+.term-result{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px;font-size:13px;line-height:1.7}
+.holiday-list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px}
+.holiday-row{display:grid;grid-template-columns:130px 1fr auto;gap:8px;align-items:center;margin:5px 0}
+@media(max-width:760px){.summary-box{grid-template-columns:repeat(2,1fr)}.holiday-row{grid-template-columns:1fr}}
+
+
+/* V4.4 — Large readable UI for TH Sarabun New
+   ขยายเฉพาะหน้าจอใช้งาน ไม่กระทบสัดส่วนหน้าพิมพ์ A4 */
+html{font-size:18px}
+body{
+  font-size:18px;
+  line-height:1.5;
+}
+.brand{font-size:25px}
+.brand small{font-size:16px}
+.nav a{
+  font-size:18px;
+  padding:12px 14px;
+}
+h1{font-size:34px;line-height:1.25}
+.sub{font-size:18px;line-height:1.45}
+
+.module h3{font-size:21px}
+.module p{font-size:17px;line-height:1.55}
+.module .icon{font-size:32px}
+
+.stat strong{font-size:32px}
+.stat span{font-size:17px}
+
+.btn{
+  font-size:17px;
+  padding:10px 16px;
+  line-height:1.3;
+}
+
+input,select,textarea{
+  font-size:18px;
+  line-height:1.35;
+  padding:10px 12px;
+  min-height:42px;
+}
+textarea{min-height:96px}
+
+.field label{
+  font-size:18px;
+  margin-bottom:6px;
+}
+
+table.data th,
+table.data td{
+  font-size:17px;
+  line-height:1.35;
+  padding:10px 11px;
+}
+table.data th{
+  font-size:17px;
+  font-weight:700;
+}
+table.data td input,
+table.data td select{
+  font-size:18px;
+  padding:8px 9px;
+  min-height:38px;
+}
+
+.matrix th,
+.matrix td{
+  font-size:14px;
+  line-height:1.25;
+  padding:4px;
+}
+.matrix input,
+.matrix select{
+  font-size:15px;
+  min-height:34px;
+  padding:5px 2px;
+}
+.matrix .name{min-width:200px}
+.matrix .sid{min-width:78px}
+
+.notice{
+  font-size:17px;
+  line-height:1.5;
+  padding:12px 15px;
+}
+.badge{font-size:16px}
+footer{font-size:16px}
+
+.day-note{
+  font-size:11px;
+  line-height:1.15;
+}
+.status-btn{
+  font-size:16px;
+  padding:7px 10px;
+}
+.summary-box strong{font-size:26px}
+.summary-box div{font-size:16px}
+.checkbox-big{width:24px;height:24px}
+.term-result{font-size:17px;line-height:1.6}
+.holiday-row{font-size:17px}
+
+@media(max-width:760px){
+  html{font-size:17px}
+  h1{font-size:29px}
+  .nav a{font-size:17px}
+  table.data th,table.data td{font-size:16px}
+  table.data td input,table.data td select{font-size:17px}
+}
+
+
+/* =========================================================
+   V4.5 — Screen form = print-like proportions
+   ใช้ override ชั้นสุดท้ายเพื่อให้หน้ากรอกข้อมูลสมส่วนกับเอกสารพิมพ์
+   ========================================================= */
+
+/* Base typography */
+html{font-size:16px}
+body{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18px;
+  line-height:1.35;
+  color:#111827;
+}
+
+/* Keep dashboard readable but not oversized */
+.brand{font-size:23px;line-height:1.25}
+.brand small{font-size:14px;line-height:1.25}
+.nav a{font-size:17px;padding:10px 12px}
+h1{font-size:30px;line-height:1.2}
+.sub{font-size:16px;line-height:1.35}
+.module h3{font-size:20px}
+.module p{font-size:16px;line-height:1.4}
+.module .icon{font-size:29px}
+.stat strong{font-size:29px}
+.stat span{font-size:15px}
+.btn{font-size:16px;padding:8px 13px;line-height:1.2}
+.notice{font-size:16px;line-height:1.4}
+.badge{font-size:14px}
+footer{font-size:14px}
+
+/* Forms: closer to official-document proportions */
+.field label{
+  font-size:16px;
+  font-weight:700;
+  margin-bottom:4px;
+  line-height:1.2;
+}
+input,select,textarea{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18px;
+  line-height:1.25;
+  min-height:36px;
+  padding:6px 9px;
+  border:1px solid #aeb8c6;
+  border-radius:4px;
+}
+textarea{min-height:72px}
+.checkbox-big{width:21px;height:21px}
+
+/* Print-like data area */
+.table-wrap{
+  background:#fff;
+  border:1px solid #6b7280;
+  border-radius:0;
+}
+table.data{
+  background:#fff;
+  border-collapse:collapse;
+}
+table.data th,
+table.data td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:18px;
+  line-height:1.22;
+  padding:7px 8px;
+  border:1px solid #9ca3af;
+  vertical-align:middle;
+}
+table.data th{
+  background:#f3f4f6;
+  color:#111827;
+  font-size:18px;
+  font-weight:700;
+  text-align:center;
+  white-space:normal;
+}
+table.data td:first-child,
+table.data td:nth-child(2){
+  text-align:center;
+}
+table.data td input,
+table.data td select{
+  font-size:18px;
+  min-height:34px;
+  padding:5px 7px;
+  border:1px solid #aeb8c6;
+  border-radius:3px;
+  background:#fff;
+}
+
+/* Make long text fields look like cells rather than web pills */
+table.data td textarea{
+  border-radius:3px;
+}
+
+/* Monthly matrices: proportional to printed ledger */
+.matrix{
+  background:#fff;
+  border-collapse:collapse;
+}
+.matrix th,
+.matrix td{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:15px;
+  line-height:1.1;
+  padding:3px 2px;
+  border:1px solid #8b93a1;
+  height:32px;
+}
+.matrix th{
+  background:#f3f4f6;
+  color:#111827;
+  font-weight:700;
+}
+.matrix .name{
+  min-width:190px;
+  text-align:left;
+  padding-left:6px;
+}
+.matrix .sid{min-width:72px}
+.matrix .no{min-width:40px}
+.matrix input,
+.matrix select{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:16px;
+  min-height:28px;
+  height:28px;
+  padding:2px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.day-note{font-size:10px;line-height:1.05}
+
+/* Panels containing records should resemble a sheet, not a card */
+.panel{
+  border-radius:6px;
+  box-shadow:0 2px 8px rgba(15,23,42,.04);
+}
+.panel .table-wrap{margin-top:4px}
+
+/* Daily attendance buttons smaller and document-like */
+.status-btn{
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+  font-size:16px;
+  padding:5px 9px;
+  border-radius:4px;
+}
+.summary-box div{font-size:15px}
+.summary-box strong{font-size:23px}
+
+/* More compact spacing for large roster screens */
+.content{padding:20px}
+.panel{padding:15px}
+.form-grid{gap:9px}
+.toolbar{margin-bottom:10px}
+
+/* On wide screens, keep rows dense like printed table */
+@media(min-width:1200px){
+  table.data th,table.data td{font-size:18px}
+  table.data td input,table.data td select{font-size:18px}
+}
+
+/* Mobile remains usable */
+@media(max-width:760px){
+  body{font-size:17px}
+  h1{font-size:27px}
+  .nav a{font-size:16px}
+  table.data th,table.data td{font-size:17px}
+  table.data td input,table.data td select{font-size:17px}
+  .matrix th,.matrix td{font-size:14px}
+}
+
+.paper-panel{
+  background:#fff;
+  border:1px solid #9ca3af;
+  border-radius:2px;
+  box-shadow:0 3px 12px rgba(0,0,0,.05);
+}
+.paper-panel .toolbar{
+  padding-bottom:8px;
+  border-bottom:1px solid #d1d5db;
+}
+
+
+/* V4.6 — screen table alignment closer to printed form */
+.paper-panel table.data th:nth-child(1),
+.paper-panel table.data th:nth-child(2),
+.paper-panel table.data td:nth-child(1),
+.paper-panel table.data td:nth-child(2){
+  text-align:center !important;
+}
+.paper-panel table.data td:nth-child(3){
+  text-align:left;
+}
+
+
+/* V4.8 — volunteer screen alignment based on original */
+#volHead th:nth-child(1),
+#volHead th:nth-child(2),
+#volBody td:nth-child(1),
+#volBody td:nth-child(2){
+  text-align:center !important;
+}
+#volHead th:nth-child(3){
+  text-align:center !important;
+}
+#volBody td:nth-child(3){
+  text-align:left !important;
+}
+
+
+/* V4.9 — key columns centered on data-entry screens */
+table.data th:nth-child(1),
+table.data th:nth-child(2),
+table.data td:nth-child(1),
+table.data td:nth-child(2),
+.matrix th:nth-child(1),
+.matrix th:nth-child(2),
+.matrix td:nth-child(1),
+.matrix td:nth-child(2){
+  text-align:center !important;
+}
+
+
+/* V4.10 — holiday vertical band on monthly screen tables */
+.matrix th.holiday-special{
+  position:relative;
+  background:#d9d9d9 !important;
+  color:#111 !important;
+  min-width:38px;
+  height:130px !important;
+  vertical-align:top !important;
+  overflow:visible;
+}
+.matrix td.holiday-special{
+  background:#e5e7eb !important;
+}
+.matrix th.holiday-special .day-number{
+  display:block;
+  font-size:11px;
+  line-height:1;
+  margin-top:3px;
+}
+.matrix th.holiday-special .holiday-vertical-label{
+  position:absolute;
+  left:50%;
+  top:24px;
+  bottom:4px;
+  transform:translateX(-50%) rotate(180deg);
+  writing-mode:vertical-rl;
+  white-space:nowrap;
+  font-size:13px;
+  font-weight:700;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+
+/* V4.11 — on-screen holiday long vertical band like the sample */
+.matrix th.holiday-special{
+  position:relative;
+  background:#d9d9d9 !important;
+  color:#111 !important;
+  overflow:visible !important;
+  vertical-align:middle !important;
+  height:28px !important; /* keep normal day-number row */
+  min-width:38px;
+  padding:0 !important;
+}
+.matrix th.holiday-special .day-number{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  font-size:11px;
+  line-height:1;
+  position:relative;
+  z-index:3;
+  background:#d9d9d9;
+}
+.matrix th.holiday-special .holiday-vertical-label{
+  position:absolute;
+  left:50%;
+  top:100%;
+  transform:translateX(-50%) rotate(180deg);
+  writing-mode:vertical-rl;
+  white-space:nowrap;
+  font-size:13px;
+  font-weight:700;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:430px;                 /* visual band downward through many rows */
+  pointer-events:none;
+  z-index:2;
+}
+.matrix td.holiday-special{
+  background:#e5e7eb !important;
+  position:relative;
+}
+
+
+/* V4.12 — real merged holiday cell on screen */
+.matrix td.holiday-merged-cell{
+  background:#d9d9d9 !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  position:relative;
+  min-width:38px;
+}
+.matrix td.holiday-merged-cell .holiday-merged-label{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  min-height:220px;
+  font-size:14px;
+  font-weight:700;
+  line-height:1;
+  margin:auto;
+}
+.matrix th.holiday-special{
+  height:28px !important;
+  min-height:28px !important;
+  background:#d9d9d9 !important;
+  vertical-align:middle !important;
+  padding:0 !important;
+}
+.matrix th.holiday-special .holiday-vertical-label{
+  display:none !important;
+}
+
+
+/* V4.13 — date number remains a separate header cell on screen */
+.matrix thead th.holiday-special{
+  height:28px !important;
+  min-height:28px !important;
+  background:#f3f4f6 !important;
+  color:#111 !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  position:static !important;
+  overflow:hidden !important;
+}
+.matrix thead th.holiday-special .day-number{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100%;
+  height:100%;
+  font-size:12px;
+  line-height:1;
+  position:static !important;
+  background:transparent !important;
+}
+.matrix thead th.holiday-special .holiday-vertical-label{
+  display:none !important;
+}
+.matrix tbody td.holiday-merged-cell{
+  background:#d9d9d9 !important;
+  vertical-align:middle !important;
+  text-align:center !important;
+  padding:0 !important;
+}
+.matrix tbody tr:first-child td.holiday-merged-cell{
+  border-top:1px solid #8b93a1 !important;
+}
+
+
+/* V4.14 — normalize all on-screen date numbers */
+.matrix thead tr:nth-child(2) th,
+.matrix thead th.holiday-special,
+.matrix thead th.day-off,
+.matrix thead th.out-term,
+.matrix thead th.today-col{
+  color:#111 !important;
+  font-weight:400 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  padding:0 !important;
+}
+
+.matrix thead th .day-number{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  height:100% !important;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif !important;
+  font-size:16px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  color:#111 !important;
+  letter-spacing:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:center !important;
+}
+
+.matrix thead tr:nth-child(2){
+  height:28px !important;
+}
+.matrix thead tr:nth-child(2) th{
+  height:28px !important;
+  min-height:28px !important;
+}
+
+
+/* V4.17 — homeroom checkbox editor */
+.home-check-editor{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(220px,1fr));
+  gap:8px 14px;
+  align-items:center;
+  margin-top:4px;
+}
+.home-check-editor label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:400;
+}
+.home-check-editor input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  min-height:auto;
+  padding:0;
+}
+.home-check-editor input[name="hmOtherText"]{
+  grid-column:1 / -1;
+}
+
+
+/* V4.18 — other homeroom item on the same line in data entry */
+.home-check-editor .home-other-editor{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.home-check-editor .home-other-editor label{
+  flex:0 0 auto;
+  margin:0;
+}
+.home-check-editor .home-other-editor input[name="hmOtherText"]{
+  flex:1 1 auto;
+  border-radius:3px;
+}
+
+
+/* V4.19 — readonly auto-calculated homeroom fields */
+#homeForm input[readonly]{
+  background:#f8fafc;
+  color:#334155;
+}
+#homeBody .actions{
+  flex-wrap:nowrap;
+}
+
+
+/* V4.26 — attendance now has 5 statuses + total */
+.summary-box{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+}
+@media(max-width:900px){
+  .summary-box{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:560px){
+  .summary-box{grid-template-columns:repeat(2,1fr)}
+}
+
+
+/* V4.27 — Homeroom time settings */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.45);
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal-card{
+  width:min(720px,96vw);
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:12px;
+  border:1px solid #cbd5e1;
+  padding:18px;
+  box-shadow:0 20px 60px rgba(15,23,42,.25);
+}
+.home-time-row{
+  display:grid;
+  grid-template-columns:120px 1fr 1fr;
+  gap:12px;
+  align-items:end;
+  border-bottom:1px solid #e2e8f0;
+  padding:10px 0;
+}
+.home-time-day{
+  font-size:19px;
+  font-weight:700;
+  padding-bottom:8px;
+}
+.home-time-hint{
+  margin-top:6px;
+  font-size:17px;
+  font-weight:700;
+  color:#4f46e5;
+}
+.summary-box small{
+  font-size:12px;
+  font-weight:400;
+}
+@media(max-width:650px){
+  .home-time-row{grid-template-columns:1fr 1fr}
+  .home-time-day{grid-column:1/-1}
+}
+
+
+/* =========================================================
+   V4.28 — Behavior form matching source layout
+   ========================================================= */
+.behavior-screen-title{
+  text-align:center;
+  margin:2px 0 10px;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.behavior-title-main{
+  font-size:24px;
+  font-weight:700;
+  line-height:1.25;
+}
+.behavior-title-meta{
+  font-size:19px;
+  font-weight:600;
+  line-height:1.35;
+  margin-top:6px;
+}
+.behavior-table-screen{
+  width:100%;
+  min-width:980px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#fff;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.behavior-table-screen th,
+.behavior-table-screen td{
+  border:1px solid #111827;
+  font-size:18px;
+  line-height:1.2;
+  padding:5px 6px;
+  vertical-align:middle;
+}
+.behavior-table-screen th{
+  text-align:center;
+  font-weight:700;
+  background:#fff;
+}
+.behavior-table-screen .b-no{width:50px;text-align:center}
+.behavior-table-screen .b-id{width:78px;text-align:center}
+.behavior-table-screen .b-name{width:210px;text-align:left}
+.behavior-table-screen th.b-name{text-align:center}
+.behavior-table-screen .b-rating{width:78px}
+.behavior-table-screen .b-rating-cell{
+  width:78px;
+  text-align:center;
+}
+.behavior-table-screen .b-rating-cell input[type="radio"]{
+  width:18px;
+  height:18px;
+  min-height:auto;
+  margin:0;
+}
+.behavior-table-screen .b-advice{width:245px}
+.behavior-table-screen .b-advice-cell{
+  padding:2px;
+}
+.behavior-table-screen .b-advice-cell input{
+  border:0;
+  border-radius:0;
+  min-height:32px;
+  width:100%;
+  background:transparent;
+  font-size:18px;
+  padding:4px 6px;
+}
+.behavior-table-screen tbody tr{
+  height:36px;
+}
+
+
+/* =========================================================
+   V4.30 — Health form matching source layout
+   ========================================================= */
+.health-screen-title{
+  text-align:center;
+  margin:2px 0 10px;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.health-title-main{
+  font-size:24px;
+  font-weight:700;
+  line-height:1.25;
+}
+.health-title-meta{
+  font-size:20px;
+  font-weight:600;
+  line-height:1.35;
+  margin-top:6px;
+}
+.health-table-screen{
+  width:100%;
+  min-width:1120px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#fff;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.health-table-screen th,
+.health-table-screen td{
+  border:1px solid #111827;
+  font-size:18px;
+  line-height:1.15;
+  padding:4px 4px;
+  vertical-align:middle;
+}
+.health-table-screen th{
+  text-align:center;
+  font-weight:700;
+  background:#fff;
+}
+.health-table-screen .vhead{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  letter-spacing:.2px;
+  white-space:nowrap;
+}
+.health-table-screen .h-no{width:42px}
+.health-table-screen .h-id{width:50px}
+.health-table-screen .h-name{width:220px}
+.health-table-screen .h-small{width:44px}
+.health-table-screen .h-rate{width:44px}
+.health-table-screen .h-note{width:165px}
+.health-table-screen td.center{text-align:center}
+.health-table-screen td.left{text-align:left}
+.health-table-screen tbody tr{height:34px}
+.health-text{
+  width:100%;
+  min-height:30px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  text-align:center;
+  padding:2px;
+  font-size:18px;
+}
+.health-rate-select{
+  width:100%;
+  min-height:30px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  text-align:center;
+  padding:2px;
+  font-size:18px;
+}
+.health-note-input{
+  width:100%;
+  min-height:30px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  padding:2px 6px;
+  font-size:18px;
+}
+
+/* V4.32 — scholarship synced table */
+#schBody td:nth-child(1),
+#schBody td:nth-child(2){
+  text-align:center;
+}
+
+/* V4.33 — scholarship all-student view */
+#schBody td{
+  vertical-align:top;
+}
+#schBody td:nth-child(1),
+#schBody td:nth-child(2){
+  text-align:center;
+}
+.sch-row-actions{
+  margin-bottom:4px;
+}
+
+
+/* =========================================================
+   V4.35 — Volunteer status controls
+   ========================================================= */
+#volHead .vol-status-head{
+  min-width:92px;
+  text-align:center !important;
+  vertical-align:bottom !important;
+  padding:6px 4px !important;
+}
+.vol-event-name{
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1.15;
+  margin-bottom:5px;
+}
+.vol-mark-all{
+  font-size:14px !important;
+  padding:4px 6px !important;
+  white-space:nowrap;
+  width:100%;
+}
+.vol-status-cell{
+  padding:1px !important;
+  text-align:center !important;
+}
+.vol-status-cell select{
+  width:100%;
+  min-width:42px;
+  min-height:34px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  text-align:center;
+  text-align-last:center;
+  font-size:18px;
+  font-weight:700;
+  padding:2px;
+}
+
+
+/* =========================================================
+   V4.36 — Literacy form matching source layout
+   ========================================================= */
+.literacy-screen-title{
+  text-align:center;
+  margin:2px 0 10px;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.literacy-title-main{
+  font-size:24px;
+  font-weight:700;
+  line-height:1.25;
+}
+.literacy-title-meta{
+  font-size:20px;
+  font-weight:600;
+  line-height:1.35;
+  margin-top:6px;
+}
+.literacy-table-screen{
+  width:100%;
+  min-width:1080px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#fff;
+  font-family:"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;
+}
+.literacy-table-screen th,
+.literacy-table-screen td{
+  border:1px solid #111827;
+  font-size:18px;
+  line-height:1.15;
+  padding:4px 4px;
+  vertical-align:middle;
+}
+.literacy-table-screen th{
+  text-align:center;
+  font-weight:700;
+  background:#fff;
+}
+.literacy-table-screen .vhead{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  letter-spacing:.2px;
+  white-space:nowrap;
+}
+.literacy-table-screen .l-no{width:42px}
+.literacy-table-screen .l-id{width:50px}
+.literacy-table-screen .l-name{width:200px}
+.literacy-table-screen .l-skill{width:85px}
+.literacy-table-screen .l-note{width:190px}
+.literacy-table-screen td.center{text-align:center}
+.literacy-table-screen td.left{text-align:left}
+.literacy-table-screen tbody tr{height:34px}
+.literacy-name-cell{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+}
+.literacy-check-cell{
+  text-align:center !important;
+  padding:2px !important;
+}
+.literacy-check-cell .checkbox-big{
+  width:18px;
+  height:18px;
+  min-height:auto;
+  margin:0;
+}
+.literacy-note-cell{
+  padding:2px !important;
+}
+.literacy-note-input{
+  width:100%;
+  min-height:30px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  padding:2px 6px;
+  font-size:18px;
+}
+
+
+/* =========================================================
+   V4.37 — Literacy vertical no/id + check-all buttons
+   ========================================================= */
+.literacy-table-screen th.l-no,
+.literacy-table-screen th.l-id{
+  writing-mode:vertical-rl !important;
+  transform:rotate(180deg) !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  height:110px;
+  padding:4px 2px !important;
+}
+.literacy-skill-head{
+  display:flex;
+  min-height:74px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  line-height:1.15;
+}
+.literacy-check-all{
+  font-size:14px !important;
+  line-height:1 !important;
+  padding:5px 7px !important;
+  white-space:nowrap;
+  width:100%;
+}
+
+
+/* =========================================================
+   V4.38 — Dashboard progress + classroom book printing
+   ========================================================= */
+.book-print-btn{
+  background:#0f766e !important;
+  color:#fff !important;
+}
+.dashboard-progress-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:16px;
+}
+.progress-card{
+  padding:18px;
+}
+.progress-card-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.progress-card h2,
+.classroom-book-card h2{
+  margin:0;
+  font-size:22px;
+  line-height:1.25;
+}
+.progress-percent{
+  font-size:30px;
+  line-height:1;
+  white-space:nowrap;
+}
+.progress-track{
+  width:100%;
+  height:16px;
+  border-radius:999px;
+  background:#e2e8f0;
+  overflow:hidden;
+  margin:14px 0 11px;
+  border:1px solid #cbd5e1;
+}
+.progress-fill{
+  height:100%;
+  width:0;
+  border-radius:999px;
+  background:linear-gradient(90deg,#5b4bdb,#7c3aed);
+  transition:width .3s ease;
+}
+.term-progress-fill{
+  background:linear-gradient(90deg,#059669,#10b981);
+}
+.progress-modules{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.progress-module{
+  padding:4px 9px;
+  border-radius:999px;
+  font-size:15px;
+  border:1px solid #cbd5e1;
+}
+.progress-module.done{
+  background:#ecfdf5;
+  color:#047857;
+  border-color:#a7f3d0;
+}
+.progress-module.pending{
+  background:#f8fafc;
+  color:#64748b;
+}
+.term-countdown{
+  margin-top:7px;
+  font-size:17px;
+  line-height:1.4;
+}
+.classroom-book-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:16px;
+  border:1px solid #99f6e4;
+  background:linear-gradient(135deg,#f0fdfa,#ffffff);
+}
+.classroom-book-info{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.classroom-book-info p{
+  margin:5px 0 0;
+  color:#64748b;
+  font-size:16px;
+  line-height:1.45;
+}
+.book-icon{
+  font-size:38px;
+}
+.classroom-book-action{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+@media(max-width:900px){
+  .dashboard-progress-grid{grid-template-columns:1fr}
+  .classroom-book-card{align-items:flex-start;flex-direction:column}
+}
+
+
+/* V4.39 — dashboard keeps only term progress */
+.dashboard-progress-grid.single-progress{
+  grid-template-columns:1fr !important;
+}
+
+
+/* V4.41 — Homeroom weekly Monday anchor */
+#homeForm input[readonly]{
+  background:#f8fafc;
+}
+#homeWeekMonday{
+  font-weight:700;
+}
+
+
+/* =========================================================
+   V4.42 — Dashboard protected clear-data workflow
+   ========================================================= */
+.clear-all-data-btn{
+  background:#fff1f2 !important;
+  color:#be123c !important;
+  border:1px solid #fda4af !important;
+}
+.clear-all-data-btn:hover{
+  background:#ffe4e6 !important;
+}
+.clear-data-modal-card{
+  width:min(600px,96vw);
+  text-align:left;
+}
+.clear-data-warning-icon{
+  text-align:center;
+  font-size:46px;
+  line-height:1;
+  margin-bottom:8px;
+}
+.clear-data-modal-card h2{
+  margin:0 0 10px;
+  text-align:center;
+  font-size:24px;
+  color:#9f1239;
+}
+.clear-data-warning{
+  font-size:17px;
+  line-height:1.55;
+  padding:12px 14px;
+  background:#fff1f2;
+  border:1px solid #fecdd3;
+  border-radius:8px;
+  color:#881337;
+}
+.clear-data-keep{
+  font-size:16px;
+  line-height:1.5;
+  padding:10px 12px;
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  margin-top:10px;
+}
+.clear-confirm-field{
+  margin-top:16px;
+}
+.clear-confirm-field input{
+  font-size:19px;
+  font-weight:700;
+  text-align:center;
+}
+.clear-data-actions{
+  justify-content:flex-end;
+  margin-top:16px;
+}
+.clear-confirm-delete:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:grayscale(.4);
+}
+.clear-confirm-delete:not(:disabled){
+  background:#be123c !important;
+  border-color:#be123c !important;
+  color:#fff !important;
+}
+
+/* V5.0 Supabase / multi-user */
+body.cloud-protected{visibility:hidden}
+.cloud-fatal{position:fixed;z-index:99999;left:20px;right:20px;top:20px;background:#fff1f2;border:1px solid #fb7185;color:#881337;border-radius:12px;padding:16px;font-size:17px}
+.cloud-userbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px 14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.cloud-userbar>div:first-child{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cloud-role,.cloud-room{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:14px;background:#eff6ff;color:#1d4ed8}
+.cloud-room{background:#f0fdf4;color:#047857}.cloud-sync-status{font-size:13px;color:#64748b}.cloud-sync-status.saving{color:#b45309}.cloud-sync-status.error{color:#be123c}.cloud-sync-status.ok{color:#047857}
+.cloud-user-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.cloud-viewer-notice{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#eef2ff,#f8fafc)}
+.login-card{width:min(440px,100%);background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:28px;box-shadow:0 20px 50px rgba(15,23,42,.12)}
+.login-logo{text-align:center;font-size:48px;margin-bottom:8px}.login-card h1{text-align:center;margin:0;font-size:27px}.login-card .sub{text-align:center;margin:6px 0 20px}
+.login-card .field{margin-bottom:12px}.login-card .btn{width:100%;justify-content:center;padding:11px}.login-message{min-height:24px;margin-top:10px;text-align:center;color:#b91c1c}
+.classroom-page,.admin-page{max-width:1100px;margin:0 auto;padding:24px}.admin-page{max-width:1200px}
+.classroom-page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:18px}
+.classroom-list-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.classroom-choice{text-align:left;border:1px solid #cbd5e1;border-radius:14px;background:#fff;padding:18px;cursor:pointer;font:inherit;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.classroom-choice:hover{border-color:#6366f1;transform:translateY(-1px)}.classroom-choice.active{border:2px solid #4f46e5;background:#eef2ff}
+.classroom-choice-main{font-size:25px;font-weight:700;margin-bottom:5px}.classroom-choice small{display:block;color:#64748b;margin:5px 0 8px}
+.empty-room-state{grid-column:1/-1;text-align:center;padding:36px;border:1px dashed #94a3b8;border-radius:12px;color:#64748b;background:#fff}
+.admin-create-panel{margin-top:18px}.cloud-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.cloud-form-grid .span2{grid-column:span 2}.cloud-form-grid .full{grid-column:1/-1}
+.admin-section{margin-bottom:16px}.admin-hint{padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;margin-bottom:12px}
+@media(max-width:800px){.cloud-userbar,.classroom-page-head{flex-direction:column}.cloud-form-grid{grid-template-columns:1fr}.cloud-form-grid .span2,.cloud-form-grid .full{grid-column:auto}}
+
+
+/* V5.2 — Forgot password / password recovery */
+.login-link-btn{
+  display:block;
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#4f46e5;
+  padding:11px 6px 4px;
+  cursor:pointer;
+  font:inherit;
+  font-weight:600;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.login-link-btn:hover{color:#3730a3}
+.login-link-btn:disabled{opacity:.55;cursor:not-allowed}
+.login-message.success{color:#047857}
+.login-message-note{
+  display:inline-block;
+  margin-top:5px;
+  color:#64748b;
+  font-size:14px;
+  line-height:1.4;
+}
+.login-back-link{
+  display:block;
+  text-align:center;
+  margin-top:15px;
+  color:#475569;
+  text-decoration:none;
+}
+.login-back-link:hover{text-decoration:underline}
+
+
+/* =========================================================
+   V5.3 — Google Sign-In
+   ========================================================= */
+.google-login-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  background:#fff;
+  color:#1f2937;
+  cursor:pointer;
+  font:inherit;
+  font-weight:600;
+  box-shadow:0 1px 2px rgba(15,23,42,.06);
+}
+.google-login-btn:hover{
+  background:#f8fafc;
+  border-color:#94a3b8;
+}
+.google-login-btn:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+.google-g{
+  display:inline-flex;
+  width:24px;
+  height:24px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-family:Arial,sans-serif;
+  font-size:18px;
+  font-weight:700;
+  color:#4285f4;
+}
+.login-divider{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#94a3b8;
+  font-size:14px;
+  margin:16px 0;
+}
+.login-divider::before,
+.login-divider::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:#e2e8f0;
+}
+.login-divider span{white-space:nowrap}

@@ -1,0 +1,41 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>🧑‍🏫 แบบบันทึกกิจกรรมโฮมรูม (Home room)</title><link rel="stylesheet" href="../assets/app.css"></head><body class="cloud-protected"><div class="app"><aside class="sidebar"><div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div><nav class="nav"><a class="" href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a><a class="" href="../settings.html">⚙️ ข้อมูลห้องเรียน</a><a class="active" href="../modules/homeroom.html">🧑‍🏫 โฮมรูม</a><a class="" href="../modules/attendance.html">📋 การมาโรงเรียน</a><a class="" href="../modules/savings.html">💰 การออมทรัพย์</a><a class="" href="../modules/behavior.html">⚠️ พฤติกรรม</a><a class="" href="../modules/health.html">🩺 ตรวจสุขภาพ</a><a class="" href="../modules/scholarship.html">🎓 รับทุน</a><a class="" href="../modules/volunteer.html">🤝 จิตอาสา</a><a class="" href="../modules/literacy.html">📚 อ่านออก-เขียนได้</a></nav></aside><main class="content"><div class="top"><div><h1>🧑‍🏫 แบบบันทึกกิจกรรมโฮมรูม (Home room)</h1><div class="sub">หน้าพิมพ์เป็นฟอร์ม 4 คอลัมน์ตามต้นฉบับ: วัน/เดือน/ปี • รายการ/เนื้อหาสาระ • นักเรียนที่ขาด • หมายเหตุ</div></div><div class="actions"><button class="btn gray" type="button" onclick="openHomeroomSettings()">⚙️ ตั้งค่าเวลาโฮมรูม</button></div></div><section class="panel"><form id="homeForm"><div class="form-grid">
+<div class="field"><label>สัปดาห์ที่</label><input name="week" readonly placeholder="คำนวณอัตโนมัติ"></div>
+<div class="field"><label>วันจันทร์ของสัปดาห์</label><input type="date" name="weekMonday" id="homeWeekMonday"></div>
+<div class="field"><label>วัน</label><select name="day" id="homeDay"><option>จันทร์</option><option>อังคาร</option><option>พุธ</option><option>พฤหัสบดี</option><option>ศุกร์</option></select></div>
+<div class="field"><label>วันที่ของรายการ</label><input type="date" name="date" id="homeDate" readonly></div>
+<div class="field full"><label>รายการ/เนื้อหาสาระ</label>
+    <div class="home-check-editor">
+      <label><input type="checkbox" name="hmMath"> ท่องแม่สูตรคูณ</label>
+      <label><input type="checkbox" name="hmPoem"> ท่องอาขยาน</label>
+      <div class="home-other-editor">
+        <label><input type="checkbox" name="hmOther"> อื่น ๆ</label>
+        <input name="hmOtherText" placeholder="กรอกรายละเอียดอื่น ๆ">
+      </div>
+    </div></div>
+<div class="field span2"><label>รายชื่อนักเรียนที่ขาด</label><textarea name="absent"></textarea></div><div class="field"><label>หมายเหตุ</label><textarea name="note"></textarea></div>
+</div><input type="hidden" id="homeEditingId">
+<div class="sub" style="margin-top:8px">กำหนด “วันจันทร์ของสัปดาห์” 1 ครั้ง แล้วเลือกวันจันทร์–ศุกร์ ระบบจะรันวันที่และสัปดาห์ให้อัตโนมัติ</div>
+<div class="home-time-hint" id="homeTimeHint"></div>
+<div class="actions" style="margin-top:10px">
+  <button class="btn primary" id="homeSubmitBtn">บันทึก</button>
+  <button class="btn gray" type="button" id="homeCancelEdit" style="display:none" onclick="cancelHomeEdit()">ยกเลิกการแก้ไข</button>
+</div></form></section>
+<section class="panel"><div class="toolbar"><div class="field" style="min-width:220px"><label>เดือนที่ต้องการพิมพ์</label><input type="month" id="printMonth"></div><div class="actions"><button class="btn" onclick="openPrint('homeroom','#printMonth',false)">พิมพ์เดือนนี้</button><button class="btn primary" onclick="openPrint('homeroom',null,true)">🖨️ พิมพ์ทุกเดือนในภาคเรียน</button></div></div><div class="sub">โฮมรูมจะสร้างหน้ารายสัปดาห์อัตโนมัติตามปฏิทิน จันทร์–ศุกร์ และแสดงลายเซ็นเฉพาะสัปดาห์สุดท้ายของเดือน</div></section>
+<section class="panel paper-panel"><div class="table-wrap"><table class="data"><thead><tr><th>สัปดาห์</th><th>วันที่</th><th>วัน</th><th>รายการ/เนื้อหาสาระ</th><th>นักเรียนที่ขาด</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead><tbody id="homeBody"></tbody></table></div></section><footer>ปุ่ม “พิมพ์แบบฟอร์ม” จะเปิดหน้า A4 สำหรับสั่งพิมพ์โดยเฉพาะ</footer></main></div>
+<div class="modal-backdrop" id="homeTimeSettingsModal" style="display:none" onclick="if(event.target===this)closeHomeroomSettings()">
+  <div class="modal-card home-time-modal">
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0">⚙️ ตั้งค่าเวลาโฮมรูม</h2>
+        <div class="sub">กำหนดเวลาแยกตามวันจันทร์–ศุกร์</div>
+      </div>
+      <button class="btn gray" type="button" onclick="closeHomeroomSettings()">✕ ปิด</button>
+    </div>
+    <div id="homeTimeSettingsBody"></div>
+    <div class="actions" style="margin-top:14px">
+      <button class="btn primary" type="button" onclick="saveHomeroomTimes()">บันทึกเวลา</button>
+      <button class="btn gray" type="button" onclick="resetHomeroomTimes()">คืนค่า 14:40–15:30</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initHomeroom()})</script></body></html>

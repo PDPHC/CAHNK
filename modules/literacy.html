@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📚 แบบบันทึกครูอาสาอ่านออก-เขียนได้</title>
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body class="cloud-protected">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div>
+  <nav class="nav">
+    <a href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a>
+    <a href="../settings.html">⚙️ ข้อมูลห้องเรียน</a>
+    <a href="homeroom.html">🧑‍🏫 โฮมรูม</a>
+    <a href="attendance.html">📋 การมาโรงเรียน</a>
+    <a href="savings.html">💰 การออมทรัพย์</a>
+    <a href="behavior.html">⚠️ พฤติกรรม</a>
+    <a href="health.html">🩺 ตรวจสุขภาพ</a>
+    <a href="scholarship.html">🎓 รับทุน</a>
+    <a href="volunteer.html">🤝 จิตอาสา</a>
+    <a class="active" href="literacy.html">📚 อ่านออก-เขียนได้</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <div class="top">
+    <div>
+      <h1>📚 แบบบันทึกครูอาสาอ่านออก-เขียนได้</h1>
+      <div class="sub">ทำเครื่องหมาย ✓ ในทักษะที่นักเรียนผ่าน และเพิ่มหมายเหตุ/คำแนะนำได้</div>
+    </div>
+  </div>
+
+  <section class="panel paper-panel">
+    <div class="toolbar">
+      <div class="field" style="min-width:220px">
+        <label>เดือน</label>
+        <input type="month" id="month">
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="openPrint('literacy','#month',false)">พิมพ์เดือนนี้</button>
+        <button class="btn primary" onclick="openPrint('literacy',null,true)">🖨️ พิมพ์ทุกเดือน</button>
+      </div>
+    </div>
+
+    <div class="literacy-screen-title">
+      <div class="literacy-title-main">แบบบันทึกครูอาสาอ่านออก-เขียนได้</div>
+      <div class="literacy-title-meta">
+        นักเรียนชั้น <span id="literacyClass"></span>
+        &nbsp;&nbsp; เดือน <span id="literacyMonthName"></span>
+        &nbsp;&nbsp; พ.ศ. <span id="literacyBE"></span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="literacy-table-screen">
+        <thead>
+          <tr>
+            <th rowspan="2" class="vhead l-no">เลขที่</th>
+            <th rowspan="2" class="vhead l-id">เลขประจำตัว</th>
+            <th rowspan="2" class="l-name">ชื่อ - สกุล</th>
+            <th colspan="4">เนื้อหา/กิจกรรม</th>
+            <th rowspan="2" class="l-note">หมายเหตุ/คำแนะนำ</th>
+          </tr>
+          <tr>
+            <th class="l-skill"><div class="literacy-skill-head">แจกลูกสะกดคำ<button type="button" class="btn literacy-check-all" onclick="literacyCheckAll('spell')">เช็กทุกคน</button></div></th>
+            <th class="l-skill"><div class="literacy-skill-head">อ่านออกเสียง<button type="button" class="btn literacy-check-all" onclick="literacyCheckAll('read')">เช็กทุกคน</button></div></th>
+            <th class="l-skill"><div class="literacy-skill-head">คัดคำและเรื่อง<button type="button" class="btn literacy-check-all" onclick="literacyCheckAll('copy')">เช็กทุกคน</button></div></th>
+            <th class="l-skill"><div class="literacy-skill-head">เขียนตามคำบอก<button type="button" class="btn literacy-check-all" onclick="literacyCheckAll('dictation')">เช็กทุกคน</button></div></th>
+          </tr>
+        </thead>
+        <tbody id="literacyBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>ข้อมูลจะบันทึกอัตโนมัติเมื่อคลิกเครื่องหมายหรือตอนพิมพ์หมายเหตุ</footer>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initLiteracy()})</script></body></html>

@@ -1,0 +1,16 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ห้องเรียนของฉัน</title><link rel="stylesheet" href="assets/app.css"></head><body class="cloud-protected">
+<div class="classroom-page"><div class="classroom-page-head"><div><h1 style="margin:0">🏫 ห้องเรียนของฉัน</h1><div class="sub">ผู้ใช้: <b id="classroomUserName"></b> • <span id="classroomUserRole"></span></div></div>
+<div class="actions"><a id="adminPermissionLink" href="admin.html" class="btn gray" style="display:none">👥 จัดการสิทธิ์ครู</a><button class="btn danger" onclick="cloudLogout()">ออกจากระบบ</button></div></div>
+<section class="panel"><h2 style="margin-top:0">เลือกห้องเรียน</h2><div class="classroom-list-grid" id="classroomList"></div></section>
+<section class="panel admin-create-panel" id="adminCreateRoomPanel" style="display:none"><h2 style="margin-top:0">+ สร้างห้องเรียน</h2><div class="sub">สร้างหลายชั้น/หลายห้อง แล้วกำหนดสิทธิ์ให้ครูแต่ละคนได้</div>
+<form id="createClassroomForm" onsubmit="event.preventDefault();cloudCreateClassroom()"><div class="cloud-form-grid" style="margin-top:12px">
+<div class="field span2"><label>ชื่อโรงเรียน</label><input name="school_name"></div><div class="field"><label>ปีการศึกษา (พ.ศ.)</label><input name="academic_year" required></div>
+<div class="field full"><label>หน่วยงานต้นสังกัด</label><input name="office_name"></div><div class="field"><label>ระดับชั้น</label><input name="class_level" required></div>
+<div class="field"><label>ห้อง</label><input name="room" required></div><div class="field"><label>ภาคเรียน</label><select name="term"><option value="1">1</option><option value="2">2</option></select></div>
+<div class="field"><label>ครูประจำชั้นคนที่ 1</label><input name="teacher1"></div><div class="field"><label>ครูประจำชั้นคนที่ 2</label><input name="teacher2"></div>
+<div class="field"><label>วิชาการระดับมัธยมศึกษา</label><input name="academic_head"></div><div class="field"><label>รองผู้อำนวยการฝ่ายวิชาการ</label><input name="deputy"></div>
+<div class="field"><label>วันเปิดเรียน</label><input type="date" name="open_date"></div><div class="field"><label>วันปิดเรียน</label><input type="date" name="close_date"></div>
+<div class="field"><label>เป้าหมายวันเรียน</label><input type="number" name="target_days" value="100"></div><div class="field"><label>เป้าหมายสัปดาห์</label><input type="number" name="target_weeks" value="20"></div>
+<div class="field full"><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="migrate_local" style="width:20px;height:20px"> คัดลอกรายชื่อนักเรียนและข้อมูลแบบบันทึกที่อยู่ในเครื่องนี้ไปยังห้องใหม่</label></div>
+</div><div class="actions" style="margin-top:12px"><button class="btn primary">สร้างห้องเรียน</button></div><div id="createClassroomMessage" class="sub" style="margin-top:8px"></div></form></section></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="assets/supabase-config.js"></script><script src="assets/app.js"></script><script src="assets/cloud.js"></script><script>startClassroomsPage()</script></body></html>

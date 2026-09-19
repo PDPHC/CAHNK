@@ -1,0 +1,15 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แบบบันทึกการมาโรงเรียน</title><link rel="stylesheet" href="../assets/app.css"></head><body class="cloud-protected"><div class="app">
+<aside class="sidebar"><div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div><nav class="nav">
+<a href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a><a href="../settings.html">⚙️ ข้อมูลห้องเรียน</a><a href="homeroom.html">🧑‍🏫 โฮมรูม</a><a class="active" href="attendance.html">📋 การมาโรงเรียน</a><a href="savings.html">💰 การออมทรัพย์</a><a href="behavior.html">⚠️ พฤติกรรม</a><a href="health.html">🩺 ตรวจสุขภาพ</a><a href="scholarship.html">🎓 รับทุน</a><a href="volunteer.html">🤝 จิตอาสา</a><a href="literacy.html">📚 อ่านออก-เขียนได้</a></nav></aside>
+<main class="content"><div class="top"><div><h1>📋 แบบบันทึกการมาโรงเรียน</h1><div class="sub">เช็กชื่อรายวัน • เสาร์ อาทิตย์ วันหยุดราชการ และวันนอกภาคเรียนถูกปิดอัตโนมัติ</div></div></div>
+<div class="notice">สถานะ: <b>/</b> = มา &nbsp; <b>ข</b> = ขาด &nbsp; <b>ล</b> = ลา &nbsp; <b>น</b> = หนี &nbsp; <b>ส</b> = สาย</div>
+<section class="panel paper-panel">
+<div class="toolbar"><div class="field" style="min-width:220px"><label>วันที่เช็กชื่อ</label><input type="date" id="attendanceDate"></div>
+<div class="actions"><button class="btn primary" onclick="markAllPresent()">✓ เช็กมาเรียนทั้งหมดวันนี้</button><button class="btn gray" onclick="clearAttendanceDay()">ล้างวันนี้</button></div></div>
+<div id="dailyDateInfo" class="sub"></div><div id="dailySummary" class="summary-box"></div>
+<div class="table-wrap"><table class="data"><thead><tr><th>เลขที่</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>สถานะวันนี้</th></tr></thead><tbody id="dailyAttendanceBody"></tbody></table></div>
+</section>
+<section class="panel paper-panel"><div class="toolbar"><div class="field" style="min-width:220px"><label>ดูตารางรายเดือน</label><input type="month" id="month"></div>
+<div class="actions"><button class="btn" onclick="openPrint('attendance','#month',false)">พิมพ์เดือนนี้</button><button class="btn primary" onclick="openPrint('attendance',null,true)">🖨️ พิมพ์ทุกเดือนในภาคเรียน</button></div></div>
+<div class="table-wrap"><table class="matrix"><thead id="matrixHead"></thead><tbody id="matrixBody"></tbody></table></div></section>
+<footer>วันหยุดแก้ไขได้จากเมนู “ข้อมูลห้องเรียน”</footer></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initAttendance()})</script></body></html>

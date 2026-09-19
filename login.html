@@ -1,0 +1,15 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>เข้าสู่ระบบธุรการชั้นเรียน</title><link rel="stylesheet" href="assets/app.css"></head><body>
+<div class="login-shell"><div class="login-card"><div class="login-logo">🏫</div><h1>ระบบธุรการชั้นเรียน</h1><div class="sub">เข้าสู่ระบบด้วยบัญชีครูที่ได้รับอนุญาต</div>
+<button class="google-login-btn" id="googleLoginBtn" type="button" onclick="cloudGoogleLogin()">
+  <span class="google-g">G</span>
+  <span>เข้าสู่ระบบด้วย Google</span>
+</button>
+
+<div class="login-divider"><span>หรือ</span></div>
+
+<div class="field"><label>อีเมล</label><input id="loginEmail" type="email" autocomplete="username"></div>
+<div class="field"><label>รหัสผ่าน</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+<button class="btn primary" type="button" onclick="cloudLogin()">เข้าสู่ระบบด้วยอีเมล</button>
+<button class="login-link-btn" id="forgotPasswordBtn" type="button" onclick="cloudForgotPassword()">ลืมรหัสผ่าน?</button>
+<div id="loginMessage" class="login-message"></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="assets/supabase-config.js"></script><script src="assets/cloud.js"></script><script>startLoginPage()</script></body></html>

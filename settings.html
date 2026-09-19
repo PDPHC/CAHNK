@@ -1,0 +1,34 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ข้อมูลห้องเรียน</title><link rel="stylesheet" href="assets/app.css"></head><body class="cloud-protected"><div class="app"><aside class="sidebar"><div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div><nav class="nav"><a class="" href="index.html">🏠 แดชบอร์ด</a><a href="classrooms.html">🏫 ห้องเรียนของฉัน</a><a class="active" href="settings.html">⚙️ ข้อมูลห้องเรียน</a><a class="" href="modules/homeroom.html">🧑‍🏫 โฮมรูม</a><a class="" href="modules/attendance.html">📋 การมาโรงเรียน</a><a class="" href="modules/savings.html">💰 การออมทรัพย์</a><a class="" href="modules/behavior.html">⚠️ พฤติกรรม</a><a class="" href="modules/health.html">🩺 ตรวจสุขภาพ</a><a class="" href="modules/scholarship.html">🎓 รับทุน</a><a class="" href="modules/volunteer.html">🤝 จิตอาสา</a><a class="" href="modules/literacy.html">📚 อ่านออก-เขียนได้</a></nav></aside><main class="content">
+<div class="top"><div><h1>⚙️ ข้อมูลห้องเรียน</h1><div class="sub">ข้อมูลส่วนนี้จะถูกใช้เป็นหัวกระดาษของแบบพิมพ์ทุกโมดูล</div></div></div>
+<section class="panel"><form id="settingsForm" onsubmit="event.preventDefault();saveSettingsForm()"><div class="form-grid">
+<div class="field span2"><label>ชื่อโรงเรียน</label><input name="school"></div><div class="field"><label>ปีการศึกษา (พ.ศ.)</label><input name="academicYear"></div>
+<div class="field full"><label>หน่วยงานต้นสังกัด</label><input name="office"></div>
+<div class="field"><label>ระดับชั้น</label><input name="classLevel" placeholder="มัธยมศึกษาปีที่ 1"></div><div class="field"><label>ห้อง</label><input name="room"></div><div class="field"><label>ภาคเรียน</label><select name="term"><option>1</option><option>2</option></select></div>
+<div class="field"><label>ครูประจำชั้นคนที่ 1</label><input name="teacher1"></div><div class="field"><label>ครูประจำชั้นคนที่ 2</label><input name="teacher2"></div><div class="field"><label>วิชาการระดับมัธยมศึกษา</label><input name="academicHead"></div>
+<div class="field"><label>รองผู้อำนวยการฝ่ายบริหารงานวิชาการ</label><input name="deputy"></div>
+</div>
+<hr style="border:0;border-top:1px solid #e2e8f0;margin:18px 0">
+<h3 style="margin:0 0 12px">ตั้งค่าภาคเรียน</h3>
+<div class="form-grid">
+<div class="field"><label>วันเปิดเรียน</label><input type="date" name="openDate"></div>
+<div class="field"><label>วันปิดเรียน</label><input type="date" name="closeDate"></div>
+<div class="field"><label>ใช้วันหยุดราชการไทย</label><label style="display:flex;align-items:center;gap:8px;font-weight:400"><input type="checkbox" name="useThaiHolidays" style="width:20px;height:20px"> ปิดช่องวันหยุดอัตโนมัติ</label></div>
+<div class="field"><label>เป้าหมายวันเรียน</label><input type="number" name="targetDays" value="100"></div>
+<div class="field"><label>เป้าหมายสัปดาห์</label><input type="number" name="targetWeeks" value="20"></div>
+<div class="field"><label>&nbsp;</label><button type="button" class="btn" onclick="calculateTargetClose()">คำนวณวันปิดจากเป้าหมาย</button></div>
+</div>
+<div class="term-result" id="termSummary" style="margin-top:12px"></div>
+<div class="actions" style="margin-top:12px"><button class="btn primary">บันทึกข้อมูลห้องเรียนและภาคเรียน</button></div></form></section>
+<section class="panel"><div class="toolbar"><div><strong>รายชื่อนักเรียน</strong> <span class="badge"><span id="studentCount">0</span> คน</span></div></div>
+<div class="form-grid"><div class="field"><label>เลขประจำตัว</label><input id="studentId"></div><div class="field span2"><label>ชื่อ - สกุล</label><input id="studentName"></div></div>
+<div class="actions" style="margin-top:10px"><button class="btn" onclick="addStudent()">+ เพิ่มนักเรียน</button></div>
+<div class="table-wrap" style="margin-top:12px"><table class="data"><thead><tr><th>เลขที่</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>จัดการ</th></tr></thead><tbody id="rosterBody"></tbody></table></div></section>
+<section class="panel"><strong>นำเข้ารายชื่อแบบเร็ว</strong><div class="sub">วางข้อมูลรูปแบบ: เลขที่,เลขประจำตัว,ชื่อ-สกุล หรือ เลขประจำตัว,ชื่อ-สกุล</div><textarea id="rosterPaste" style="margin-top:9px" placeholder="1,4118,เด็กชาย...&#10;2,4122,เด็กชาย..."></textarea><div class="actions" style="margin-top:9px"><button class="btn" onclick="importRoster()">นำเข้ารายชื่อ</button></div></section>
+
+<section class="panel">
+<div class="toolbar"><div><strong>วันหยุดราชการ / วันหยุดของโรงเรียน</strong><div class="sub">เสาร์–อาทิตย์ปิดอัตโนมัติอยู่แล้ว รายการนี้ใช้เพิ่มวันหยุดวันจันทร์–ศุกร์</div></div><button class="btn gray" onclick="restoreHolidayPreset()">คืนค่าชุดวันหยุด 2569</button></div>
+<div class="form-grid"><div class="field"><label>วันที่</label><input type="date" id="holidayDate"></div><div class="field span2"><label>ชื่อวันหยุด</label><input id="holidayName" placeholder="เช่น กิจกรรมโรงเรียน / หยุดกรณีพิเศษ"></div></div>
+<div class="actions" style="margin:9px 0"><button class="btn" onclick="addHoliday()">+ เพิ่มวันหยุด</button></div>
+<div class="holiday-list" id="holidayList"></div>
+</section>
+</main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="assets/supabase-config.js"></script><script src="assets/app.js"></script><script src="assets/cloud.js"></script><script>startProtectedPage(()=>{initSettings()})</script></body></html>

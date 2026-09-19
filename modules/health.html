@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🩺 แบบบันทึกการตรวจสุขภาพของนักเรียน</title>
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body class="cloud-protected">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div>
+  <nav class="nav">
+    <a href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a>
+    <a href="../settings.html">⚙️ ข้อมูลห้องเรียน</a>
+    <a href="homeroom.html">🧑‍🏫 โฮมรูม</a>
+    <a href="attendance.html">📋 การมาโรงเรียน</a>
+    <a href="savings.html">💰 การออมทรัพย์</a>
+    <a href="behavior.html">⚠️ พฤติกรรม</a>
+    <a class="active" href="health.html">🩺 ตรวจสุขภาพ</a>
+    <a href="scholarship.html">🎓 รับทุน</a>
+    <a href="volunteer.html">🤝 จิตอาสา</a>
+    <a href="literacy.html">📚 อ่านออก-เขียนได้</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <div class="top">
+    <div>
+      <h1>🩺 แบบบันทึกการตรวจสุขภาพของนักเรียน</h1>
+      <div class="sub">อายุ / น้ำหนัก / ส่วนสูง เป็นข้อมูลกรอกตรง ส่วนคอลัมน์หลังจากส่วนสูงใช้ 3 = ดีมาก, 2 = ปานกลาง, 1 = ปรับปรุง</div>
+    </div>
+  </div>
+
+  <section class="panel paper-panel">
+    <div class="toolbar">
+      <div class="field" style="min-width:220px">
+        <label>เดือน</label>
+        <input type="month" id="month">
+      </div>
+      <div class="notice">เกณฑ์การประเมิน: <b>3</b> = ดีมาก &nbsp; <b>2</b> = ปานกลาง &nbsp; <b>1</b> = ปรับปรุง</div>
+      <div class="actions">
+        <button class="btn" onclick="openPrint('health','#month',false)">พิมพ์เดือนนี้</button>
+        <button class="btn primary" onclick="openPrint('health',null,true)">🖨️ พิมพ์ทุกเดือน</button>
+      </div>
+    </div>
+
+    <div class="health-screen-title">
+      <div class="health-title-main">แบบบันทึกการตรวจสุขภาพของนักเรียน</div>
+      <div class="health-title-meta">
+        นักเรียนชั้น <span id="healthClass"></span>
+        &nbsp;&nbsp; เดือน <span id="healthMonthName"></span>
+        &nbsp;&nbsp; พ.ศ. <span id="healthBE"></span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="health-table-screen">
+        <thead>
+          <tr>
+            <th rowspan="2" class="vhead h-no">เลขที่</th>
+            <th rowspan="2" class="vhead h-id">เลขประจำตัว</th>
+            <th rowspan="2" class="h-name">ชื่อ - สกุล</th>
+            <th colspan="7">รายการ</th>
+            <th rowspan="2" class="h-note">หมายเหตุ/คำแนะนำ</th>
+          </tr>
+          <tr>
+            <th class="vhead h-small">อายุ</th>
+            <th class="vhead h-small">น้ำหนัก</th>
+            <th class="vhead h-small">ส่วนสูง</th>
+            <th class="vhead h-rate">ผม/ทรงผม</th>
+            <th class="vhead h-rate">เล็บมือ</th>
+            <th class="vhead h-rate">เสื้อผ้า</th>
+            <th class="vhead h-rate">ช่องปาก/กลิ่นตัว</th>
+          </tr>
+        </thead>
+        <tbody id="healthBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>ข้อมูลจะบันทึกอัตโนมัติเมื่อกรอกหรือเลือกค่า</footer>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initHealth()})</script></body></html>

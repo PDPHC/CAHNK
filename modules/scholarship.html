@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎓 แบบบันทึกข้อมูลการรับทุนการศึกษาของนักเรียน</title>
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body class="cloud-protected">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div>
+  <nav class="nav">
+    <a href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a>
+    <a href="../settings.html">⚙️ ข้อมูลห้องเรียน</a>
+    <a href="homeroom.html">🧑‍🏫 โฮมรูม</a>
+    <a href="attendance.html">📋 การมาโรงเรียน</a>
+    <a href="savings.html">💰 การออมทรัพย์</a>
+    <a href="behavior.html">⚠️ พฤติกรรม</a>
+    <a href="health.html">🩺 ตรวจสุขภาพ</a>
+    <a class="active" href="scholarship.html">🎓 รับทุน</a>
+    <a href="volunteer.html">🤝 จิตอาสา</a>
+    <a href="literacy.html">📚 อ่านออก-เขียนได้</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <div class="top">
+    <div>
+      <h1>🎓 แบบบันทึกข้อมูลการรับทุนการศึกษาของนักเรียน</h1>
+      <div class="sub">เชื่อมกับรายชื่อนักเรียนกลางโดยตรง และซิงค์ชื่อ/รหัสอัตโนมัติ</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <form id="schForm">
+      <input type="hidden" id="schEditingId">
+      <div class="form-grid">
+        <div class="field">
+          <label>นักเรียน</label>
+          <select name="studentUid" id="schStudent" required>
+            <option value="">-- เลือกนักเรียน --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ชื่อทุนที่ได้รับ</label>
+          <input name="fund" required>
+        </div>
+        <div class="field">
+          <label>ประเภท</label>
+          <select name="type">
+            <option>ทุนการศึกษา</option>
+            <option>อุปกรณ์ต่าง ๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>จำนวน</label>
+          <input name="amount">
+        </div>
+        <div class="field">
+          <label>วันที่ได้รับ</label>
+          <input type="date" name="date" required>
+        </div>
+        <div class="field">
+          <label>หน่วยงาน / มูลนิธิ ที่มอบทุน</label>
+          <input name="org">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn primary" id="schSubmitBtn">บันทึก</button>
+        <button class="btn gray" type="button" id="schCancelEdit" style="display:none" onclick="cancelScholarshipEdit()">ยกเลิกการแก้ไข</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <div class="field" style="min-width:220px">
+        <label>เดือนที่แสดง/พิมพ์</label>
+        <input type="month" id="printMonth">
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="openPrint('scholarship','#printMonth',false)">พิมพ์เดือนนี้</button>
+        <button class="btn primary" onclick="openPrint('scholarship',null,true)">🖨️ พิมพ์ทุกเดือนในภาคเรียน</button>
+      </div>
+    </div>
+    <div class="sub" id="schMonthSummary"></div>
+  </section>
+
+  <section class="panel paper-panel">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>ที่</th>
+            <th>เลขประจำตัว</th>
+            <th>ชื่อ - สกุล</th>
+            <th>ชื่อทุน</th>
+            <th>ประเภท</th>
+            <th>จำนวน</th>
+            <th>วันที่</th>
+            <th>หน่วยงาน</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="schBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>ข้อมูลในตารางและหน้าพิมพ์ใช้ฐานข้อมูลชุดเดียวกัน</footer>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initScholarship()})</script></body></html>

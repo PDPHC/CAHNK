@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚠️ แบบบันทึกพฤติกรรมนักเรียนที่มีปัญหา</title>
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body class="cloud-protected">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div>
+  <nav class="nav">
+    <a href="../index.html">🏠 แดชบอร์ด</a><a href="../classrooms.html">🏫 ห้องเรียนของฉัน</a>
+    <a href="../settings.html">⚙️ ข้อมูลห้องเรียน</a>
+    <a href="homeroom.html">🧑‍🏫 โฮมรูม</a>
+    <a href="attendance.html">📋 การมาโรงเรียน</a>
+    <a href="savings.html">💰 การออมทรัพย์</a>
+    <a class="active" href="behavior.html">⚠️ พฤติกรรม</a>
+    <a href="health.html">🩺 ตรวจสุขภาพ</a>
+    <a href="scholarship.html">🎓 รับทุน</a>
+    <a href="volunteer.html">🤝 จิตอาสา</a>
+    <a href="literacy.html">📚 อ่านออก-เขียนได้</a>
+  </nav>
+</aside>
+
+<main class="content">
+  <div class="top">
+    <div>
+      <h1>⚠️ แบบบันทึกพฤติกรรมนักเรียนที่มีปัญหา</h1>
+      <div class="sub">เลือกพฤติกรรมได้ 1 ระดับต่อคน และบันทึกข้อแนะนำ/แนวทางแก้ไข</div>
+    </div>
+  </div>
+
+  <section class="panel paper-panel">
+    <div class="toolbar">
+      <div class="field" style="min-width:220px">
+        <label>เดือน</label>
+        <input type="month" id="month">
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="openPrint('behavior','#month',false)">พิมพ์เดือนนี้</button>
+        <button class="btn primary" onclick="openPrint('behavior',null,true)">🖨️ พิมพ์ทุกเดือน</button>
+      </div>
+    </div>
+
+    <div class="behavior-screen-title">
+      <div class="behavior-title-main">แบบบันทึกพฤติกรรมนักเรียนที่มีปัญหา ปีการศึกษา <span id="behaviorYear"></span></div>
+      <div class="behavior-title-meta">
+        นักเรียนชั้น <span id="behaviorClass"></span>
+        &nbsp;&nbsp; เดือน <span id="behaviorMonthName"></span>
+        &nbsp;&nbsp; พ.ศ. <span id="behaviorBE"></span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="behavior-table-screen">
+        <thead>
+          <tr>
+            <th rowspan="2" class="b-no">ที่</th>
+            <th rowspan="2" class="b-id">รหัส</th>
+            <th rowspan="2" class="b-name">ชื่อ - สกุล</th>
+            <th colspan="4">พฤติกรรมที่แสดงออก</th>
+            <th rowspan="2" class="b-advice">ข้อแนะนำ/แก้ไข</th>
+          </tr>
+          <tr>
+            <th class="b-rating">ดีมาก</th>
+            <th class="b-rating">ดี</th>
+            <th class="b-rating">พอใช้</th>
+            <th class="b-rating">ปรับปรุง</th>
+          </tr>
+        </thead>
+        <tbody id="behaviorBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>ข้อมูลบันทึกอัตโนมัติเมื่อเลือกพฤติกรรมหรือแก้ไขข้อแนะนำ</footer>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="../assets/supabase-config.js"></script><script src="../assets/app.js"></script><script src="../assets/cloud.js"></script><script>startProtectedPage(()=>{initBehavior()})</script></body></html>

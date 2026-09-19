@@ -1,0 +1,61 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ระบบธุรการชั้นเรียน</title><link rel="stylesheet" href="assets/app.css"></head><body class="cloud-protected"><div class="app"><aside class="sidebar"><div class="brand">ระบบธุรการชั้นเรียน<small>Classroom Administration System</small></div><nav class="nav"><a class="active" href="index.html">🏠 แดชบอร์ด</a><a href="classrooms.html">🏫 ห้องเรียนของฉัน</a><a class="" href="settings.html">⚙️ ข้อมูลห้องเรียน</a><a class="" href="modules/homeroom.html">🧑‍🏫 โฮมรูม</a><a class="" href="modules/attendance.html">📋 การมาโรงเรียน</a><a class="" href="modules/savings.html">💰 การออมทรัพย์</a><a class="" href="modules/behavior.html">⚠️ พฤติกรรม</a><a class="" href="modules/health.html">🩺 ตรวจสุขภาพ</a><a class="" href="modules/scholarship.html">🎓 รับทุน</a><a class="" href="modules/volunteer.html">🤝 จิตอาสา</a><a class="" href="modules/literacy.html">📚 อ่านออก-เขียนได้</a></nav></aside><main class="content">
+<div class="top"><div><h1>แดชบอร์ดธุรการชั้นเรียน</h1><div class="sub">หน้าจอสำหรับบันทึกข้อมูล • หน้าพิมพ์เป็นแบบฟอร์ม A4 ตามต้นฉบับ</div></div><div class="actions">
+<button class="btn book-print-btn" type="button" onclick="openClassroomBook()">🖨️ พิมพ์เล่มธุรการชั้นเรียน</button>
+<button class="btn clear-all-data-btn" type="button" onclick="openClearAllDataModal()">🗑️ ล้างข้อมูล 7 แบบ</button>
+<a href="settings.html" class="btn primary">ตั้งค่าห้องเรียน</a>
+</div></div>
+<div class="stats"><div class="card stat"><strong id="dashStudents">0</strong><span>นักเรียน</span></div><div class="card stat"><strong id="dashUsed">0</strong><span>โมดูลที่มีข้อมูล</span></div><div class="card stat"><strong id="dashClass">-</strong><span>ชั้น/ห้อง</span></div><div class="card stat"><strong id="dashYear">-</strong><span>ปีการศึกษา</span></div><div class="card stat"><strong id="termDash">-</strong><span>วันเรียนในภาคเรียน</span></div></div>
+<div class="notice">เพิ่มข้อมูลห้องเรียนและรายชื่อนักเรียนครั้งเดียว จากนั้นทั้ง 8 โมดูลจะใช้รายชื่อชุดเดียวกัน • เล่มธุรการชั้นเรียนรวม 7 แบบหลัก (แบบอ่านออก-เขียนได้พิมพ์แยก)</div>
+
+<div class="dashboard-progress-grid single-progress">
+<section class="card progress-card">
+    <div class="progress-card-head">
+      <div>
+        <h2>ความคืบหน้าภาคเรียน</h2>
+        <div class="sub" id="termProgressDetail">กำลังคำนวณ...</div>
+      </div>
+      <strong class="progress-percent" id="termProgressPercent">0%</strong>
+    </div>
+    <div class="progress-track"><div class="progress-fill term-progress-fill" id="termProgressBar" style="width:0%"></div></div>
+    <div class="term-countdown" id="termCountdown"></div>
+  </section>
+</div>
+
+<section class="card classroom-book-card">
+  <div class="classroom-book-info">
+    <div class="book-icon">📘</div>
+    <div>
+      <h2>พิมพ์เล่มธุรการชั้นเรียน</h2>
+      <p>พิมพ์ต่อเนื่องทุกเดือน/ทุกสัปดาห์ รวม 7 แบบหลัก: โฮมรูม • การมาโรงเรียน • ออมทรัพย์ • พฤติกรรม • ตรวจสุขภาพ • รับทุน • จิตอาสา</p>
+    </div>
+  </div>
+  <button class="btn primary classroom-book-action" type="button" onclick="openClassroomBook()">🖨️ เปิดตัวอย่างเล่มและพิมพ์</button>
+</section>
+<div class="grid"><a class="card module" href="modules/homeroom.html"><div class="icon">🧑‍🏫</div><h3>แบบบันทึกโฮมรูม</h3><p>บันทึกกิจกรรมโฮมรูมรายสัปดาห์และพิมพ์แบบฟอร์ม จันทร์–ศุกร์</p></a><a class="card module" href="modules/attendance.html"><div class="icon">📋</div><h3>แบบบันทึกการมาโรงเรียน</h3><p>ตารางรายเดือนแบบ 1–31 วัน แยกนักเรียนรายบุคคล</p></a><a class="card module" href="modules/savings.html"><div class="icon">💰</div><h3>แบบบันทึกการออมทรัพย์</h3><p>บันทึกยอดออมรายวัน พร้อมยอดรวมรายเดือน</p></a><a class="card module" href="modules/behavior.html"><div class="icon">⚠️</div><h3>แบบบันทึกพฤติกรรมนักเรียนที่มีปัญหา</h3><p>ประเมิน ดีมาก / ดี / พอใช้ / ปรับปรุง พร้อมข้อแนะนำ</p></a><a class="card module" href="modules/health.html"><div class="icon">🩺</div><h3>แบบบันทึกการตรวจสุขภาพ</h3><p>อายุ น้ำหนัก ส่วนสูง ผม เล็บ เสื้อผ้า ช่องปาก/กลิ่นตัว</p></a><a class="card module" href="modules/scholarship.html"><div class="icon">🎓</div><h3>แบบบันทึกการรับทุน</h3><p>ชื่อทุน ประเภท จำนวน วันที่ และหน่วยงานผู้มอบ</p></a><a class="card module" href="modules/volunteer.html"><div class="icon">🤝</div><h3>แบบบันทึกกิจกรรมจิตอาสา</h3><p>ตารางรายชื่อนักเรียนและช่องกิจกรรมรายครั้ง</p></a><a class="card module" href="modules/literacy.html"><div class="icon">📚</div><h3>แบบบันทึกครูอาสาอ่านออก-เขียนได้</h3><p>แจกลูกสะกดคำ อ่านออกเสียง คัดคำ และเขียนตามคำบอก</p></a></div>
+<footer>Supabase Cloud • แยกสิทธิ์ครูตามห้องเรียน</footer>
+</main></div>
+<div class="modal-backdrop" id="clearAllDataModal" style="display:none" onclick="if(event.target===this)closeClearAllDataModal()">
+  <div class="modal-card clear-data-modal-card">
+    <div class="clear-data-warning-icon">⚠️</div>
+    <h2>ยืนยันการล้างข้อมูลแบบบันทึกทั้ง 7 แบบ</h2>
+    <p class="clear-data-warning">
+      การดำเนินการนี้จะลบข้อมูลที่กรอกใน
+      <b>โฮมรูม, การมาโรงเรียน, ออมทรัพย์, พฤติกรรม, ตรวจสุขภาพ, รับทุน และจิตอาสา</b>
+      ทั้งหมด และไม่สามารถย้อนกลับได้
+    </p>
+    <div class="clear-data-keep">
+      ข้อมูลที่จะ <b>ไม่ถูกลบ</b>: ข้อมูลห้องเรียน, รายชื่อนักเรียน, การตั้งค่า, เวลาโฮมรูม และแบบอ่านออก-เขียนได้
+    </div>
+
+    <div class="field clear-confirm-field">
+      <label>พิมพ์คำว่า <b>ยืนยัน</b> เพื่อเปิดใช้งานปุ่มลบ</label>
+      <input id="clearAllConfirmInput" autocomplete="off" placeholder="พิมพ์คำว่า ยืนยัน" oninput="validateClearAllDataConfirmation()">
+    </div>
+
+    <div class="actions clear-data-actions">
+      <button class="btn gray" type="button" onclick="closeClearAllDataModal()">ยกเลิก</button>
+      <button class="btn danger clear-confirm-delete" id="clearAllConfirmButton" type="button" disabled onclick="clearAllCoreModuleData()">ลบข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script><script src="assets/supabase-config.js"></script><script src="assets/app.js"></script><script src="assets/cloud.js"></script><script>startProtectedPage(()=>{dashboard()})</script></body></html>

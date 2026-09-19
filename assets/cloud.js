@@ -1,0 +1,495 @@
+
+(() => {
+  "use strict";
+
+  const cfg = window.SUPABASE_CONFIG || {};
+  if (!window.supabase || !cfg.url || !cfg.publishableKey) {
+    console.error("Supabase client/config is missing");
+    return;
+  }
+
+  const sb = window.supabase.createClient(cfg.url, cfg.publishableKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  window.cloudClient = sb;
+
+  const ACTIVE_KEY = "hnk_cloud_active_classroom";
+  const MODULES = ["homeroom","attendance","savings","behavior","health","scholarship","volunteer","literacy"];
+  const state = {user:null,profile:null,classroom:null,permission:null,bootstrapped:false,pending:new Map()};
+  window.cloudState = state;
+
+  const esc = s => String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  const hget = (k,d=null) => window.hnkGet ? window.hnkGet(k,d) : d;
+  const hset = (k,v) => { if (window.hnkSet) window.hnkSet(k,v); };
+
+  function rootPath(){
+    return (location.pathname.includes("/modules/") || location.pathname.includes("/print/")) ? "../" : "./";
+  }
+  function go(path){ location.href = rootPath()+path; }
+  function showBody(){ document.body?.classList.remove("cloud-protected"); }
+  function fatal(msg){
+    showBody();
+    const n=document.createElement("div");n.className="cloud-fatal";
+    n.innerHTML=`<b>เชื่อมต่อระบบไม่สำเร็จ</b><br>${esc(msg)}`;
+    document.body.prepend(n);
+  }
+
+  async function getSessionUser(){
+    const {data,error}=await sb.auth.getSession();
+    if(error)throw error;
+    state.user=data.session?.user||null;
+    return state.user;
+  }
+  async function loadProfile(){
+    const {data,error}=await sb.from("profiles").select("id,email,display_name,role").eq("id",state.user.id).single();
+    if(error)throw error;
+    state.profile=data;return data;
+  }
+  async function listClassrooms(){
+    const {data,error}=await sb.from("classrooms").select("*")
+      .order("academic_year",{ascending:false}).order("term",{ascending:false})
+      .order("class_level").order("room");
+    if(error)throw error;
+    return data||[];
+  }
+  async function permissionFor(cid){
+    if(state.profile?.role==="admin")return "owner";
+    const {data,error}=await sb.from("classroom_teachers").select("permission")
+      .eq("classroom_id",cid).eq("teacher_id",state.user.id).maybeSingle();
+    if(error)throw error;
+    return data?.permission||null;
+  }
+  function classroomSettings(c){
+    return {
+      school:c.school_name||"",office:c.office_name||"",classLevel:c.class_level||"",room:c.room||"",
+      academicYear:String(c.academic_year||""),term:String(c.term||"1"),
+      teacher1:c.teacher1||"",teacher2:c.teacher2||"",academicHead:c.academic_head||"",deputy:c.deputy||"",
+      openDate:c.open_date||"",closeDate:c.close_date||"",targetDays:String(c.target_days||100),
+      targetWeeks:String(c.target_weeks||20),useThaiHolidays:c.use_thai_holidays!==false
+    };
+  }
+  async function loadClassroom(cid){
+    const [cr,sr,mr]=await Promise.all([
+      sb.from("classrooms").select("*").eq("id",cid).single(),
+      sb.from("students").select("id,client_uid,student_code,full_name,sort_order,active")
+        .eq("classroom_id",cid).eq("active",true).order("sort_order"),
+      sb.from("module_data").select("module_name,data").eq("classroom_id",cid)
+    ]);
+    if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(mr.error)throw mr.error;
+    state.classroom=cr.data;state.permission=await permissionFor(cid);
+
+    hset("settings",classroomSettings(cr.data));
+    hset("holidays",Array.isArray(cr.data.holidays)?cr.data.holidays:[]);
+    hset("students",(sr.data||[]).map((s,i)=>({
+      uid:s.client_uid||s.id,id:s.student_code||"",name:s.full_name||"",_dbId:s.id,_sort:s.sort_order??i
+    })));
+    MODULES.forEach(k=>hset("module_"+k,{}));
+    hset("homeroom_time_settings",{});
+    (mr.data||[]).forEach(r=>{
+      if(r.module_name==="homeroom_times")hset("homeroom_time_settings",r.data||{});
+      else if(MODULES.includes(r.module_name))hset("module_"+r.module_name,r.data||{});
+    });
+    localStorage.setItem(ACTIVE_KEY,cid);
+    state.bootstrapped=true;
+  }
+
+  function syncStatus(text,kind=""){
+    const el=document.getElementById("cloudSyncStatus");if(!el)return;
+    el.textContent=text;el.className="cloud-sync-status "+kind;
+  }
+  async function saveModuleNow(name,data){
+    if(!state.bootstrapped||!state.classroom?.id||!state.user)return;
+    syncStatus("กำลังบันทึก...","saving");
+    const {error}=await sb.from("module_data").upsert({
+      classroom_id:state.classroom.id,module_name:name,data:data||{},updated_by:state.user.id,updated_at:new Date().toISOString()
+    },{onConflict:"classroom_id,module_name"});
+    if(error){syncStatus("บันทึกไม่สำเร็จ","error");throw error}
+    syncStatus("บันทึกบน Cloud แล้ว","ok");
+  }
+  window.cloudQueueModuleSave=(name,data)=>{
+    if(!state.bootstrapped||!state.classroom?.id)return;
+    const old=state.pending.get(name);if(old?.timer)clearTimeout(old.timer);
+    const item={data,timer:null};
+    item.timer=setTimeout(async()=>{
+      state.pending.delete(name);
+      try{await saveModuleNow(name,item.data)}catch(e){console.error(e)}
+    },300);
+    state.pending.set(name,item);
+  };
+  window.cloudFlushPending=async()=>{
+    if(!state.pending.size)return;
+    const jobs=[];
+    for(const [name,item] of state.pending.entries()){
+      if(item.timer)clearTimeout(item.timer);
+      jobs.push(saveModuleNow(name,item.data));
+    }
+    state.pending.clear();
+    await Promise.allSettled(jobs);
+  };
+  window.cloudSaveHomeroomTimes=data=>window.cloudQueueModuleSave?.("homeroom_times",data||{});
+
+  window.cloudSaveSettings=async()=>{
+    if(!state.bootstrapped||!state.classroom?.id||typeof window.settings!=="function")return;
+    const s=window.settings(),hs=typeof window.holidays==="function"?window.holidays():[];
+    syncStatus("กำลังบันทึก...","saving");
+    const payload={
+      school_name:s.school||"",office_name:s.office||"",class_level:s.classLevel||"",room:s.room||"",
+      academic_year:Number(s.academicYear||0),term:Number(s.term||1),teacher1:s.teacher1||"",teacher2:s.teacher2||"",
+      academic_head:s.academicHead||"",deputy:s.deputy||"",open_date:s.openDate||null,close_date:s.closeDate||null,
+      target_days:Number(s.targetDays||100),target_weeks:Number(s.targetWeeks||20),
+      use_thai_holidays:s.useThaiHolidays!==false&&s.useThaiHolidays!=="false",holidays:hs||[],updated_at:new Date().toISOString()
+    };
+    const {data,error}=await sb.from("classrooms").update(payload).eq("id",state.classroom.id).select().single();
+    if(error){syncStatus("บันทึกไม่สำเร็จ","error");alert("บันทึกบน Cloud ไม่สำเร็จ: "+error.message);return}
+    state.classroom=data;syncStatus("บันทึกบน Cloud แล้ว","ok");
+  };
+
+  window.cloudSaveStudents=async()=>{
+    if(!state.bootstrapped||!state.classroom?.id||typeof window.students!=="function")return;
+    const cid=state.classroom.id,rows=window.students();
+    syncStatus("กำลังบันทึกรายชื่อ...","saving");
+    const {data:existing,error:fe}=await sb.from("students").select("id,client_uid").eq("classroom_id",cid);
+    if(fe){syncStatus("บันทึกไม่สำเร็จ","error");console.error(fe);return}
+    if(rows.length){
+      const payload=rows.map((s,i)=>({classroom_id:cid,client_uid:String(s.uid),student_code:String(s.id||""),
+        full_name:String(s.name||""),sort_order:i+1,active:true}));
+      const {error}=await sb.from("students").upsert(payload,{onConflict:"classroom_id,client_uid"});
+      if(error){syncStatus("บันทึกไม่สำเร็จ","error");console.error(error);return}
+    }
+    const keep=new Set(rows.map(s=>String(s.uid)));
+    for(const old of existing||[]){
+      if(!keep.has(String(old.client_uid))){
+        const {error}=await sb.from("students").delete().eq("id",old.id);
+        if(error)console.error(error);
+      }
+    }
+    syncStatus("บันทึกบน Cloud แล้ว","ok");
+  };
+
+  function renderUserBar(){
+    const content=document.querySelector(".content");if(!content||document.getElementById("cloudUserBar"))return;
+    const c=state.classroom,p=state.profile,bar=document.createElement("div");
+    bar.id="cloudUserBar";bar.className="cloud-userbar";
+    bar.innerHTML=`<div><b>${esc(p?.display_name||p?.email||"")}</b>
+      <span class="cloud-role">${p?.role==="admin"?"ผู้ดูแลระบบ":"ครู"}</span>
+      <span class="cloud-room">ห้อง ${esc(c?.class_level||"")}/${esc(c?.room||"")}</span>
+      <span id="cloudSyncStatus" class="cloud-sync-status ok">เชื่อมต่อ Cloud แล้ว</span></div>
+      <div class="cloud-user-actions">
+      ${p?.role==="admin"?`<a class="btn gray" href="${rootPath()}admin.html">จัดการสิทธิ์ครู</a>`:""}
+      <a class="btn gray" href="${rootPath()}classrooms.html">เปลี่ยนห้อง</a>
+      <button class="btn danger cloud-allow" type="button" onclick="cloudLogout()">ออกจากระบบ</button></div>`;
+    content.insertBefore(bar,content.firstChild);
+  }
+  function viewerMode(){
+    if(state.permission!=="viewer")return;
+    document.querySelectorAll("input,select,textarea").forEach(x=>x.disabled=true);
+    document.querySelectorAll("button").forEach(btn=>{
+      const code=btn.getAttribute("onclick")||"";
+      if(/openPrint|openClassroomBook|cloudLogout/.test(code))return;
+      btn.disabled=true;
+    });
+    const content=document.querySelector(".content");
+    if(content){
+      const n=document.createElement("div");n.className="notice cloud-viewer-notice";
+      n.textContent='สิทธิ์ของคุณเป็น “ดูอย่างเดียว” สามารถดูและพิมพ์ได้ แต่ไม่สามารถแก้ไขข้อมูลห้องนี้';
+      content.insertBefore(n,content.children[1]||null);
+    }
+  }
+  function installFlushNavigation(){
+    document.addEventListener("click",async e=>{
+      const a=e.target.closest("a[href]");if(!a||!state.pending.size)return;
+      const href=a.getAttribute("href");
+      if(!href||href.startsWith("#")||href.startsWith("http")||a.target==="_blank")return;
+      e.preventDefault();
+      try{await window.cloudFlushPending()}finally{location.href=href}
+    });
+  }
+
+  window.startProtectedPage=async initFn=>{
+    try{
+      const user=await getSessionUser();if(!user){go("login.html");return}
+      await loadProfile();
+      const rooms=await listClassrooms(),active=localStorage.getItem(ACTIVE_KEY);
+      if(!active||!rooms.some(r=>r.id===active)){go("classrooms.html");return}
+      await loadClassroom(active);renderUserBar();showBody();
+      if(typeof initFn==="function")await initFn();
+      viewerMode();installFlushNavigation();
+    }catch(e){console.error(e);fatal(e.message||String(e))}
+  };
+
+
+  window.cloudGoogleLogin=async()=>{
+    const msg=document.getElementById("loginMessage");
+    const btn=document.getElementById("googleLoginBtn");
+    if(btn)btn.disabled=true;
+    if(msg){
+      msg.className="login-message";
+      msg.textContent="กำลังเปิด Google...";
+    }
+    try{
+      const redirectTo=new URL("classrooms.html",location.href).href;
+      const {data,error}=await sb.auth.signInWithOAuth({
+        provider:"google",
+        options:{
+          redirectTo,
+          queryParams:{
+            access_type:"offline",
+            prompt:"select_account"
+          }
+        }
+      });
+      if(error)throw error;
+      if(data?.url)location.href=data.url;
+    }catch(e){
+      console.error(e);
+      if(btn)btn.disabled=false;
+      if(msg){
+        msg.className="login-message";
+        msg.textContent="เข้าสู่ระบบด้วย Google ไม่สำเร็จ: "+(e?.message||String(e));
+      }
+    }
+  };
+
+  window.cloudLogin=async()=>{
+    const email=document.getElementById("loginEmail")?.value.trim(),password=document.getElementById("loginPassword")?.value||"";
+    const msg=document.getElementById("loginMessage");
+    if(!email||!password){msg.textContent="กรอกอีเมลและรหัสผ่าน";return}
+    msg.textContent="กำลังเข้าสู่ระบบ...";
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error){msg.textContent="เข้าสู่ระบบไม่สำเร็จ: "+error.message;return}
+    location.href="classrooms.html";
+  };
+
+  window.cloudForgotPassword=async()=>{
+    const email=document.getElementById("loginEmail")?.value.trim();
+    const msg=document.getElementById("loginMessage");
+    if(!email){
+      msg.textContent="กรอกอีเมลก่อน แล้วกด “ลืมรหัสผ่าน”";
+      document.getElementById("loginEmail")?.focus();
+      return;
+    }
+    const btn=document.getElementById("forgotPasswordBtn");
+    if(btn)btn.disabled=true;
+    msg.className="login-message";
+    msg.textContent="กำลังส่งอีเมลสำหรับตั้งรหัสผ่านใหม่...";
+    try{
+      const redirectTo=new URL("reset-password.html",location.href).href;
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+      if(error)throw error;
+      msg.className="login-message success";
+      msg.innerHTML=`ส่งอีเมลสำหรับตั้งรหัสผ่านใหม่แล้ว<br><span class="login-message-note">ตรวจสอบกล่องจดหมายของ ${esc(email)} รวมถึงโฟลเดอร์ Spam/Junk</span>`;
+    }catch(e){
+      console.error(e);
+      let detail=e?.message||String(e);
+      if(/redirect|not allowed|url/i.test(detail)){
+        detail='Redirect URL ยังไม่ได้รับอนุญาตใน Supabase กรุณาเพิ่ม http://localhost:*/reset-password.html ใน Authentication → URL Configuration';
+      }
+      msg.className="login-message";
+      msg.textContent="ส่งอีเมลไม่สำเร็จ: "+detail;
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  };
+
+  window.startResetPasswordPage=async()=>{
+    const msg=document.getElementById("resetMessage");
+    const form=document.getElementById("resetPasswordForm");
+
+    const showReady=()=>{
+      form.style.display="";
+      msg.className="login-message success";
+      msg.textContent="ยืนยันลิงก์แล้ว กรุณาตั้งรหัสผ่านใหม่";
+      document.getElementById("newPassword")?.focus();
+    };
+
+    sb.auth.onAuthStateChange((event,session)=>{
+      if(event==="PASSWORD_RECOVERY" || (event==="SIGNED_IN" && session)){
+        showReady();
+      }
+    });
+
+    const {data,error}=await sb.auth.getSession();
+    if(error){
+      msg.className="login-message";
+      msg.textContent="ตรวจสอบลิงก์ไม่สำเร็จ: "+error.message;
+      return;
+    }
+    if(data.session){
+      showReady();
+    }else{
+      form.style.display="none";
+      msg.className="login-message";
+      msg.innerHTML='ลิงก์นี้ยังไม่พร้อมใช้งานหรือหมดอายุแล้ว<br><span class="login-message-note">กลับหน้าเข้าสู่ระบบ แล้วกด “ลืมรหัสผ่าน” เพื่อขอลิงก์ใหม่</span>';
+    }
+
+    document.getElementById("newPasswordConfirm")?.addEventListener("keydown",e=>{
+      if(e.key==="Enter")window.cloudUpdatePassword();
+    });
+  };
+
+  window.cloudUpdatePassword=async()=>{
+    const p1=document.getElementById("newPassword")?.value||"";
+    const p2=document.getElementById("newPasswordConfirm")?.value||"";
+    const msg=document.getElementById("resetMessage");
+    const btn=document.getElementById("resetSubmitBtn");
+
+    if(p1.length<8){
+      msg.className="login-message";
+      msg.textContent="รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร";
+      return;
+    }
+    if(p1!==p2){
+      msg.className="login-message";
+      msg.textContent="รหัสผ่านทั้งสองช่องไม่ตรงกัน";
+      return;
+    }
+
+    btn.disabled=true;
+    msg.className="login-message";
+    msg.textContent="กำลังบันทึกรหัสผ่านใหม่...";
+
+    const {error}=await sb.auth.updateUser({password:p1});
+    if(error){
+      btn.disabled=false;
+      msg.textContent="เปลี่ยนรหัสผ่านไม่สำเร็จ: "+error.message;
+      return;
+    }
+
+    msg.className="login-message success";
+    msg.textContent="เปลี่ยนรหัสผ่านเรียบร้อย กำลังกลับหน้าเข้าสู่ระบบ...";
+    await sb.auth.signOut();
+    setTimeout(()=>location.href="login.html",1200);
+  };
+
+  window.startLoginPage=async()=>{
+    const user=await getSessionUser();if(user){location.href="classrooms.html";return}
+    const oauthError=sessionStorage.getItem("hnk_oauth_error");
+    if(oauthError){
+      sessionStorage.removeItem("hnk_oauth_error");
+      const msg=document.getElementById("loginMessage");
+      if(msg)msg.textContent="เข้าสู่ระบบด้วย Google ไม่สำเร็จ: "+oauthError;
+    }
+    document.getElementById("loginPassword")?.addEventListener("keydown",e=>{if(e.key==="Enter")window.cloudLogin()});
+  };
+  window.cloudLogout=async()=>{
+    try{await window.cloudFlushPending?.()}catch{}
+    await sb.auth.signOut();localStorage.removeItem(ACTIVE_KEY);
+    Object.keys(localStorage).forEach(k=>{if(k.startsWith("hnk_admin_v3_")||k.startsWith("hnk_admin_v2_"))localStorage.removeItem(k)});
+    go("login.html");
+  };
+  window.cloudChooseClassroom=id=>{localStorage.setItem(ACTIVE_KEY,id);location.href="index.html"};
+
+  function roomCard(r){
+    const active=localStorage.getItem(ACTIVE_KEY)===r.id;
+    return `<button type="button" class="classroom-choice ${active?"active":""}" onclick="cloudChooseClassroom('${r.id}')">
+      <div class="classroom-choice-main">${esc(r.class_level)}/${esc(r.room)}</div>
+      <div>ภาคเรียนที่ ${esc(r.term)} ปีการศึกษา ${esc(r.academic_year)}</div>
+      <small>${esc(r.school_name||"")}</small>${active?'<span class="badge">ห้องที่ใช้อยู่</span>':""}</button>`;
+  }
+  function fillRoomDefaults(){
+    const f=document.getElementById("createClassroomForm");if(!f||typeof window.settings!=="function")return;
+    const s=window.settings(),map={school_name:s.school,office_name:s.office,class_level:s.classLevel,room:s.room,
+      academic_year:s.academicYear,term:s.term,teacher1:s.teacher1,teacher2:s.teacher2,academic_head:s.academicHead,
+      deputy:s.deputy,open_date:s.openDate,close_date:s.closeDate,target_days:s.targetDays,target_weeks:s.targetWeeks};
+    Object.entries(map).forEach(([k,v])=>{if(f.elements[k])f.elements[k].value=v||""});
+  }
+  async function uploadLocal(cid){
+    const rows=typeof window.students==="function"?window.students():[];
+    if(rows.length){
+      const payload=rows.map((s,i)=>({classroom_id:cid,client_uid:String(s.uid),student_code:String(s.id||""),
+        full_name:String(s.name||""),sort_order:i+1,active:true}));
+      const {error}=await sb.from("students").upsert(payload,{onConflict:"classroom_id,client_uid"});if(error)throw error;
+    }
+    const payloads=MODULES.map(name=>({classroom_id:cid,module_name:name,
+      data:typeof window.moduleStore==="function"?window.moduleStore(name):{},updated_by:state.user.id}));
+    payloads.push({classroom_id:cid,module_name:"homeroom_times",data:hget("homeroom_time_settings",{})||{},updated_by:state.user.id});
+    const {error}=await sb.from("module_data").upsert(payloads,{onConflict:"classroom_id,module_name"});if(error)throw error;
+  }
+  window.cloudCreateClassroom=async()=>{
+    if(state.profile?.role!=="admin")return alert("เฉพาะผู้ดูแลระบบเท่านั้น");
+    const f=document.getElementById("createClassroomForm"),msg=document.getElementById("createClassroomMessage");
+    const v=Object.fromEntries(new FormData(f).entries());
+    if(!v.class_level||!v.room||!v.academic_year){msg.textContent="กรอกระดับชั้น ห้อง และปีการศึกษา";return}
+    msg.textContent="กำลังสร้างห้องเรียน...";
+    const payload={school_name:v.school_name||"",office_name:v.office_name||"",class_level:v.class_level,room:v.room,
+      academic_year:Number(v.academic_year),term:Number(v.term||1),teacher1:v.teacher1||"",teacher2:v.teacher2||"",
+      academic_head:v.academic_head||"",deputy:v.deputy||"",open_date:v.open_date||null,close_date:v.close_date||null,
+      target_days:Number(v.target_days||100),target_weeks:Number(v.target_weeks||20),use_thai_holidays:true,
+      holidays:typeof window.holidays==="function"?window.holidays():[],created_by:state.user.id};
+    const {data:room,error}=await sb.from("classrooms").insert(payload).select().single();
+    if(error){msg.textContent="สร้างห้องไม่สำเร็จ: "+error.message;return}
+    const {error:ae}=await sb.from("classroom_teachers").insert({classroom_id:room.id,teacher_id:state.user.id,permission:"owner"});
+    if(ae){msg.textContent="สร้างห้องแล้ว แต่กำหนดสิทธิ์ไม่สำเร็จ: "+ae.message;return}
+    if(f.elements.migrate_local?.checked){
+      try{await uploadLocal(room.id)}catch(e){console.error(e);alert("สร้างห้องแล้ว แต่ย้ายข้อมูลเดิมบางส่วนไม่สำเร็จ: "+e.message)}
+    }
+    localStorage.setItem(ACTIVE_KEY,room.id);location.href="index.html";
+  };
+  window.startClassroomsPage=async()=>{
+    try{
+      const qs=new URLSearchParams(location.search);
+      const hash=new URLSearchParams(location.hash.replace(/^#/,""));
+      const oauthError=qs.get("error_description")||hash.get("error_description")||qs.get("error")||hash.get("error");
+      if(oauthError){
+        sessionStorage.setItem("hnk_oauth_error",oauthError);
+        history.replaceState({},document.title,location.pathname);
+        location.href="login.html";
+        return;
+      }
+      const user=await getSessionUser();if(!user){location.href="login.html";return}
+      await loadProfile();showBody();
+      document.getElementById("classroomUserName").textContent=state.profile.display_name||state.profile.email||"";
+      document.getElementById("classroomUserRole").textContent=state.profile.role==="admin"?"ผู้ดูแลระบบ":"ครู";
+      if(state.profile.role==="admin"){
+        document.getElementById("adminCreateRoomPanel").style.display="";
+        document.getElementById("adminPermissionLink").style.display="";
+        fillRoomDefaults();
+      }
+      const rooms=await listClassrooms(),box=document.getElementById("classroomList");
+      box.innerHTML=rooms.length?rooms.map(roomCard).join(""):`<div class="empty-room-state">ยังไม่มีห้องเรียนที่คุณได้รับสิทธิ์${state.profile.role==="admin"?"<br>สร้างห้องเรียนแรกได้จากแบบฟอร์มด้านล่าง":""}</div>`;
+    }catch(e){console.error(e);fatal(e.message||String(e))}
+  };
+
+  async function adminReload(){
+    const [pr,cr,ar]=await Promise.all([
+      sb.from("profiles").select("id,email,display_name,role").order("display_name"),
+      sb.from("classrooms").select("id,class_level,room,academic_year,term,school_name").order("academic_year",{ascending:false}),
+      sb.from("classroom_teachers").select("classroom_id,teacher_id,permission")
+    ]);
+    if(pr.error)throw pr.error;if(cr.error)throw cr.error;if(ar.error)throw ar.error;
+    const profiles=pr.data||[],rooms=cr.data||[],assignments=ar.data||[],pm=new Map(profiles.map(x=>[x.id,x])),cm=new Map(rooms.map(x=>[x.id,x]));
+    document.getElementById("assignTeacher").innerHTML=profiles.map(p=>`<option value="${p.id}">${esc(p.display_name||p.email)} — ${esc(p.email||"")}</option>`).join("");
+    document.getElementById("assignClassroom").innerHTML=rooms.map(r=>`<option value="${r.id}">${esc(r.class_level)}/${esc(r.room)} • ${esc(r.academic_year)}/${esc(r.term)}</option>`).join("");
+    document.getElementById("teacherTableBody").innerHTML=profiles.map(p=>`<tr><td>${esc(p.display_name||"")}</td><td>${esc(p.email||"")}</td>
+      <td>${p.role==="admin"?"ผู้ดูแลระบบ":"ครู"}</td><td><button class="btn gray" type="button" onclick="cloudRenameProfile('${p.id}','${esc(p.display_name||"")}')">แก้ชื่อ</button></td></tr>`).join("");
+    document.getElementById("assignmentTableBody").innerHTML=assignments.length?assignments.map(a=>{
+      const p=pm.get(a.teacher_id),r=cm.get(a.classroom_id);
+      return `<tr><td>${esc(p?.display_name||p?.email||a.teacher_id)}</td><td>${esc(r?`${r.class_level}/${r.room} • ${r.academic_year}/${r.term}`:a.classroom_id)}</td>
+        <td>${esc(a.permission)}</td><td><button class="btn danger" onclick="cloudRemoveAssignment('${a.classroom_id}','${a.teacher_id}')">ถอนสิทธิ์</button></td></tr>`;
+    }).join(""):'<tr><td colspan="4" style="text-align:center;padding:20px">ยังไม่มีการกำหนดสิทธิ์</td></tr>';
+  }
+  window.startAdminPage=async()=>{
+    try{
+      const user=await getSessionUser();if(!user){location.href="login.html";return}
+      await loadProfile();if(state.profile.role!=="admin"){location.href="classrooms.html";return}
+      showBody();await adminReload();
+    }catch(e){console.error(e);fatal(e.message||String(e))}
+  };
+  window.cloudAssignTeacher=async()=>{
+    const teacher_id=document.getElementById("assignTeacher").value,classroom_id=document.getElementById("assignClassroom").value,
+      permission=document.getElementById("assignPermission").value;
+    if(!teacher_id||!classroom_id)return alert("ต้องมีบัญชีครูและห้องเรียนก่อน");
+    const {error}=await sb.from("classroom_teachers").upsert({classroom_id,teacher_id,permission},{onConflict:"classroom_id,teacher_id"});
+    if(error)return alert("กำหนดสิทธิ์ไม่สำเร็จ: "+error.message);await adminReload();
+  };
+  window.cloudRemoveAssignment=async(cid,tid)=>{
+    if(!confirm("ยืนยันการถอนสิทธิ์ครูออกจากห้องนี้?"))return;
+    const {error}=await sb.from("classroom_teachers").delete().eq("classroom_id",cid).eq("teacher_id",tid);
+    if(error)return alert("ถอนสิทธิ์ไม่สำเร็จ: "+error.message);await adminReload();
+  };
+  window.cloudRenameProfile=async(uid,oldName)=>{
+    const name=prompt("ชื่อที่แสดงของครู",oldName||"");if(name===null)return;
+    const {error}=await sb.from("profiles").update({display_name:name.trim()}).eq("id",uid);
+    if(error)return alert("แก้ชื่อไม่สำเร็จ: "+error.message);await adminReload();
+  };
+})();
