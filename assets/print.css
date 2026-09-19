@@ -1731,3 +1731,6 @@ body{
 .sheet.book-print .electronic-signature-mark{font-size:8.5pt}
 .sheet.book-print .electronic-signature-person{font-size:10pt}
 .sheet.book-print .signature-approved-date{font-size:8pt}
+
+.electronic-signature-image{display:block;max-width:34mm;max-height:11mm;object-fit:contain;margin:0 auto .5mm}
+.sheet.book-print .electronic-signature-image{max-width:30mm;max-height:9mm}
