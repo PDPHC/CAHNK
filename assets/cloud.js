@@ -261,7 +261,7 @@
     document.querySelectorAll("input,select,textarea").forEach(x=>{if(!x.classList.contains("cloud-allow"))x.disabled=true});
     document.querySelectorAll("button").forEach(btn=>{
       const code=btn.getAttribute("onclick")||"";
-      if(/openPrint|openClassroomBook|cloudLogout/.test(code))return;
+      if(/openPrint|openClassroomBook|cloudPrintMonthlyBook|cloudLogout/.test(code))return;
       btn.disabled=true;
     });
     const content=document.querySelector(".content");
