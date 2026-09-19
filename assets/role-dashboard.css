@@ -1,0 +1,39 @@
+
+.role-dashboard-page{max-width:1400px;margin:0 auto;padding:22px}
+.role-dashboard-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.role-dashboard-head h1{margin:0 0 4px;font-size:28px}
+.role-dashboard-sub{color:#64748b}
+.role-dashboard-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.role-dashboard-toolbar select{min-width:230px}
+.role-summary-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:14px 0}
+.role-summary-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+.role-summary-card strong{display:block;font-size:28px;line-height:1.1;margin-bottom:5px}
+.role-summary-card span{color:#64748b;font-size:13px}
+.role-overview-panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:14px}
+.role-overview-panel h2{margin:0 0 10px;font-size:19px}
+.missing-room-list{display:flex;gap:8px;flex-wrap:wrap}
+.missing-room-chip{display:inline-flex;padding:7px 11px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;font-weight:700}
+.all-sent{color:#166534;font-weight:700}
+.role-room-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.role-room-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 4px 14px rgba(15,23,42,.04)}
+.role-room-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.role-room-head h3{margin:0;font-size:21px}
+.role-room-teacher{color:#64748b;font-size:13px;margin-top:3px}
+.role-status{padding:6px 9px;border-radius:999px;font-size:12px;font-weight:700;background:#f1f5f9}
+.status-submitted_to_academic{background:#eff6ff}
+.status-forwarded_to_deputy{background:#f5f3ff}
+.status-approved{background:#ecfdf5}
+.status-returned_by_academic,.status-returned_by_deputy{background:#fff7ed}
+.role-room-progress-line{display:grid;grid-template-columns:1fr 48px;gap:10px;align-items:center;margin:14px 0 8px}
+.role-progress-track{height:9px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.role-progress-fill{height:100%;background:#334155;border-radius:999px}
+.role-room-meta{display:flex;flex-wrap:wrap;gap:8px 16px;color:#64748b;font-size:12px}
+.role-latest-comment{margin-top:10px;padding:9px 10px;background:#f8fafc;border-radius:9px;font-size:13px}
+.role-room-tools{margin-top:10px}
+.role-action-box{margin-top:12px;border-top:1px solid #e2e8f0;padding-top:12px}
+.role-action-box textarea{width:100%;resize:vertical;min-height:58px}
+.role-action-buttons{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:8px}
+.role-fatal{margin:20px;padding:14px;border:1px solid #fecaca;background:#fef2f2;border-radius:12px}
+@media(max-width:1100px){.role-summary-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.role-room-grid{grid-template-columns:1fr}.role-summary-grid{grid-template-columns:repeat(2,1fr)}.role-dashboard-page{padding:12px}}
+@media(max-width:520px){.role-summary-grid{grid-template-columns:1fr 1fr}.role-dashboard-toolbar{width:100%}.role-dashboard-toolbar select{min-width:0;width:100%}}

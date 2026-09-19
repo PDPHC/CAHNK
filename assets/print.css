@@ -1721,3 +1721,13 @@ body{
     padding:22mm 12mm !important;
   }
 }
+
+
+/* V5 electronic approval signatures */
+.electronic-signature{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;line-height:1.05;padding-bottom:1mm}
+.electronic-signature-mark{font-size:9.5pt;font-weight:600}
+.electronic-signature-person{font-size:11pt;font-weight:700;margin-top:1mm}
+.signature-approved-date{font-size:9pt;line-height:1.1;margin-top:.5mm}
+.sheet.book-print .electronic-signature-mark{font-size:8.5pt}
+.sheet.book-print .electronic-signature-person{font-size:10pt}
+.sheet.book-print .signature-approved-date{font-size:8pt}

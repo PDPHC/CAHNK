@@ -19,6 +19,7 @@ const months=["มกราคม","กุมภาพันธ์","มีน�
 const q=new URLSearchParams(location.search),mod=q.get("module"),requestedMonth=q.get("month")||new Date().toISOString().slice(0,7),all=q.get("all")==="1";
 const SETTINGS_DEFAULTS={school:"โรงเรียนห้วยน้ำขุ่นวิทยา",office:"สำนักงานเขตพื้นที่การศึกษาประถมศึกษาเชียงราย เขต 2",classLevel:"มัธยมศึกษาปีที่ 1",room:"1",academicYear:"2569",term:"1",teacher1:"",teacher2:"",academicHead:"",deputy:"",openDate:"2026-05-18",closeDate:"2026-10-12",targetDays:"100",targetWeeks:"20",useThaiHolidays:true};
 const S={...SETTINGS_DEFAULTS,...(get("settings",{})||{})};
+const APPROVAL=get("workflow_approval",{})||{};
 const R=(get("students",[])||[]).map((x,i)=>({...x,no:i+1}));
 const H=(get("holidays",[])||[]),HM=Object.fromEntries(H.map(h=>[h.date,h]));
 const store=k=>get("module_"+k,{});
@@ -43,13 +44,34 @@ function spacedSignatureName(value){
  return `( ${esc(v||"................................................")} )`;
 }
 
+function approvalThaiDate(value){
+ if(!value)return "";
+ const d=new Date(value);
+ if(Number.isNaN(d.getTime()))return "";
+ return d.toLocaleString("th-TH",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+function approvedSignature(name,at,fallbackName,roleHtml){
+ const approved=!!at;
+ const display=String(name||fallbackName||"").trim();
+ if(!approved){
+  return `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(display)}</div><div class="signature-role">${roleHtml}</div></div>`;
+ }
+ return `<div class="approved-signature-block">
+   <div class="signature-space electronic-signature">
+     <div class="electronic-signature-mark">✓ ลงนามอิเล็กทรอนิกส์</div>
+     <div class="electronic-signature-person">${esc(display||"ผู้อนุมัติ")}</div>
+   </div>
+   <div class="signature-name">${spacedSignatureName(display)}</div>
+   <div class="signature-role">${roleHtml}<div class="signature-approved-date">อนุมัติ ${esc(approvalThaiDate(at))}</div></div>
+ </div>`;
+}
 const signatures=()=>{
  const hasTeacher2=String(S.teacher2||"").trim()!=="";
  const blocks=[
   `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.teacher1)}</div><div class="signature-role">ครูประจำชั้น</div></div>`,
   ...(hasTeacher2?[`<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.teacher2)}</div><div class="signature-role">ครูประจำชั้น</div></div>`]:[]),
-  `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.academicHead)}</div><div class="signature-role">วิชาการระดับมัธยมศึกษา</div></div>`,
-  `<div><div class="signature-space"></div><div class="signature-name">${spacedSignatureName(S.deputy)}</div><div class="signature-role">รองผู้อำนวยการ<br>ฝ่ายบริหารงานวิชาการ</div></div>`
+  approvedSignature(APPROVAL.academic_approved_name,APPROVAL.academic_approved_at,S.academicHead,"วิชาการระดับมัธยมศึกษา"),
+  approvedSignature(APPROVAL.approved_name,APPROVAL.approved_at,S.deputy,"รองผู้อำนวยการ<br>ฝ่ายบริหารงานวิชาการ")
  ];
  return `<div class="signature-section"><div class="signatures ${hasTeacher2?"four":"three"}">${blocks.join("")}</div></div>`;
 };

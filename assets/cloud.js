@@ -37,6 +37,14 @@
   const isManagementRole=role=>MANAGEMENT_ROLES.includes(role);
   const roleLabel=role=>ROLE_LABELS[role]||role||"-";
   const statusLabel=status=>STATUS_LABELS[status]||status||"-";
+  function roleDashboardPath(role){
+    return ({
+      director:"director-dashboard.html",
+      deputy_director:"deputy-dashboard.html",
+      academic:"academic-dashboard.html"
+    })[role]||"";
+  }
+  window.cloudRoleDashboardPath=roleDashboardPath;
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
   const hget = (k,d=null) => window.hnkGet ? window.hnkGet(k,d) : d;
@@ -80,6 +88,14 @@
     if(error)throw error;
     return data?.permission||null;
   }
+  async function syncWorkflowApproval(cid){
+    const {data,error}=await sb.from("classroom_submissions")
+      .select("status,academic_approved_name,academic_approved_at,approved_name,approved_at")
+      .eq("classroom_id",cid).maybeSingle();
+    if(error)throw error;
+    hset("workflow_approval",data||{});
+  }
+
   function classroomSettings(c){
     return {
       school:c.school_name||"",office:c.office_name||"",classLevel:c.class_level||"",room:c.room||"",
@@ -98,6 +114,7 @@
     ]);
     if(cr.error)throw cr.error;if(sr.error)throw sr.error;if(mr.error)throw mr.error;
     state.classroom=cr.data;state.permission=await permissionFor(cid);
+    await syncWorkflowApproval(cid);
 
     hset("settings",classroomSettings(cr.data));
     hset("holidays",Array.isArray(cr.data.holidays)?cr.data.holidays:[]);
@@ -197,7 +214,7 @@
       <span id="cloudSyncStatus" class="cloud-sync-status ok">เชื่อมต่อ Cloud แล้ว</span></div>
       <div class="cloud-user-actions">
       ${isManagementRole(p?.role)?`<a class="btn gray" href="${rootPath()}admin.html">จัดการผู้ใช้/สิทธิ์</a>`:""}
-      ${(isManagementRole(p?.role)||p?.role==="academic")?`<a class="btn gray" href="${rootPath()}review.html">งานส่งตรวจ</a>`:""}
+      ${roleDashboardPath(p?.role)?`<a class="btn gray" href="${rootPath()}${roleDashboardPath(p?.role)}">แดชบอร์ดภาพรวม</a>`:""}
       <a class="btn gray" href="${rootPath()}classrooms.html">เปลี่ยนห้อง</a>
       <button class="btn danger cloud-allow" type="button" onclick="cloudLogout()">ออกจากระบบ</button></div>`;
     content.insertBefore(bar,content.firstChild);
@@ -460,7 +477,10 @@
         return;
       }
       const user=await getSessionUser();if(!user){location.href="login.html";return}
-      await loadProfile();showBody();
+      await loadProfile();
+      const roleDash=roleDashboardPath(state.profile.role);
+      if(roleDash && qs.get("rooms")!=="1"){location.href=roleDash;return}
+      showBody();
       document.getElementById("classroomUserName").textContent=state.profile.display_name||state.profile.email||"";
       document.getElementById("classroomUserRole").textContent=roleLabel(state.profile.role);
       if(isManagementRole(state.profile.role)){
@@ -469,7 +489,11 @@
         fillRoomDefaults();
       }
       const reviewLink=document.getElementById("reviewWorkLink");
-      if(reviewLink && (isManagementRole(state.profile.role)||state.profile.role==="academic"))reviewLink.style.display="";
+      if(reviewLink && roleDashboardPath(state.profile.role)){
+        reviewLink.href=roleDashboardPath(state.profile.role);
+        reviewLink.textContent="📊 แดชบอร์ดภาพรวม";
+        reviewLink.style.display="";
+      }
       const rooms=await listClassrooms(),box=document.getElementById("classroomList");
       box.innerHTML=rooms.length?rooms.map(roomCard).join(""):`<div class="empty-room-state">ยังไม่มีห้องเรียนที่คุณได้รับสิทธิ์${isManagementRole(state.profile.role)?"<br>สร้างห้องเรียนแรกได้จากแบบฟอร์มด้านล่าง":""}</div>`;
     }catch(e){console.error(e);fatal(e.message||String(e))}
@@ -587,7 +611,9 @@
       status:"submitted_to_academic",
       submitted_by:state.user.id,
       submitted_at:now,
-      forwarded_by:null,forwarded_at:null,approved_by:null,approved_at:null,updated_at:now
+      forwarded_by:null,forwarded_at:null,
+      academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,
+      approved_by:null,approved_at:null,approved_name:null,updated_at:now
     };
     const {error}=await sb.from("classroom_submissions").upsert(payload,{onConflict:"classroom_id"});
     if(error)return alert("ส่งไม่สำเร็จ: "+error.message);
@@ -636,7 +662,7 @@
     const role=state.profile?.role;
     if(role==="academic"){
       return `<button class="btn gray" onclick="cloudReviewSetStatus('${sub.id}','returned_by_academic')">↩ ส่งกลับครูแก้ไข</button>
-              <button class="btn primary" onclick="cloudReviewSetStatus('${sub.id}','forwarded_to_deputy')">ส่งต่อ Deputy Director →</button>`;
+              <button class="btn primary" onclick="cloudReviewSetStatus('${sub.id}','forwarded_to_deputy')">✓ อนุมัติและส่งต่อ Deputy Director →</button>`;
     }
     if(role==="deputy_director"){
       return `<button class="btn gray" onclick="cloudReviewSetStatus('${sub.id}','returned_by_deputy')">↩ ส่งกลับวิชาการ</button>
