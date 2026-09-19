@@ -532,19 +532,19 @@
     await adminReload();
   };
 
-  window.cloudAdminCreateUser=async()=>{
-    if(!isManagementRole(state.profile?.role))return alert("ไม่มีสิทธิ์สร้างบัญชี");
-    const form=document.getElementById("createUserForm"),msg=document.getElementById("createUserMessage");
+  window.cloudAdminInviteUser=async()=>{
+    if(!isManagementRole(state.profile?.role))return alert("ไม่มีสิทธิ์เชิญผู้ใช้");
+    const form=document.getElementById("inviteUserForm"),msg=document.getElementById("inviteUserMessage");
     if(!form||!msg)return;
     const v=Object.fromEntries(new FormData(form).entries());
-    if(!v.email||!v.password){msg.textContent="กรอกอีเมลและรหัสผ่านชั่วคราว";return}
-    msg.textContent="กำลังสร้างบัญชี...";
-    const {data,error}=await sb.functions.invoke("admin-create-user",{body:{
-      email:v.email,password:v.password,display_name:v.display_name||"",role:v.role||"teacher"
+    if(!v.email){msg.textContent="กรอกอีเมลก่อน";return}
+    msg.textContent="กำลังส่งคำเชิญ...";
+    const {data,error}=await sb.functions.invoke("admin-invite-user",{body:{
+      email:v.email,display_name:v.display_name||"",role:v.role||"teacher"
     }});
-    if(error){msg.textContent="สร้างบัญชีไม่สำเร็จ: "+error.message;return}
-    if(data?.error){msg.textContent="สร้างบัญชีไม่สำเร็จ: "+data.error;return}
-    msg.textContent="สร้างบัญชีเรียบร้อย";
+    if(error){msg.textContent="ส่งคำเชิญไม่สำเร็จ: "+error.message;return}
+    if(data?.error){msg.textContent="ส่งคำเชิญไม่สำเร็จ: "+data.error;return}
+    msg.textContent="ส่งคำเชิญเรียบร้อย";
     form.reset();
     await adminReload();
   };
