@@ -95,6 +95,9 @@
     if(error)throw error;
     hset("workflow_approval",data||{});
   }
+  window.cloudRefreshApprovalSignature=async function(){
+    if(state.classroom && state.classroom.id)await syncWorkflowApproval(state.classroom.id);
+  };
 
   function classroomSettings(c){
     return {
@@ -711,10 +714,9 @@
     try{
       const user=await getSessionUser();if(!user){location.href="login.html";return}
       await loadProfile();
-      if(!(isManagementRole(state.profile.role)||state.profile.role==="academic")){location.href="classrooms.html";return}
-      showBody();
-      document.getElementById("reviewRole").textContent=roleLabel(state.profile.role);
-      await renderReviewList();
+      const dash=roleDashboardPath(state.profile.role);
+      if(dash){location.href=dash;return}
+      location.href="classrooms.html?rooms=1";
     }catch(e){console.error(e);fatal(e.message||String(e))}
   };
 
