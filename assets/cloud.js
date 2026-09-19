@@ -356,9 +356,9 @@
     const msg=document.getElementById("resetMessage");
     const btn=document.getElementById("resetSubmitBtn");
 
-    if(p1.length<8){
+    if(p1.length<12 || !/[a-z]/.test(p1) || !/[A-Z]/.test(p1) || !/[0-9]/.test(p1) || !/[^A-Za-z0-9]/.test(p1)){
       msg.className="login-message";
-      msg.textContent="รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร";
+      msg.textContent="รหัสผ่านต้องมีอย่างน้อย 12 ตัว และมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์";
       return;
     }
     if(p1!==p2){
