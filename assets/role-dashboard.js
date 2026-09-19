@@ -56,10 +56,10 @@
   }
   function latestComment(subId){for(var i=0;i<state.comments.length;i++)if(state.comments[i].submission_id===subId)return state.comments[i];return null}
   function archivedFor(classroomId,ym){return state.archives.some(function(a){return a.classroom_id===classroomId&&monthKey(a.report_month)===ym})}
-  function deliveryText(sub,ym){
+  function deliveryText(sub,ym,room){
     var due=dueDate(ym),deadline=new Date(due+"T23:59:59");
     if(sub&&sub.submitted_at)return new Date(sub.submitted_at)<=deadline?"ส่งตรงเวลา":"ส่งล่าช้า";
-    if(!monthReady(ym,state.rooms.filter(function(r){return periodKey(r)===state.period})))return "ยังไม่ถึงรอบส่ง";
+    if(room&&!monthReady(ym,[room]))return "ยังไม่ถึงรอบส่ง";
     return new Date()>deadline?"เกินกำหนด":"ยังไม่ส่ง";
   }
 
@@ -120,7 +120,7 @@
 
   function roomCard(room,sub){
     var pct=stagePercent(sub?sub.status:null),comment=sub?latestComment(sub.id):null,teacher=[room.teacher1,room.teacher2].filter(Boolean).join(" / ")||"-";
-    var delivery=deliveryText(sub,state.reportMonth),archived=archivedFor(room.id,state.reportMonth);
+    var delivery=deliveryText(sub,state.reportMonth,room),archived=archivedFor(room.id,state.reportMonth);
     var html='<article class="role-room-card"><div class="role-room-head"><div><h3>'+esc(roomLabel(room))+'</h3><div class="role-room-teacher">ครูประจำชั้น: '+esc(teacher)+'</div></div>'+
       '<span class="role-status status-'+esc(sub?sub.status:"draft")+'">'+esc(statusLabel(sub?sub.status:null))+'</span></div>'+
       '<div class="role-room-progress-line"><div class="role-progress-track"><div class="role-progress-fill" style="width:'+pct+'%"></div></div><strong>'+pct+'%</strong></div>'+
@@ -143,8 +143,8 @@
     var waitAcademic=rows.filter(function(x){return x.sub&&(x.sub.status==="submitted_to_academic"||x.sub.status==="returned_by_deputy")}).length;
     var waitDeputy=rows.filter(function(x){return x.sub&&x.sub.status==="forwarded_to_deputy"}).length;
     var approved=rows.filter(function(x){return x.sub&&x.sub.status==="approved"}).length;
-    var onTime=rows.filter(function(x){return x.sub&&deliveryText(x.sub,state.reportMonth)==="ส่งตรงเวลา"}).length;
-    var overdue=rows.filter(function(x){var t=deliveryText(x.sub,state.reportMonth);return t==="เกินกำหนด"||t==="ส่งล่าช้า"}).length;
+    var onTime=rows.filter(function(x){return x.sub&&deliveryText(x.sub,state.reportMonth,x.room)==="ส่งตรงเวลา"}).length;
+    var overdue=rows.filter(function(x){var t=deliveryText(x.sub,state.reportMonth,x.room);return t==="เกินกำหนด"||t==="ส่งล่าช้า"}).length;
 
     document.getElementById("roleDashboardTitle").textContent=ROLE_LABELS[state.profile.role]+" Dashboard";
     document.getElementById("roleDashboardUser").textContent=state.profile.display_name||state.profile.email||"";
