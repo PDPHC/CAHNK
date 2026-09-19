@@ -98,8 +98,9 @@
   }
   function reportDueDate(ym){
     const m=String(ym||"").match(/^(\d{4})-(\d{2})$/);if(!m)return "";
-    const d=new Date(Number(m[1]),Number(m[2]),5);
-    return d.toISOString().slice(0,10);
+    let y=Number(m[1]),mon=Number(m[2])+1;
+    if(mon===13){mon=1;y++}
+    return y+"-"+String(mon).padStart(2,"0")+"-05";
   }
   function reportMonthsForClassroom(c,readyOnly=false){
     if(!c?.open_date||!c?.close_date)return [];
@@ -257,7 +258,7 @@
   }
   function viewerMode(){
     if(state.permission!=="viewer")return;
-    document.querySelectorAll("input,select,textarea").forEach(x=>x.disabled=true);
+    document.querySelectorAll("input,select,textarea").forEach(x=>{if(!x.classList.contains("cloud-allow"))x.disabled=true});
     document.querySelectorAll("button").forEach(btn=>{
       const code=btn.getAttribute("onclick")||"";
       if(/openPrint|openClassroomBook|cloudLogout/.test(code))return;
@@ -288,6 +289,8 @@
       if(!active||!rooms.some(r=>r.id===active)){go("classrooms.html");return}
       await loadClassroom(active);renderUserBar();showBody();
       if(typeof initFn==="function")await initFn();
+      const preferredMonth=sessionStorage.getItem("hnk_report_month");
+      if(preferredMonth)state.reportMonth=preferredMonth;
       await renderCurrentSubmission().catch(console.error);
       viewerMode();installFlushNavigation();
     }catch(e){console.error(e);fatal(e.message||String(e))}
@@ -655,14 +658,14 @@
         </div>
         <div class="workflow-month-picker">
           <label>เดือนที่รายงาน</label>
-          <select onchange="cloudChangeReportMonth(this.value)">
+          <select class="cloud-allow" onchange="cloudChangeReportMonth(this.value)">
             ${choices.map(m=>`<option value="${m}" ${m===ym?"selected":""}>${esc(reportMonthLabel(m))}</option>`).join("")}
           </select>
         </div>
       </div>
       <div class="workflow-month-summary">
         <div><span>สถานะ</span><b>${esc(statusLabel(sub?.status||"draft"))}</b></div>
-        <div><span>กำหนดส่ง</span><b>5 ${esc(reportMonthLabel(reportMonthValue(due)).replace(/^\S+\s/,""))}</b></div>
+        <div><span>กำหนดส่ง</span><b>5 ${esc(reportMonthLabel(reportMonthValue(due)))}</b></div>
         <div><span>การส่ง</span><b class="${late||submittedLate?"workflow-late":"workflow-ok"}">${sub?.submitted_at?(submittedLate?"ส่งล่าช้า":"ส่งตรงเวลา"):(late?"เกินกำหนด":"ยังไม่ส่ง")}</b></div>
       </div>
       ${sub?.status==="approved"?`<div class="notice workflow-approved-note">✓ เดือนนี้ผ่านการอนุมัติขั้นสุดท้ายแล้ว และบันทึกเข้าคลังฐานข้อมูลปีการศึกษาเรียบร้อย</div>`:""}
@@ -839,13 +842,14 @@
     const img=await new Promise((resolve,reject)=>{
       const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error("เปิดรูปไม่สำเร็จ"));i.src=source;
     });
-    const maxW=900,maxH=320,scale=Math.min(1,maxW/img.width,maxH/img.height);
+    const maxW=600,maxH=220,scale=Math.min(1,maxW/img.width,maxH/img.height);
     const canvas=document.createElement("canvas");
     canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
     const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
     let data=canvas.toDataURL("image/png");
-    if(data.length>1450000)data=canvas.toDataURL("image/jpeg",0.88);
-    if(data.length>1450000)throw new Error("ไฟล์ลายเซ็นยังมีขนาดใหญ่เกินไป กรุณาครอปภาพให้เหลือเฉพาะลายเซ็น");
+    if(data.length>300000)data=canvas.toDataURL("image/webp",0.88);
+    if(data.length>600000)data=canvas.toDataURL("image/jpeg",0.84);
+    if(data.length>900000)throw new Error("ไฟล์ลายเซ็นยังมีขนาดใหญ่เกินไป กรุณาครอปภาพให้เหลือเฉพาะลายเซ็น");
     return data;
   }
 
