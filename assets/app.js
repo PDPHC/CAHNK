@@ -153,7 +153,7 @@ function editHoliday(id,k,v){const a=holidays();const x=a.find(h=>h.uid===id);if
 function removeHoliday(id){set("holidays",holidays().filter(h=>h.uid!==id));window.cloudSaveSettings?.();renderHolidayList();renderTermSummary()}
 function restoreHolidayPreset(){if(!confirm("คืนค่ารายการวันหยุด พ.ศ. 2569 ตามชุดเริ่มต้น?"))return;set("holidays",THAI_HOLIDAY_2026.map(([date,name])=>({uid:uid(),date,name,type:"ราชการ"})));window.cloudSaveSettings?.();renderHolidayList();renderTermSummary()}
 function fillMonth(id){const el=$(id);if(el&&!el.value){const ms=monthsInTerm();el.value=ms[0]||new Date().toISOString().slice(0,7)}}
-function openPrint(module,ymSelector,all=false){let extra=all?"&all=1":"";if(ymSelector&&!all){const v=$(ymSelector).value;extra+=`&month=${encodeURIComponent(v)}`}window.open(`../print/form.html?module=${encodeURIComponent(module)}${extra}`,"_blank")}
+async function openPrint(module,ymSelector,all=false){let extra=all?"&all=1":"";if(ymSelector&&!all){const v=$(ymSelector).value;extra+=`&month=${encodeURIComponent(v)}`}try{if(window.cloudRefreshApprovalSignature)await window.cloudRefreshApprovalSignature()}catch(e){console.error(e)}window.open(`../print/form.html?module=${encodeURIComponent(module)}${extra}`,"_blank")}
 function moduleStore(k){return get("module_"+k,{})}
 function saveModule(k,v){set("module_"+k,v);window.cloudQueueModuleSave?.(k,v)}
 function rosterRows(){return students().map((s,i)=>({...s,no:i+1}))}
@@ -1007,7 +1007,8 @@ function clearAllCoreModuleData(){
  alert("ล้างข้อมูลที่กรอกในแบบบันทึกทั้ง 7 แบบเรียบร้อยแล้ว");
 }
 
-function openClassroomBook(){
+async function openClassroomBook(){
+ try{if(window.cloudRefreshApprovalSignature)await window.cloudRefreshApprovalSignature()}catch(e){console.error(e)}
  window.open("print/form.html?module=book&all=1","_blank");
 }
 function renderDashboardProgress(){
