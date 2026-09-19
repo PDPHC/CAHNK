@@ -45,3 +45,9 @@
 .role-month-banner strong{font-size:18px}.role-signature-notice{margin-bottom:12px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px}
 @media(max-width:1100px){.role-summary-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:800px){.role-summary-grid{grid-template-columns:repeat(2,1fr)}}
+
+.archive-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.archive-filters select{min-width:170px}
+.archive-card{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:10px}
+.archive-card h3{margin:0 0 5px}.archive-meta{display:flex;gap:8px 16px;flex-wrap:wrap;margin-top:9px;color:#64748b;font-size:13px}
+@media(max-width:760px){.archive-card{flex-direction:column}.archive-filters select{width:100%;min-width:0}}
