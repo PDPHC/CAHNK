@@ -3,18 +3,29 @@
   const message=document.getElementById("bookMessage"),sb=window.cloudClient;
   try{
     if(!sb)throw new Error("เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่");
-    const id=new URLSearchParams(location.search).get("submission");
-    if(!id)throw new Error("ไม่พบรายการส่งตรวจ กรุณาเปิดเล่มจากรายการงานอีกครั้ง");
+    const params=new URLSearchParams(location.search),id=params.get("submission"),archiveId=params.get("archive");
+    if(!id&&!archiveId)throw new Error("ไม่พบรายการส่งตรวจ กรุณาเปิดเล่มจากรายการงานอีกครั้ง");
     const auth=await sb.auth.getSession();if(auth.error)throw auth.error;
     if(!auth.data.session)throw new Error("กรุณาเข้าสู่ระบบ แล้วเปิดเล่มจากหน้ารายการงานอีกครั้ง");
     const profile=await sb.from("profiles").select("role").eq("id",auth.data.session.user.id).single();
     if(profile.error)throw profile.error;
     document.getElementById("backLink").href=(window.cloudRoleDashboardPath(profile.data.role)||"classrooms.html");
-    const result=await sb.from("classroom_submissions").select("*").eq("id",id).single();
-    if(result.error)throw result.error;
-    const sub=result.data,ym=String(sub.report_month).slice(0,7);
+    let sub,archivedSnapshot=null;
+    if(archiveId){
+      const archived=await sb.from("classroom_monthly_archives").select("snapshot").eq("id",archiveId).single();
+      if(archived.error)throw archived.error;
+      archivedSnapshot=archived.data.snapshot;sub=archivedSnapshot.submission;
+      document.getElementById("backLink").href="archive.html";
+      document.getElementById("backLink").textContent="← กลับคลังเอกสาร";
+    }else{
+      const result=await sb.from("classroom_submissions").select("*").eq("id",id).single();
+      if(result.error)throw result.error;sub=result.data;
+    }
+    const ym=String(sub.report_month).slice(0,7);
     let c,students,modules,approval=sub;
-    if(sub.status==="approved"){
+    if(archivedSnapshot){
+      c=archivedSnapshot.classroom;students=archivedSnapshot.students;modules=archivedSnapshot.modules;approval=archivedSnapshot.submission;
+    }else if(sub.status==="approved"){
       const a=await sb.from("classroom_monthly_archives").select("snapshot").eq("submission_id",id).single();
       if(a.error)throw new Error("ไม่สามารถเปิดฉบับอนุมัติจากคลังได้ กรุณาลองใหม่");
       const snap=a.data.snapshot;c=snap.classroom;students=snap.students;modules=snap.modules;approval=snap.submission;
@@ -39,6 +50,11 @@
     await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="print/print.js";script.onload=resolve;script.onerror=()=>reject(new Error("โหลดแบบพิมพ์ไม่สำเร็จ"));document.body.appendChild(script)});
     if(!document.getElementById("sheet").textContent.trim())throw new Error("สร้างเล่มไม่สำเร็จ กรุณาลองใหม่");
     message.hidden=true;document.getElementById("printBook").disabled=false;
+    if(params.get("print")==="1"){
+      if(document.fonts)await document.fonts.ready;
+      await Promise.all(Array.from(document.querySelectorAll("#sheet img")).map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()));
+      window.print();
+    }
   }catch(e){document.getElementById("sheet").textContent="";message.textContent=e.message||String(e);document.getElementById("bookTitle").textContent="เปิดเล่มไม่สำเร็จ";}
 })();
 

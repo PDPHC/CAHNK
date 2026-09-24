@@ -1341,3 +1341,110 @@ body.cloud-protected{visibility:hidden}
   background:#e2e8f0;
 }
 .login-divider span{white-space:nowrap}
+
+
+/* School UI: purple and white. Screen-only to preserve official printed forms. */
+@media screen {
+ :root{--bg:#f7f5fb;--card:#fff;--line:#e8e1f0;--text:#292139;--muted:#756b84;--primary:#6f35ad;--primary2:#8551bf;--danger:#b42342;--ok:#187452}
+ body{background:radial-gradient(ellipse at top right,#eee6fa 0,transparent 45%),#f7f5fb;color:var(--text);font-family:Tahoma,"Sarabun",sans-serif;font-size:14px;line-height:1.65}
+ h1,h2,h3{color:#38224e;letter-spacing:0;line-height:1.45}h1{font-size:26px;font-weight:700}
+ .sub{color:var(--muted);font-size:13px;line-height:1.7}
+ .content{padding:30px;max-width:1680px;width:100%;margin:auto}
+ .sidebar{background:linear-gradient(175deg,#48216c,#612f91 70%,#743ca4);padding:28px 18px;color:#fff}
+ .brand{font-family:Tahoma,sans-serif;font-size:18px;line-height:1.7;padding:0 10px 22px;border-bottom:1px solid #ffffff26;margin-bottom:22px}
+ .brand small{font-size:10px;letter-spacing:.7px;color:#e2ceee}
+ .nav a{padding:12px 14px;margin:5px 0;font-size:13px;color:#eee1f8;border:1px solid transparent;border-radius:12px;transition:background .18s}
+ .nav a:hover{background:#ffffff16}.nav a.active{background:#fff;color:#602b8e;box-shadow:0 5px 16px #28123820;font-weight:700}
+ .card,.panel{border:1px solid var(--line);border-radius:18px;box-shadow:0 5px 22px #40215e06;padding:22px}
+ .module:hover{border-color:#b593d2;box-shadow:0 8px 24px #50207a10}
+ .module h3{font-size:16px}.module p{font-size:13px}.module .icon{background:#f3ecfa;border-radius:14px;width:52px;height:52px;display:grid;place-items:center}
+ .stats{gap:16px}.stat{position:relative;border-top:3px solid #9560bd}.stat strong{font-size:30px;color:#643098}.stat span{font-size:13px;color:#786886}
+ .btn{font-family:inherit;font-size:13px;line-height:1.5;padding:11px 16px;border-radius:10px;min-height:42px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,box-shadow .15s}
+ .btn.primary{background:#743bad;color:white;box-shadow:0 3px 8px #6f35ad20}.btn.primary:hover{background:#5e288f;box-shadow:0 5px 12px #6f35ad30}
+ .btn.gray{background:#fff;border-color:#dfd4e9;color:#624378}.btn.gray:hover{background:#f6f0fb;border-color:#b89ad0}
+ .btn.danger{background:#fff1f3;color:#a52b49;border-color:#f2d2dc}
+ button:disabled{opacity:.5;cursor:not-allowed}
+ input:not([type=checkbox]):not([type=radio]),select,textarea{border-color:#dcd2e5;border-radius:10px;font-size:14px;color:#33283f;padding:10px 12px;background:#fff}
+ input:focus,select:focus,textarea:focus{outline:3px solid #e9d9f7;border-color:#9d6cc3}
+ input[type=checkbox],input[type=radio]{accent-color:#743bad}
+ a:focus-visible,button:focus-visible{outline:3px solid #b28bce;outline-offset:3px}
+ .field label{color:#5e4a70;font-size:13px;margin-bottom:7px}
+ .notice{background:#f3edfa;border-color:#8850b6;color:#553274;font-size:13px;border-radius:12px;padding:15px 18px}
+ .badge{background:#eee3f8;color:#61318a}
+ .cloud-userbar{border-color:#e0d1ec;background:#fff;border-radius:14px}
+ .cloud-room,.cloud-role{background:#f0e7f8;color:#64398c}
+ .table-wrap{border-color:#e6dcec;border-radius:14px}
+ table.data th{background:#f6f1fa;color:#5c3b74;font-size:13px;padding:12px}
+ table.data td{font-size:13px;padding:11px;border-color:#eee6f4}
+ .matrix input,.matrix select{padding:4px 2px;border-radius:0;font-size:13px}
+ .matrix th{background:#f4eef8}
+ .login-shell{min-height:100vh;background:radial-gradient(circle at 15% 15%,#ddc9ef 0,transparent 35%),radial-gradient(circle at 90% 85%,#e8dbf4 0,transparent 35%),#f8f5fc;display:grid;place-items:center;padding:30px 16px}
+ .login-card{width:min(100%,460px);padding:38px;border:1px solid #e6d9ef;border-radius:26px;box-shadow:0 22px 70px #54227b15;background:#fff}
+ .login-card h1{font-size:25px;text-align:center}.login-card>.sub{text-align:center;margin:8px 0 25px}
+ .login-logo{width:72px;height:72px;border-radius:22px;background:#f0e4fa;color:#7136a6;display:grid;place-items:center;margin:0 auto 20px;font-size:32px}
+ .login-card .field{margin:15px 0}.login-card .btn.primary{width:100%;margin-top:12px}
+ .google-login-btn{font-family:inherit;font-size:14px;border:1px solid #ded3e8;border-radius:11px;min-height:46px;color:#4f3b61;background:#fff}
+ .login-link-btn{color:#75429d;font-size:13px}.login-divider{color:#9c8ca9}
+ body .role-dashboard-page{max-width:1440px;padding:30px}
+ body .role-dashboard-head{padding:26px 28px;border:1px solid #e3d6ed;border-radius:22px;background:linear-gradient(110deg,#fff,#f5eefb);box-shadow:0 8px 28px #54287906;margin-bottom:22px}
+ body .role-dashboard-head h1{font-size:27px;color:#512776}
+ body .role-dashboard-sub{font-size:13px;color:#7b668d}
+ body .role-dashboard-toolbar{gap:9px}body .role-dashboard-toolbar select{min-width:190px}
+ body .role-summary-grid{gap:14px;margin:20px 0}
+ body .role-summary-card{border:1px solid #e8dff0;border-radius:17px;padding:21px 23px;box-shadow:0 4px 16px #57227505}
+ body .role-summary-card strong{font-size:30px;color:#6f36a3;line-height:1.3}body .role-summary-card span{font-size:13px;color:#7a6889}
+ body .role-month-banner{background:#eee3f8;border:1px solid #e3d0f1;border-radius:14px;padding:16px 22px;color:#643988}
+ body .role-month-banner strong{font-size:18px}
+ body .role-overview-panel{border-color:#e7ddf0;border-radius:17px;padding:22px}
+ body .role-overview-panel h2{font-size:16px;color:#67447d}
+ body .role-room-grid{gap:18px}
+ body .role-room-card{padding:24px;border-color:#e5d9ee;border-radius:20px;box-shadow:0 5px 18px #48216607}
+ body .role-room-head h3{font-size:22px;color:#4b2569}
+ body .role-room-teacher{font-size:13px;line-height:1.8;color:#7a6987}
+ body .role-status{font-size:11px;line-height:1.7;padding:7px 12px;max-width:55%;text-align:center}
+ body .status-submitted_to_academic,body .status-forwarded_to_deputy{background:#f0e5fa;color:#71379b}
+ body .status-approved{background:#e9f5ef;color:#226c4d}
+ body .status-returned_by_academic,body .status-returned_by_deputy{background:#fff1e1;color:#915714}
+ body .role-progress-track{background:#eee6f5;height:7px}body .role-progress-fill{background:linear-gradient(90deg,#9b70c4,#68369b)}
+ body .role-room-meta{font-size:12px;line-height:1.9;color:#82718f}
+ body .role-latest-comment{background:#f8f3fc;border-left:3px solid #b590d2;padding:13px;border-radius:9px;font-size:13px}
+ body .role-action-box{border-top-color:#eee3f5;padding-top:18px;margin-top:18px}body .role-action-box p{color:#7a618b;font-size:12px}
+ body .role-action-buttons{gap:9px;margin-top:12px}
+ body .role-room-tools{display:inline-flex;margin:14px 8px 0 0}
+ body #academicFilters{background:#fff;padding:19px 22px;border:1px solid #e6daee;border-radius:16px}
+ body #academicFilters label{font-size:12px;font-weight:700;color:#79588e;flex:1;min-width:200px}body #academicFilters .sub{width:100%;font-size:12px}
+ body .archive-card{border-color:#e7dded;border-radius:18px;padding:23px}
+ body .role-signature-notice{font-size:13px;padding:15px;border-radius:12px}
+ body .admin-dashboard-nav{padding:14px 24px;background:#f0e5fa;border-bottom:1px solid #dcc7ed;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:#593476}
+ body .admin-dashboard-nav select{width:auto;min-width:240px}body .admin-dashboard-nav span{font-size:12px;color:#80638f}
+ dialog::backdrop{background:#21122b65;backdrop-filter:blur(3px)}
+ dialog{color:#372644;box-shadow:0 20px 80px #36174930}dialog h2{font-size:21px}dialog a{color:#7835ad;text-decoration:underline;font-weight:700}
+ @media(max-width:900px){.content{padding:20px}body .role-dashboard-page{padding:18px}body .role-dashboard-head{padding:22px}body .role-room-grid{grid-template-columns:1fr}}
+ @media(max-width:600px){body{font-size:13px}.content{padding:14px}.login-card{padding:28px 22px}body .role-dashboard-page{padding:12px}body .role-dashboard-head{padding:20px}body .role-summary-card{padding:16px}body .role-summary-card strong{font-size:25px}body .role-room-card{padding:18px}body .role-room-head{flex-direction:column}body .role-status{max-width:100%}body .role-action-buttons .btn{flex:1}body .admin-dashboard-nav{padding:12px}body .admin-dashboard-nav select{width:100%;min-width:0}.sidebar{padding:18px}.brand{margin-bottom:12px;padding-bottom:12px}}
+ @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+}
+
+
+
+@media screen{
+ .director-charts{display:grid;grid-template-columns:1fr 1.25fr;gap:18px;margin:20px 0}
+ .director-chart-card{background:#fff;border:1px solid #e7dcef;border-radius:20px;padding:24px;min-width:0}
+ .director-chart-card h2{font-size:18px;margin:0}.director-chart-card p{margin-top:5px}
+ .director-status-chart{display:flex;align-items:center;gap:24px;margin-top:22px;flex-wrap:wrap}
+ .director-donut{width:175px;height:175px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+ .director-donut>div{width:125px;height:125px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column}
+ .director-donut strong{font-size:34px;color:#633590;line-height:1.3}.director-donut span{font-size:12px;color:#887294}
+ .director-chart-legend{padding:0;margin:0;list-style:none;flex:1;min-width:170px}
+ .director-chart-legend li{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:12px}.director-chart-legend b{margin-left:auto;color:#593078}
+ .director-chart-legend i,.director-chart-key i{display:inline-block;width:10px;height:10px;border-radius:3px;flex-shrink:0}
+ .director-chart-key{display:flex;gap:18px;font-size:12px;color:#80648e;margin:18px 0}.director-chart-key i{margin-right:6px}
+ .director-bar-row{display:grid;grid-template-columns:102px 1fr 95px;gap:12px;align-items:center;margin:14px 0}
+ .director-bar-label{font-size:12px;color:#71577f}.director-bar-count{font-size:11px;color:#826a90;line-height:1.7}
+ .director-bar-pair{display:grid;gap:5px}.director-bar-track{background:#f4eff8;height:10px;border-radius:5px;overflow:hidden}
+ .director-bar{height:100%;border-radius:5px}.director-bar.sent,.director-chart-key .sent{background:#b98bd6}.director-bar.approved,.director-chart-key .approved{background:#62328f}
+ @media(max-width:1000px){.director-charts{grid-template-columns:1fr}}
+ @media(max-width:480px){.director-chart-card{padding:18px}.director-status-chart{justify-content:center;gap:16px}.director-bar-row{grid-template-columns:80px 1fr 74px;gap:7px}.director-bar-label{font-size:11px}}
+}
+
+
+

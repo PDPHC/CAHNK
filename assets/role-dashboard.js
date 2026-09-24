@@ -101,7 +101,7 @@
 
   function actionArea(room,sub){
     if(!sub)return "";
-    var role=state.profile.role,id=esc(sub.id);
+    var role=state.profile.role==="admin"&&state.requiredRole==="deputy_director"?"deputy_director":state.profile.role,id=esc(sub.id);
     if(role==="academic"&&sub.status==="forwarded_to_deputy"){
       return '<div class="role-action-box"><p>ส่งต่อรองวิชาการแล้ว สามารถดึงกลับได้ก่อนรองฯ อนุมัติ</p><button class="btn gray" onclick="roleRecallSubmission(\''+id+'\')">↩ ยกเลิกการส่งต่อรองวิชาการ</button></div>';
     }
@@ -136,10 +136,26 @@
     return html;
   }
 
+  function renderDirectorCharts(rooms,rows){
+    var host=document.getElementById("directorCharts");if(!host)return;
+    var categories=[{key:"draft",label:"ยังไม่ส่ง",color:"#d9cce5"},{key:"submitted_to_academic",label:"รอวิชาการตรวจ",color:"#b68bd5"},{key:"returned_by_academic",label:"ครูแก้ไข",color:"#d79851"},{key:"forwarded_to_deputy",label:"รอรองวิชาการ",color:"#8650b5"},{key:"returned_by_deputy",label:"วิชาการแก้ไข",color:"#b66696"},{key:"approved",label:"อนุมัติแล้ว",color:"#4d2671"}];
+    var total=rows.length,offset=0,segments=[];
+    categories.forEach(function(x){x.count=rows.filter(function(r){return (r.sub?r.sub.status:"draft")===x.key}).length;var end=offset+(total?100*x.count/total:0);if(x.count)segments.push(x.color+" "+offset+"% "+end+"%");offset=end});
+    var months=monthsForRooms(rooms);
+    var bars=months.map(function(m){
+      var applicable=rooms.filter(function(r){return monthsForRoom(r).includes(m)}),n=applicable.length;
+      var sent=applicable.filter(function(r){var s=submissionFor(r.id,m);return s&&s.submitted_at}).length;
+      var approved=applicable.filter(function(r){var s=submissionFor(r.id,m);return s&&s.status==="approved"}).length;
+      return '<div class="director-bar-row"><div class="director-bar-label">'+esc(monthLabel(m))+'</div><div class="director-bar-pair"><div class="director-bar-track"><div class="director-bar sent" style="width:'+percent(sent,n)+'%"></div></div><div class="director-bar-track"><div class="director-bar approved" style="width:'+percent(approved,n)+'%"></div></div></div><div class="director-bar-count">ส่ง '+sent+'/'+n+'<br>อนุมัติ '+approved+'/'+n+'</div></div>';
+    }).join("");
+    host.innerHTML='<section class="director-chart-card"><h2>สถานะงานประจำเดือน</h2><p class="sub">'+esc(monthLabel(state.reportMonth))+'</p><div class="director-status-chart"><div class="director-donut" role="img" aria-label="สถานะงาน '+total+' ห้อง ดูรายละเอียดในรายการข้างกราฟ" style="background:'+(segments.length?'conic-gradient('+segments.join(',')+')':'#eee6f5')+'"><div><strong>'+total+'</strong><span>ห้องเรียน</span></div></div><ul class="director-chart-legend">'+categories.map(function(x){return '<li><i style="background:'+x.color+'"></i><span>'+x.label+'</span><b>'+x.count+'</b></li>'}).join("")+'</ul></div>'+(total?'':'<p class="sub">ยังไม่มีห้องเรียนในภาคเรียนนี้</p>')+'</section><section class="director-chart-card"><h2>การส่งและอนุมัติรายเดือน</h2><p class="sub">'+esc(periodLabel(state.period))+' • สัดส่วนเทียบจำนวนห้องของแต่ละเดือน</p><div class="director-chart-key"><span><i class="sent"></i>ส่งแล้ว</span><span><i class="approved"></i>อนุมัติแล้ว</span></div>'+(bars||'<p class="sub">ยังไม่มีข้อมูลเดือนสำหรับแสดงกราฟ</p>')+'</section>';
+  }
+
   function render(){
     var rooms=state.rooms.filter(function(r){return periodKey(r)===state.period});
     var rows=rooms.map(function(r){return {room:r,sub:submissionFor(r.id,state.reportMonth)}});
     var total=rows.length,sent=rows.filter(function(x){return !!(x.sub&&x.sub.submitted_at)}).length;
+    renderDirectorCharts(rooms,rows);
     var notSent=rows.filter(function(x){return !(x.sub&&x.sub.submitted_at)});
     var waitAcademic=rows.filter(function(x){return x.sub&&(x.sub.status==="submitted_to_academic"||x.sub.status==="returned_by_deputy")}).length;
     var waitDeputy=rows.filter(function(x){return x.sub&&x.sub.status==="forwarded_to_deputy"}).length;
@@ -174,7 +190,7 @@
 
     var sig=document.getElementById("signatureNotice");
     if(sig){
-      if((state.profile.role==="academic"||state.profile.role==="deputy_director")&&!state.signatureReady){
+      if((state.profile.role==="academic"||state.profile.role==="deputy_director"||(state.profile.role==="admin"&&state.requiredRole==="deputy_director"))&&!state.signatureReady){
         sig.style.display="";sig.innerHTML='⚠ ยังไม่มีลายเซ็นในระบบ — <a href="signature.html">อัปโหลดลายเซ็นก่อนอนุมัติ</a>';
       }else sig.style.display="none";
     }
