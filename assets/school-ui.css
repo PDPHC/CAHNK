@@ -1,0 +1,61 @@
+/* School workspace: purple navigation, white work surfaces, compact actions. */
+@media screen {
+ :root{--school-purple:#582b95;--school-ink:#2e2540;--school-muted:#776d86;--school-line:#e8e3ef}
+ body{background:#f5f4f8!important;color:var(--school-ink);font-size:15px}
+ h1,h2,h3{color:var(--school-ink);line-height:1.5}p,.sub{line-height:1.75}
+ .btn{border-radius:9px!important;min-height:42px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600!important;box-shadow:none!important}
+ .btn.primary{background:#6433a5!important;border-color:#6433a5!important;color:#fff!important}
+ .btn.primary:hover{background:#4d2388!important}.btn.gray{background:white!important;border:1px solid #ded6e9!important;color:#5c4279!important}
+ .btn.danger{background:#fff4f4!important;border:1px solid #f3d5da!important;color:#ab344e!important}
+ input,select,textarea{border-radius:9px!important;border:1px solid #ddd5e8!important;background:#fff!important;color:#392b4b;min-height:42px;font:inherit}
+ textarea{padding:12px!important;line-height:1.7}
+ .role-dashboard-page{max-width:1440px;padding:24px 36px 56px}
+ .role-dashboard-head{display:block;padding:28px 30px!important;border:0!important;border-radius:18px!important;background:linear-gradient(115deg,#442074,#63339f 70%,#794eae)!important;box-shadow:0 10px 25px #38225b12!important;margin-bottom:22px}
+ .role-dashboard-head>div:first-child:before{content:'ระบบธุรการชั้นเรียน';display:block;font-size:12px;font-weight:600;letter-spacing:.8px;color:#e1cafa;margin-bottom:8px}
+ .role-dashboard-head h1{color:white!important;font-size:29px!important;font-weight:700;margin:0 0 7px}
+ .role-dashboard-sub{color:#eee2fb!important;font-size:13px}
+ .role-dashboard-toolbar{display:flex!important;gap:9px;padding-top:22px;margin-top:20px;border-top:1px solid #ffffff26;width:100%;box-sizing:border-box}
+ .role-dashboard-toolbar select{flex:0 1 260px!important;min-width:240px!important;color:#3d255d!important}
+ .role-dashboard-toolbar .btn.gray{background:#ffffff12!important;border-color:#ffffff44!important;color:#fff!important}
+ .role-dashboard-toolbar .btn.gray:hover{background:#ffffff24!important}.role-dashboard-toolbar .btn.danger{background:transparent!important;border-color:#ffffff35!important;color:#f5d6e5!important}
+ .role-month-banner{background:white!important;border:1px solid var(--school-line)!important;border-radius:10px!important;padding:14px 18px!important;margin:0 0 18px!important;border-left:4px solid #8958bc!important}
+ .role-month-banner strong{color:#582b95}.role-month-banner .sub{color:#82738c}
+ .role-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 22px}
+ .role-summary-card{position:relative;border-radius:12px!important;border:1px solid var(--school-line)!important;padding:18px 20px!important;background:#fff!important;box-shadow:none!important;display:flex;flex-direction:column-reverse;gap:10px}
+ .role-summary-card strong{font-size:30px!important;color:#513079!important;line-height:1.1}.role-summary-card span{font-size:13px!important;color:#7b6c88!important}
+ .role-summary-card:nth-child(5){border-top:3px solid #9661cb!important}.role-summary-card:nth-child(6){border-top:3px solid #68ae91!important}.role-summary-card:nth-child(8){border-top:3px solid #dca35f!important}
+ .role-overview-panel{border-radius:12px!important;border:1px solid var(--school-line)!important;padding:16px 20px!important;box-shadow:none!important;background:#fff!important}
+ .role-overview-panel h2{font-size:15px!important;margin-bottom:8px}.all-sent{font-size:13px;font-weight:500}
+ .job-toolbar,#academicFilters{background:white;border:1px solid var(--school-line);border-radius:12px;padding:20px!important;margin:24px 0 0!important;gap:14px!important}
+ .job-toolbar h2{font-size:20px}.job-toolbar .sub{font-size:12px}.job-toolbar label{font-size:12px}
+ .workflow-tabs{margin:0 0 20px;padding:12px 16px;background:white;border:1px solid var(--school-line);border-top:0;border-radius:0 0 12px 12px;gap:6px}
+ .workflow-tab{border:0;border-radius:8px;padding:10px 16px;background:transparent;color:#7b6988;font-size:14px}
+ .workflow-tab[aria-pressed=true]{background:#ede4f8;color:#5b2e93}.workflow-tab[aria-pressed=true] b{background:#fff;color:#653e91}.workflow-tab b{font-size:12px}
+ .role-room-grid{gap:18px;align-items:start}.role-room-card{border:1px solid var(--school-line)!important;border-radius:14px!important;padding:24px!important;box-shadow:0 3px 12px #31213d04!important;border-top:4px solid #9d78c4!important}
+ .role-room-card:has(.status-approved){border-top-color:#73ac92!important}.role-room-card:has(.status-returned_by_academic),.role-room-card:has(.status-returned_by_deputy){border-top-color:#dba461!important}
+ .role-room-card h3{font-size:22px!important;color:#463158!important}.role-room-teacher{font-size:13px;line-height:1.8;margin-top:6px}.role-status{border-radius:7px;padding:7px 10px;font-size:11px;flex-shrink:0;max-width:160px;line-height:1.6}
+ .role-room-progress-line{margin:20px 0 12px}.role-progress-track{height:5px;background:#f0eaf5}.role-progress-fill{background:#9670be!important}.role-room-progress-line>strong{font-size:13px;color:#9072ab}
+ .role-room-meta{line-height:1.8;gap:5px 14px}.room-month-label{display:inline-block;padding:5px 10px;background:#f4f0f8;color:#79618c;font-size:12px;margin:12px 0}
+ .role-room-tools{margin-top:8px;gap:7px}.role-room-tools .btn{font-size:13px;padding:9px 13px}.role-action-box{border:0!important;border-top:1px solid #ece5f1!important;border-radius:0!important;background:transparent!important;padding:18px 0 0!important;margin-top:18px}
+ .role-action-buttons{margin-top:12px}.role-action-buttons .btn{font-size:13px}
+ .director-chart-card{border-radius:14px!important;border:1px solid var(--school-line)!important;box-shadow:none!important}.director-chart-card h2{font-size:19px!important}
+ .app{gap:0}.sidebar{background:#442273!important;border:0!important;color:white!important;border-radius:0!important;box-shadow:none!important}
+ .sidebar .brand{color:white!important;border-bottom:1px solid #ffffff25;padding-bottom:22px}.sidebar .brand small{color:#d6c2ed!important}
+ .sidebar .nav a{color:#e8ddf4!important;background:transparent;border:0!important;border-radius:8px!important;margin:4px 0;padding:12px 15px}
+ .sidebar .nav a.active{background:#ffffff!important;color:#57308a!important;font-weight:700}.sidebar .nav a:hover{background:#ffffff18!important}.sidebar .nav a.active:hover{background:#fff!important}
+ .content{background:transparent!important}.content>.top{padding:8px 0 22px;border-bottom:1px solid #e5ddea;margin-bottom:22px}.top h1{font-size:27px!important;color:#422a59!important}.top .sub{font-size:13px}
+ .workflow-card{padding:0!important;border:1px solid #e5dcec!important;border-radius:16px!important;overflow:hidden;box-shadow:0 6px 22px #39225207!important}
+ .workflow-head{padding:24px 26px;background:linear-gradient(115deg,#4d267d,#7444a8);align-items:center;gap:18px}.workflow-head h2{color:#fff!important;margin:0 0 5px;font-size:23px!important}.workflow-head .sub,.workflow-month-picker label{color:#ecdcf9!important}
+ .workflow-month-picker{min-width:205px}.workflow-month-picker select{color:#4f2f6b}
+ .workflow-month-summary{margin:20px 24px!important;padding:0!important;background:transparent!important;gap:12px}.workflow-month-summary>div{border:1px solid #e9e0f1;background:#faf8fd;border-radius:10px;padding:14px 16px}.workflow-month-summary span{font-size:12px}.workflow-month-summary b{font-size:15px;color:#52376b}
+ .workflow-card>.notice{margin:20px 24px!important;border:0!important;background:transparent!important;padding:0!important}.workflow-card>.notice>b{font-size:18px;color:#482f60}.workflow-card>.notice>p{font-size:13px;color:#806f8c}
+ .readiness-grid{gap:12px}.readiness-item{border:1px solid #e6dfea;border-left:3px solid #b591d2;border-radius:10px;padding:15px 16px;transition:border-color .15s,box-shadow .15s}.readiness-item:hover{border-color:#9870bd;box-shadow:0 3px 10px #5035750c}.readiness-item.ready{border-left-color:#73a58c}.readiness-item.incomplete{border-left-color:#dbab65}.readiness-item>span{font-size:15px;font-weight:600}.readiness-item small{font-size:12px}
+ .workflow-card>.actions{padding:20px 24px;background:#faf8fc;border-top:1px solid #ebe3f2;gap:9px}.workflow-card>.workflow-comments,.workflow-card>.sub{margin:20px 24px!important}.workflow-comment{background:#faf8fc!important;border-color:#e9e0f1!important}
+ .stats .card,.card.module{border-radius:12px!important;box-shadow:none!important;border:1px solid #e8e1ee!important}.card.module .icon{background:#f0e8f8!important;border-radius:12px;padding:10px;display:inline-flex}.card.module h3{font-size:17px}
+ .archive-card{border:1px solid var(--school-line)!important;border-left:4px solid #ae8dcf!important;border-radius:12px!important;padding:22px!important;box-shadow:none!important}.archive-card .actions{max-width:460px}.archive-card .btn{font-size:13px}
+ .admin-page,.classroom-page{max-width:1360px}.admin-section,.classroom-card{border:1px solid var(--school-line)!important;border-radius:14px!important;box-shadow:none!important}table.data th{background:#eee6f7!important;color:#583a75!important;padding:13px}table.data td{padding:13px}.admin-page h1{color:#4c2971}
+ @media(max-width:1000px){.role-dashboard-page{padding:18px}.role-dashboard-toolbar{flex-wrap:wrap}.role-dashboard-toolbar select{flex:1 1 200px!important}.role-dashboard-head{padding:24px!important}.role-dashboard-head h1{font-size:26px!important}.role-room-grid{grid-template-columns:1fr}}
+ @media(max-width:700px){.role-dashboard-page{padding:12px}.role-dashboard-head{padding:22px 18px!important;border-radius:14px!important}.role-dashboard-head h1{font-size:23px!important}.role-dashboard-toolbar{gap:8px}.role-dashboard-toolbar select{flex-basis:100%!important;min-width:0!important}.role-dashboard-toolbar .btn{flex:1 1 42%;font-size:12px;padding:9px}.role-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.role-summary-card{padding:15px!important}.role-summary-card strong{font-size:25px!important}.role-summary-card span{font-size:12px!important}.role-room-card{padding:18px!important}.role-status{max-width:100%}.workflow-head{padding:20px;display:block}.workflow-month-picker{margin-top:16px;min-width:0}.workflow-head h2{font-size:21px!important}.workflow-month-summary{margin:16px!important}.workflow-card>.notice{margin:18px 16px!important}.workflow-card>.actions{padding:16px}.workflow-card>.actions .btn{width:100%}.readiness-item{padding:14px}.top h1{font-size:23px!important}.workflow-tabs{padding:10px;gap:3px}.workflow-tab{padding:9px 12px;font-size:13px}.archive-card{padding:18px!important}.archive-card .actions{max-width:100%}}
+ .workflow-month-summary .workflow-late{color:#b23747!important}.workflow-month-summary .workflow-ok{color:#237653!important}
+ @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+}
