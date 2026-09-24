@@ -12,7 +12,8 @@
   const calc=new PP5Calc.Calculator(template.cells,data.patches),errors=[];pages.replaceChildren();
   // Never silently omit pupils beyond the original 44-row printed score form.
   for(let r=48;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน ห้องนี้มีรายชื่อเกินช่วงพิมพ์ กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบก่อน');
-  for(const [index,page] of template.pages.entries()){
+  const selectedPages=template.pages.filter(p=>!data.report||p.sheet===data.report);if(!selectedPages.length)throw Error('ไม่พบรายงานที่เลือก');
+  for(const [index,page] of selectedPages.entries()){
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
    const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[ml,mr,mt,mb]=page.margins;
    // Honor Excel's zoom and centering; do not independently shrink every page.
@@ -31,7 +32,7 @@
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;if(span.scrollWidth>cell.clientWidth&&span.scrollWidth>0)span.style.fontSize=(parseFloat(cell.style.fontSize)*cell.clientWidth/span.scrollWidth)+'pt'}
   if(errors.length)throw Error('พบสูตรที่คำนวณไม่ได้ '+errors.slice(0,4).join(' • ')+' กรุณาส่งออก Excel เพื่อตรวจสอบ');
-  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+template.pages.length+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่ • หน้าสุดท้ายใช้กระดาษ Legal ตามต้นฉบับ';button.disabled=false;
+  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+selectedPages.length+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
  }
  button.addEventListener('click',()=>window.print());
  window.addEventListener('message',event=>{if(received||event.origin!==location.origin||event.source!==window.opener||event.data?.type!=='pp5-print-data'||event.data.job!==job)return;received=true;clearInterval(ping);render(event.data).catch(fail)});

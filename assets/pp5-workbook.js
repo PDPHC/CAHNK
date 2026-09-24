@@ -13,6 +13,7 @@
   return sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
    ||sheet==='D'&&r>=8&&r<=47&&[3,15,16,17,18,19,20].includes(c)
    ||sheet==='W1'&&r===5&&c>=6&&c<=10
+   ||sheet==='F'&&r>=7&&r<=66&&['H','I','J','K','L','M','N','O','P','Q','Z','AB','AD','AF','AH','AJ','AL','AN','AP','AR','BB','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BW','BX','CD','CE','CF','CG','CH','CI','CJ','CK','CL','CM','CV','CW','CX','CY','DC','DD','DE','DF','DG','DH','DI','DJ'].includes(m[1])
    ||sheet==='CH'&&r>=7&&r<=66&&c>=7&&c<=106;
  };
  class Book {
@@ -32,7 +33,7 @@
     book.sheets[s.getAttribute('name')]={path,raw:await file.async('string')};
    }
    for(const name of ['A','B','C','D','E','F','DT','IN','W1','CH','G'])if(!book.sheets[name])throw Error('แม่แบบไม่ตรงกับ ปพ.5 ที่รองรับ: ไม่พบชีต '+name);
-   book.cells={};for(const name of ['IN','D','W1','CH']){
+   book.cells={};for(const name of ['IN','D','W1','CH','F']){
     book.cells[name]={};for(const c of nodes(parse(book.sheets[name].raw),'c')){
      const f=nodes(c,'f')[0],v=nodes(c,'v')[0]?.textContent??'',t=c.getAttribute('t');
      book.cells[name][c.getAttribute('r')]={formula:f?.textContent??null,value:t==='s'?book.texts[+v]??'':t==='inlineStr'?nodes(c,'t').map(t=>t.textContent).join(''):v===''?'':t==='str'||t==='e'?v:Number(v)};
@@ -47,11 +48,16 @@
    const zip=await JSZip.loadAsync(this.bytes),groups={};
    for(const [key,value] of Object.entries(patches)){
     const [sheet,ref]=key.split('!');if(!allowed(sheet,ref)||!['string','number'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))throw Error('ตำแหน่งหรือข้อมูลที่แก้ไขไม่ถูกต้อง: '+key);
-    if(this.cells[sheet]?.[ref]?.formula!==null&&this.cells[sheet]?.[ref]?.formula!==undefined)throw Error('ไม่อนุญาตให้ทับสูตร: '+key);
+    if(sheet!=='F'&&this.cells[sheet]?.[ref]?.formula!==null&&this.cells[sheet]?.[ref]?.formula!==undefined)throw Error('ไม่อนุญาตให้ทับสูตร: '+key);
     (groups[sheet]??=[]).push([ref,value]);
    }
    for(const [sheet,entries] of Object.entries(groups)){
     let raw=this.sheets[sheet].raw;
+    if(sheet==='F'){
+     // Expand shared formulas before removing any master for a manual score.
+     const response=await fetch('../assets/pp5-print-template.json?v=2');if(!response.ok)throw Error('โหลดสูตรคะแนนย่อยไม่สำเร็จ');const packed=await response.json(),formZip=await JSZip.loadAsync(packed.base64,{base64:true}),data=JSON.parse(await formZip.file('print.json').async('string'));
+     raw=raw.replace(/<c\b[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g,c=>{const ref=c.match(/\br="([A-Z]+\d+)"/)?.[1],f=data.cells.F[ref]?.f;if(!/<f\b/.test(c))return c;if(!f)throw Error('ไม่พบสูตร '+ref);return c.replace(/<f\b[^>]*?(?:\/>|>[\s\S]*?<\/f>)/,'<f>'+xml(f)+'</f>')});
+    }
     for(const [ref,value] of entries){
      const re=new RegExp('<c\\b[^>]*\\br="'+ref+'"[^>]*?(?:/>|>[\\s\\S]*?</c>)');const old=raw.match(re)?.[0];
      const attrs=old?old.match(/^<c\b([^>]*?)(?:\/?>)/)[1].replace(/\s+t="[^"]*"/g,'').replace(/\/$/,''):' r="'+ref+'"';
