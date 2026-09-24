@@ -1,7 +1,7 @@
 (() => {
  'use strict';
  const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let list=[],record=null,book=null,patches={},dirty=false,tab='scores',busy=false,week=1;
+ let list=[],record=null,book=null,patches={},dirty=false,tab='info',busy=false,week=1;
  const columns=['E','F','G','H','I','J'],names=['ก่อนกลางภาค','กลางภาค','แก้/ซ่อม','หลังกลางภาค','ชิ้นงาน','ปลายภาค'];
  const editable=()=>['owner','editor'].includes(window.cloudState?.permission);
  const value=(s,r)=>book.value(s,r,patches);
@@ -63,9 +63,9 @@
   status('เปิดหน้าพิมพ์แล้ว — กดพิมพ์และเลือก Save as PDF');
  }
  async function excel(){const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));download(await book.export(patches),'ปพ5_'+String(value('IN','Q7')||'รายวิชา').replace(/[\\/:*?"<>|]/g,'_')+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('ดาวน์โหลด Excel แล้ว — เปิดไฟล์เพื่อคำนวณสูตรล่าสุดก่อนพิมพ์')}
- function render(){const panel=$('pp5Panel');if(tab==='info'){
-  const labels=['ระดับ','ครูที่ปรึกษา 1','ครูที่ปรึกษา 2','รหัสวิชา','ชื่อวิชา','หน่วยกิต','ชื่อ ผอ.','รองวิชาการ','ปีการศึกษา','ภาคเรียน','ชั่วโมงต่อสัปดาห์','ช่วงชั้น','ชื่อผู้สอน','กลุ่มสาระ','หัวหน้ากลุ่มสาระ','หัวหน้างานวัดผล','โรงเรียน','ที่อยู่โรงเรียน','สังกัด','ชั้น/ห้อง'];
-  panel.innerHTML='<h2>ข้อมูลรายวิชาและหน้าปก</h2><div class="pp5-grid">'+labels.map((s,i)=>'<label>'+s+input('IN','Q'+(i+4),{label:s,numeric:[9,12,13,14,15].includes(i+4)})+'</label>').join('')+'</div>';
+ function render(){const panel=$('pp5Panel');panel.classList.add('pp5-form-panel');panel.dataset.formPage=tab;if(tab==='info'){
+  const field=(ref,label,numeric=false)=>'<label class="pp5-line-field"><span>'+label+'</span>'+input('IN',ref,{label,numeric})+'</label>';
+  panel.innerHTML='<article class="pp5-cover"><div class="pp5-form-code">ปพ.5 '+esc(value('IN','Q4'))+'</div><div class="pp5-cover-title"><div class="pp5-form-emblem" aria-hidden="true">ปพ.5</div><h2>แบบบันทึกผลการเรียนประจำวิชา</h2>'+field('Q20','โรงเรียน')+field('Q21','ที่อยู่โรงเรียน')+field('Q22','สังกัด')+'</div><section class="pp5-form-section"><h3>ข้อมูลรายวิชา</h3><div class="pp5-form-row three">'+field('Q4','ระดับ')+field('Q23','ชั้น / ห้อง')+field('Q15','ช่วงชั้น',true)+'</div><div class="pp5-form-row two">'+field('Q13','ภาคเรียน',true)+field('Q12','ปีการศึกษา',true)+'</div><div class="pp5-form-row course">'+field('Q7','รหัสวิชา')+field('Q8','ชื่อวิชา')+'</div><div class="pp5-form-row two">'+field('Q9','หน่วยกิต',true)+field('Q14','ชั่วโมง / สัปดาห์',true)+'</div>'+field('Q17','กลุ่มสาระการเรียนรู้')+'</section><section class="pp5-form-section"><h3>ครูผู้สอนและครูที่ปรึกษา</h3>'+field('Q16','ครูผู้สอน / ครูประจำวิชา')+field('Q5','ครูที่ปรึกษา 1')+field('Q6','ครูที่ปรึกษา 2')+'</section><section class="pp5-form-section"><h3>ผู้ตรวจและผู้อนุมัติ</h3>'+field('Q18','หัวหน้ากลุ่มสาระการเรียนรู้')+field('Q19','หัวหน้างานวัดผล')+field('Q11','รองผู้อำนวยการฝ่ายวิชาการ')+field('Q10','ผู้อำนวยการโรงเรียน')+'</section><p class="pp5-form-help">กรอกข้อมูลบนเส้นสีม่วง แล้วกด “บันทึกบนคลาวด์” • คะแนนและเวลาเรียนกรอกได้จากแท็บด้านบน</p></article>';
  }else if(tab==='indicators'){
   panel.innerHTML='<h2>ตัวชี้วัด / ผลการเรียนรู้</h2><p class="sub">บันทึกในชีต D ของแม่แบบโดยตรง</p><div class="table-wrap"><table class="pp5-table"><thead><tr><th>ข้อที่</th><th>ตัวชี้วัด / ผลการเรียนรู้</th>'+[1,2,3,4,5,6].map(n=>'<th>ประเมิน '+n+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:40},(_,i)=>'<tr><td>'+(i+1)+'</td><td>'+input('D','C'+(i+8),{className:'pp5-indicator',label:'ตัวชี้วัดข้อ '+(i+1)})+'</td>'+['O','P','Q','R','S','T'].map(c=>'<td>'+input('D',c+(i+8),{numeric:true,label:'คะแนนประเมินข้อ '+(i+1)+' '+c})+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
  }else if(tab==='attendance'){
