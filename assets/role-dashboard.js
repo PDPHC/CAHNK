@@ -5,15 +5,15 @@
   var ROLE_LABELS={director:"Director",deputy_director:"Deputy Director",academic:"Academic"};
   var STATUS_LABELS={
     draft:"ยังไม่ส่ง",
-    submitted_to_academic:"รอ Academic ตรวจ",
-    returned_by_academic:"Academic ส่งกลับครูแก้ไข",
-    forwarded_to_deputy:"Academic อนุมัติแล้ว • รอ Deputy Director",
-    returned_by_deputy:"Deputy Director ส่งกลับ Academic",
+    submitted_to_academic:"รอวิชาการตรวจ",
+    returned_by_academic:"ส่งกลับครูแก้ไข",
+    forwarded_to_deputy:"ส่งต่อแล้ว • รอรองวิชาการ",
+    returned_by_deputy:"รองวิชาการส่งกลับให้ตรวจ",
     approved:"Deputy Director อนุมัติแล้ว"
   };
   var ROLE_HOME={director:"director-dashboard.html",deputy_director:"deputy-dashboard.html",academic:"academic-dashboard.html"};
   var MONTHS=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-  var state={user:null,profile:null,rooms:[],submissions:[],comments:[],archives:[],period:"",reportMonth:"",requiredRole:"",signatureReady:false};
+  var state={user:null,profile:null,rooms:[],submissions:[],comments:[],archives:[],period:"",reportMonth:"",requiredRole:"",signatureReady:false,filter:"all",search:"",busy:false};
 
   function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]})}
   function showBody(){document.body.classList.remove("cloud-protected")}
@@ -67,7 +67,7 @@
     var sres=await sb.auth.getSession();if(sres.error)throw sres.error;
     state.user=sres.data.session?sres.data.session.user:null;if(!state.user){location.href="login.html";return false}
     var pres=await sb.from("profiles").select("id,email,display_name,role").eq("id",state.user.id).single();if(pres.error)throw pres.error;state.profile=pres.data;
-    if(state.profile.role!==state.requiredRole){location.href=ROLE_HOME[state.profile.role]||"classrooms.html";return false}
+    if(state.profile.role!==state.requiredRole&&state.profile.role!=="admin"){location.href=ROLE_HOME[state.profile.role]||"classrooms.html";return false}
     var results=await Promise.all([
       sb.from("classrooms").select("id,class_level,room,academic_year,term,school_name,teacher1,teacher2,open_date,close_date").order("academic_year",{ascending:false}).order("term",{ascending:false}).order("class_level").order("room"),
       sb.from("classroom_submissions").select("*").order("report_month",{ascending:false}).order("updated_at",{ascending:false}),
@@ -102,13 +102,13 @@
   function actionArea(room,sub){
     if(!sub)return "";
     var role=state.profile.role,id=esc(sub.id);
-    if((role==="academic"||role==="deputy_director")&&!state.signatureReady){
-      return '<div class="signature-required">ต้องบันทึกลายเซ็นก่อนจึงจะอนุมัติได้ <a href="signature.html">ตั้งค่าลายเซ็น</a></div>';
+    if(role==="academic"&&sub.status==="forwarded_to_deputy"){
+      return '<div class="role-action-box"><p>ส่งต่อรองวิชาการแล้ว สามารถดึงกลับได้ก่อนรองฯ อนุมัติ</p><button class="btn gray" onclick="roleRecallSubmission(\''+id+'\')">↩ ยกเลิกการส่งต่อรองวิชาการ</button></div>';
     }
     if(role==="academic"&&(sub.status==="submitted_to_academic"||sub.status==="returned_by_deputy")){
       return '<div class="role-action-box"><textarea id="comment-'+id+'" rows="2" placeholder="ความคิดเห็นกรณีส่งกลับให้แก้ไข"></textarea><div class="role-action-buttons">'+
         '<button class="btn gray" onclick="roleReturnSubmission(\''+id+'\',\'academic\')">↩ ส่งกลับครูแก้ไข</button>'+
-        '<button class="btn primary" onclick="roleApproveSubmission(\''+id+'\',\'academic\')">✓ อนุมัติและส่งต่อ Deputy Director</button></div></div>';
+        '<button class="btn primary" onclick="roleApproveSubmission(\''+id+'\',\'academic\')">✓ อนุมัติและส่งต่อรองวิชาการ</button></div></div>';
     }
     if(role==="deputy_director"&&sub.status==="forwarded_to_deputy"){
       return '<div class="role-action-box"><textarea id="comment-'+id+'" rows="2" placeholder="ความคิดเห็นกรณีส่งกลับ Academic"></textarea><div class="role-action-buttons">'+
@@ -131,6 +131,7 @@
     if(archived)html+='<span class="archive-badge">✓ เก็บเข้าคลังแล้ว</span>';
     html+='</div>';
     if(comment)html+='<div class="role-latest-comment"><b>ความคิดเห็นล่าสุด:</b> '+esc(comment.comment)+'</div>';
+    if(sub)html+='<div class="role-room-tools"><a class="btn primary" href="review-book.html?submission='+encodeURIComponent(sub.id)+'" target="_blank" rel="noopener">📖 ดูเล่มธุรการเดือนนี้</a></div>';
     html+='<div class="role-room-tools"><button class="btn gray" onclick="roleOpenRoom(\''+room.id+'\')">เปิดข้อมูลห้อง</button></div>'+actionArea(room,sub)+'</article>';
     return html;
   }
@@ -146,7 +147,7 @@
     var onTime=rows.filter(function(x){return x.sub&&deliveryText(x.sub,state.reportMonth,x.room)==="ส่งตรงเวลา"}).length;
     var overdue=rows.filter(function(x){var t=deliveryText(x.sub,state.reportMonth,x.room);return t==="เกินกำหนด"||t==="ส่งล่าช้า"}).length;
 
-    document.getElementById("roleDashboardTitle").textContent=ROLE_LABELS[state.profile.role]+" Dashboard";
+    document.getElementById("roleDashboardTitle").textContent=state.requiredRole==="academic"?"งานตรวจธุรการชั้นเรียน":ROLE_LABELS[state.requiredRole]+" Dashboard";
     document.getElementById("roleDashboardUser").textContent=state.profile.display_name||state.profile.email||"";
     document.getElementById("selectedMonthText").textContent=monthLabel(state.reportMonth);
     document.getElementById("deadlineText").textContent="กำหนดส่งภายในวันที่ 5 ของเดือนถัดไป";
@@ -162,7 +163,14 @@
 
     var missing=document.getElementById("missingRooms");
     missing.innerHTML=notSent.length?notSent.map(function(x){return '<span class="missing-room-chip">'+esc(roomLabel(x.room))+'</span>'}).join(""):'<span class="all-sent">✓ ทุกห้องส่งธุรการเดือนนี้แล้ว</span>';
-    document.getElementById("roomProgressList").innerHTML=rows.length?rows.map(function(x){return roomCard(x.room,x.sub)}).join(""):'<div class="empty-room-state">ยังไม่มีห้องเรียนในภาคเรียนนี้</div>';
+    var priorities={submitted_to_academic:0,returned_by_deputy:0,forwarded_to_deputy:1,returned_by_academic:2,approved:3,draft:4};
+    rows=rows.filter(function(x){
+      var status=x.sub?x.sub.status:"draft",needle=state.search.toLowerCase();
+      var matches=!needle||(roomLabel(x.room)+" "+x.room.teacher1+" "+x.room.teacher2).toLowerCase().includes(needle);
+      return matches&&(state.filter==="all"||(state.filter==="pending"&&["submitted_to_academic","returned_by_deputy"].includes(status))||(state.filter==="missing"&&!x.sub)||status===state.filter);
+    });
+    if(state.requiredRole==="academic")rows.sort(function(a,b){return (priorities[a.sub?a.sub.status:"draft"]??4)-(priorities[b.sub?b.sub.status:"draft"]??4)});
+    document.getElementById("roomProgressList").innerHTML=rows.length?rows.map(function(x){return roomCard(x.room,x.sub)}).join(""):'<div class="empty-room-state">ไม่พบห้องเรียนตามตัวกรองที่เลือก</div>';
 
     var sig=document.getElementById("signatureNotice");
     if(sig){
@@ -176,6 +184,21 @@
     var comment=String(text||"").trim();if(!comment)return;
     var res=await sb.from("submission_comments").insert({submission_id:submissionId,author_id:state.user.id,comment:comment});if(res.error)throw res.error;
   }
+
+  window.roleRecallSubmission=async function(id){
+    if(state.busy)return;
+    var sub=state.submissions.find(function(s){return s.id===id});
+    if(state.profile.role!=="academic"||!sub||sub.status!=="forwarded_to_deputy")return;
+    if(!confirm("ยกเลิกการส่งต่อรองวิชาการและดึงงานกลับมาตรวจ? ลายเซ็นอนุมัติของวิชาการในรอบนี้จะถูกยกเลิก และต้องอนุมัติส่งต่อใหม่"))return;
+    state.busy=true;
+    try{
+      var res=await sb.from("classroom_submissions").update({status:"submitted_to_academic"}).eq("id",id).eq("status","forwarded_to_deputy").select("id");
+      if(res.error)throw res.error;
+      if(!res.data||!res.data.length)throw new Error("สถานะงานเปลี่ยนไปแล้ว กรุณารีเฟรชรายการ");
+      await refresh();alert("ยกเลิกการส่งต่อแล้ว งานกลับมาอยู่ในรายการรอวิชาการตรวจ");
+    }catch(e){alert("ยกเลิกไม่สำเร็จ: "+e.message);await refresh().catch(function(){})}
+    finally{state.busy=false}
+  };
 
   window.roleOpenRoom=function(cid){localStorage.setItem(ACTIVE_KEY,cid);sessionStorage.setItem("hnk_report_month",state.reportMonth);location.href="index.html"};
 
@@ -214,10 +237,17 @@
       if(!sb)throw new Error("Supabase client is not ready");
       var ok=await loadAll();if(!ok)return;
       document.getElementById("roomsLink").href="classrooms.html?rooms=1";
-      if(state.profile.role==="director")document.getElementById("roleHelp").textContent="ภาพรวมการส่งธุรการรายเดือนและสถานะการอนุมัติของทุกห้อง";
-      else if(state.profile.role==="academic")document.getElementById("roleHelp").textContent="ตรวจรายเดือน • ส่งกลับครู • อนุมัติและส่งต่อ Deputy Director";
+      if(state.requiredRole==="director")document.getElementById("roleHelp").textContent="ภาพรวมการส่งธุรการรายเดือนและสถานะการอนุมัติของทุกห้อง";
+      else if(state.requiredRole==="academic")document.getElementById("roleHelp").textContent="ตรวจรายเดือน • ส่งกลับครู • อนุมัติและส่งต่อรองวิชาการ";
       else document.getElementById("roleHelp").textContent="ตรวจรายเดือน • ส่งกลับ Academic • อนุมัติขั้นสุดท้ายและจัดเก็บเข้าคลัง";
+      var filters=document.getElementById("academicFilters");
+      if(filters){
+        document.getElementById("statusFilter").onchange=function(e){state.filter=e.target.value;render()};
+        document.getElementById("roomSearch").oninput=function(e){state.search=e.target.value;render()};
+        document.getElementById("refreshJobs").onclick=async function(){try{await refresh()}catch(e){alert("โหลดรายการไม่สำเร็จ: "+e.message)}};
+      }
       showBody();render();
     }catch(e){console.error(e);fatal(e&&e.message?e.message:String(e))}
   };
 })();
+

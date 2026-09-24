@@ -14,7 +14,7 @@
   window.cloudClient = sb;
 
   const ACTIVE_KEY = "hnk_cloud_active_classroom";
-  const MODULES = ["homeroom","attendance","savings","behavior","health","scholarship","volunteer","literacy"];
+  const MODULES = ["homeroom","attendance","savings","behavior","health","scholarship","volunteer","literacy","report_checks"];
   const state = {user:null,profile:null,classroom:null,permission:null,bootstrapped:false,pending:new Map()};
   window.cloudState = state;
 
@@ -180,25 +180,30 @@
     if(error){syncStatus("บันทึกไม่สำเร็จ","error");throw error}
     syncStatus("บันทึกบน Cloud แล้ว","ok");
   }
+  const saveChains=new Map(),saveErrors=new Map();
+  function runModuleSave(name,data){
+    const previous=saveChains.get(name)||Promise.resolve();
+    const job=previous.catch(()=>{}).then(()=>saveModuleNow(name,data)).then(()=>{saveErrors.delete(name)},e=>{saveErrors.set(name,e);throw e});
+    saveChains.set(name,job);job.catch(()=>{});return job;
+  }
   window.cloudQueueModuleSave=(name,data)=>{
     if(!state.bootstrapped||!state.classroom?.id)return;
     const old=state.pending.get(name);if(old?.timer)clearTimeout(old.timer);
     const item={data,timer:null};
     item.timer=setTimeout(async()=>{
       state.pending.delete(name);
-      try{await saveModuleNow(name,item.data)}catch(e){console.error(e)}
+      try{await runModuleSave(name,item.data)}catch(e){console.error(e)}
     },300);
     state.pending.set(name,item);
   };
   window.cloudFlushPending=async()=>{
-    if(!state.pending.size)return;
-    const jobs=[];
     for(const [name,item] of state.pending.entries()){
       if(item.timer)clearTimeout(item.timer);
-      jobs.push(saveModuleNow(name,item.data));
+      runModuleSave(name,item.data);
     }
     state.pending.clear();
-    await Promise.allSettled(jobs);
+    await Promise.allSettled(Array.from(saveChains.values()));
+    if(saveErrors.size)throw new Error("ยังมีข้อมูลบันทึกบนคลาวด์ไม่สำเร็จ กรุณาบันทึกข้อมูลใหม่ก่อนส่ง");
   };
   window.cloudSaveHomeroomTimes=data=>window.cloudQueueModuleSave?.("homeroom_times",data||{});
 
@@ -669,6 +674,7 @@
         <div><span>การส่ง</span><b class="${late||submittedLate?"workflow-late":"workflow-ok"}">${sub?.submitted_at?(submittedLate?"ส่งล่าช้า":"ส่งตรงเวลา"):(late?"เกินกำหนด":"ยังไม่ส่ง")}</b></div>
       </div>
       ${sub?.status==="approved"?`<div class="notice workflow-approved-note">✓ เดือนนี้ผ่านการอนุมัติขั้นสุดท้ายแล้ว และบันทึกเข้าคลังฐานข้อมูลปีการศึกษาเรียบร้อย</div>`:""}
+      ${teacherCanSubmit?`<div class="notice"><b>ตรวจข้อมูลก่อนส่ง</b><p>ต้องกรอกโฮมรูม การมาเรียน พฤติกรรม และสุขภาพให้ครบ • จิตอาสาไม่บังคับ</p><p>ถ้าไม่มีรายการ ให้ยืนยันเฉพาะเดือนนี้ ระบบจะแสดงหมายเหตุในเล่ม:</p>${[["savings_none","เดือนนี้ไม่มีการออมทรัพย์"],["scholarship_none","เดือนนี้ไม่มีการมอบทุนใด ๆ"]].map(([key,label])=>`<label style="display:block;margin:8px 0"><input class="cloud-allow" type="checkbox" ${hget("module_report_checks",{})[ym]?.[key]?"checked":""} onchange="cloudSetNoActivity('${ym}','${key}',this.checked)"> ${label}</label>`).join("")}<button class="btn gray cloud-allow" onclick="cloudCheckMonthlySubmission()">ตรวจความครบถ้วน</button></div>`:""}
       <div class="actions">
         ${teacherCanSubmit?`<button class="btn primary" onclick="cloudSubmitClassroomBook()">📤 ${sub?"ส่งแก้ไข":"ส่ง"} ${esc(reportMonthLabel(ym))} ให้ Academic ตรวจ</button>`:""}
         ${ym?`<button class="btn gray" onclick="cloudPrintMonthlyBook('${ym}')">🖨 พิมพ์เล่มเดือนนี้</button>`:""}
@@ -684,32 +690,59 @@
     if(win)win.location.href=target;else window.open(target,"_blank");
   };
 
+
+  window.cloudSetNoActivity=async(ym,key,value)=>{
+    if(!["savings_none","scholarship_none"].includes(key)||state.profile?.role!=="teacher")return;
+    const checks=hget("module_report_checks",{});
+    checks[ym]={...(checks[ym]||{}),[key]:!!value};
+    hset("module_report_checks",checks);
+    window.cloudQueueModuleSave("report_checks",checks);
+  };
+
+  function showSubmissionIssues(issues){
+    let dialog=document.getElementById("submissionIssuesDialog");
+    if(!dialog){dialog=document.createElement("dialog");dialog.id="submissionIssuesDialog";document.body.appendChild(dialog)}
+    dialog.style.cssText="max-width:680px;width:90%;max-height:85vh;overflow:auto;padding:24px;border:1px solid #ddd;border-radius:12px";
+    const links={settings:"settings.html",students:"settings.html",homeroom:"modules/homeroom.html",attendance:"modules/attendance.html",savings:"modules/savings.html",behavior:"modules/behavior.html",health:"modules/health.html",scholarship:"modules/scholarship.html"};
+    dialog.innerHTML='<h2 id="submissionIssuesTitle">ข้อมูลยังไม่ครบ — ยังส่งไม่ได้</h2><p>กรุณาแก้ไขรายการต่อไปนี้ แล้วตรวจอีกครั้ง</p><ul>'+issues.map(x=>'<li style="margin:12px 0">'+esc(x.message)+(links[x.module]?' <a href="'+rootPath()+links[x.module]+'">เปิดแบบบันทึก</a>':"")+'</li>').join("")+'</ul><button class="btn primary cloud-allow" id="closeSubmissionIssues">กลับไปแก้ไข</button>';
+    dialog.setAttribute("aria-labelledby","submissionIssuesTitle");
+    document.getElementById("closeSubmissionIssues").onclick=()=>dialog.close();
+    if(!dialog.open)dialog.showModal();
+  }
+  async function checkMonthlySubmission(){
+    await window.cloudFlushPending();
+    const {data,error}=await sb.rpc("validate_monthly_submission",{p_classroom_id:state.classroom.id,p_report_month:reportMonthDate(state.reportMonth)});
+    if(error)throw error;
+    if(!Array.isArray(data))throw new Error("ตรวจข้อมูลไม่สำเร็จ กรุณาลองใหม่");
+    if(data.length){showSubmissionIssues(data);return false}
+    return true;
+  }
+  window.cloudCheckMonthlySubmission=async()=>{
+    try{if(await checkMonthlySubmission())alert("ข้อมูลครบ พร้อมส่งให้วิชาการตรวจ")}
+    catch(e){alert("ตรวจข้อมูลไม่ได้: "+e.message)}
+  };
+  let submitting=false;
   window.cloudSubmitClassroomBook=async()=>{
-    if(state.profile?.role!=="teacher")return alert("ปุ่มนี้สำหรับ Teacher");
-    if(!state.classroom?.id)return;
-    const ym=state.reportMonth||defaultReportMonth(state.classroom);
-    const existing=await getCurrentSubmission(ym);
-    if(existing && existing.status!=="returned_by_academic")return alert("รายการเดือนนี้อยู่ระหว่างการตรวจหรืออนุมัติแล้ว");
-    if(!confirm("ยืนยันส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic ตรวจ?"))return;
-    await window.cloudFlushPending?.();
-    const now=new Date().toISOString();
-    const payload={
-      classroom_id:state.classroom.id,
-      report_month:reportMonthDate(ym),
-      due_date:reportDueDate(ym),
-      status:"submitted_to_academic",
-      submitted_by:state.user.id,
-      submitted_at:now,
-      forwarded_by:null,forwarded_at:null,
-      academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,academic_signature_data:null,
-      approved_by:null,approved_at:null,approved_name:null,deputy_signature_data:null,updated_at:now
-    };
-    const {error}=await sb.from("classroom_submissions")
-      .upsert(payload,{onConflict:"classroom_id,report_month"});
-    if(error)return alert("ส่งไม่สำเร็จ: "+error.message);
-    alert("ส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic เรียบร้อย");
-    await syncWorkflowApproval(state.classroom.id);
-    await renderCurrentSubmission();
+    if(submitting||state.profile?.role!=="teacher"||!state.classroom?.id)return;
+    submitting=true;
+    try{
+      const ym=state.reportMonth||defaultReportMonth(state.classroom);state.reportMonth=ym;
+      const existing=await getCurrentSubmission(ym);
+      if(existing&&existing.status!=="returned_by_academic")return alert("รายการเดือนนี้อยู่ระหว่างการตรวจหรืออนุมัติแล้ว");
+      if(!await checkMonthlySubmission())return;
+      if(!confirm("ข้อมูลครบแล้ว ยืนยันส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic ตรวจ?"))return;
+      await window.cloudFlushPending();
+      const now=new Date().toISOString();
+      const payload={classroom_id:state.classroom.id,report_month:reportMonthDate(ym),due_date:reportDueDate(ym),status:"submitted_to_academic",submitted_by:existing?.submitted_by||state.user.id,submitted_at:existing?.submitted_at||now,forwarded_by:null,forwarded_at:null,academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,academic_signature_data:null,approved_by:null,approved_at:null,approved_name:null,deputy_signature_data:null,updated_at:now};
+      const res=existing
+        ?await sb.from("classroom_submissions").update(payload).eq("id",existing.id).eq("status","returned_by_academic").select("id")
+        :await sb.from("classroom_submissions").insert(payload).select("id");
+      if(res.error){let issues;try{issues=JSON.parse(res.error.details)}catch(_){}if(Array.isArray(issues)){showSubmissionIssues(issues);return}throw res.error}
+      if(!res.data?.length)throw new Error("สถานะงานเปลี่ยนไปแล้ว กรุณาโหลดรายการใหม่");
+      alert("ส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic เรียบร้อย");
+      await syncWorkflowApproval(state.classroom.id);await renderCurrentSubmission();
+    }catch(e){alert("ส่งไม่สำเร็จ: "+e.message)}
+    finally{submitting=false}
   };
 
   window.cloudOpenReviewRoom=cid=>{
@@ -886,3 +919,4 @@
   };
 
 })();
+

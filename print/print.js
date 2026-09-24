@@ -1,5 +1,5 @@
 const P="hnk_admin_v3_",OLD_P="hnk_admin_v2_";
-const get=(k,d=null)=>{try{let v=localStorage.getItem(P+k);if(v===null)v=localStorage.getItem(OLD_P+k);return v?JSON.parse(v):d}catch(e){return d}};
+const get=(k,d=null)=>{if(window.__reviewBookData)return Object.prototype.hasOwnProperty.call(window.__reviewBookData,k)?window.__reviewBookData[k]:d;try{let v=localStorage.getItem(P+k);if(v===null)v=localStorage.getItem(OLD_P+k);return v?JSON.parse(v):d}catch(e){return d}};
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 
 function applyVerticalIdentityHeaders(root){
@@ -90,6 +90,15 @@ function attendancePrintSymbol(v){
  return v==="ม"?"/":(v||"");
 }
 
+function noActivityNote(kind,ym){
+ const checks=store("report_checks")[ym]||{};
+ if(kind==="savings"&&checks.savings_none===true){
+  const values=Object.values(store("savings")[ym]||{}).flatMap(x=>Object.values(x||{}));
+  if(!values.some(v=>String(v).trim()!==""&&(!Number.isFinite(Number(v))||Number(v)!==0)))return '<p class="no-activity-note" style="font-weight:bold;margin:8px 0">หมายเหตุ: เดือนนี้ไม่มีการออมทรัพย์</p>';
+ }
+ if(kind==="scholarship"&&checks.scholarship_none===true&&!(store("scholarship").rows||[]).some(x=>String(x.date||"").slice(0,7)===ym))return '<p class="no-activity-note" style="font-weight:bold;margin:8px 0">หมายเหตุ: เดือนนี้ไม่มีการมอบทุนใด ๆ</p>';
+ return "";
+}
 function monthly(kind,title,ym){
  const inf=mi(ym),d=store(kind)[ym]||{},isSavings=kind==="savings";
  const days=Array.from({length:inf.days},(_,i)=>{
@@ -98,7 +107,7 @@ function monthly(kind,title,ym){
  });
  return `<div class="month-page"><div class="center title">${title} &nbsp; ชั้น${esc(cls())}</div>
  <div class="center subtitle">ภาคเรียนที่ ${esc(S.term)} ปีการศึกษา ${esc(S.academicYear)} &nbsp; ประจำเดือน ${inf.name} พ.ศ. ${inf.be}</div>
- <table class="print-table month-grid"><thead><tr><th class="cno" rowspan="2">เลขที่</th><th class="cid" rowspan="2">เลขประจำตัว</th><th class="cname" rowspan="2">ชื่อ - สกุล</th><th colspan="${inf.days}">${inf.name} ${inf.be}</th><th class="sum" rowspan="2">${kind==="attendance"?"รวมมา":isSavings?"รวมสะสม":"รวม"}</th></tr>
+ ${noActivityNote(kind,ym)}<table class="print-table month-grid"><thead><tr><th class="cno" rowspan="2">เลขที่</th><th class="cid" rowspan="2">เลขประจำตัว</th><th class="cname" rowspan="2">ชื่อ - สกุล</th><th colspan="${inf.days}">${inf.name} ${inf.be}</th><th class="sum" rowspan="2">${kind==="attendance"?"รวมมา":isSavings?"รวมสะสม":"รวม"}</th></tr>
  <tr>${days.map(z=>`<th class="day ${z.di.off?(z.di.out?"out-print":"off-print"):""} ${z.di.holiday?"holiday-special":""}" title="${esc(z.di.reason)}"><span class="day-number">${z.day}</span></th>`).join("")}</tr></thead><tbody>
  ${R.map((r,rowIndex)=>{
    const x=d[r.uid]||{};
@@ -314,7 +323,7 @@ function scholarship(ym){
  return `<div class="month-page scholarship-print-page">
    <div class="center title">แบบบันทึกข้อมูลการรับทุนการศึกษาของนักเรียน</div>
    <div class="center scholarship-month-line">เดือน <span class="sch-dots">${esc(inf.name)}</span> พ.ศ. <span class="sch-dots">${esc(inf.be)}</span></div>
-   <table class="print-table scholarship-print-table">
+   ${noActivityNote("scholarship",ym)}<table class="print-table scholarship-print-table">
      <colgroup>
        <col class="sch-col-no">
        <col class="sch-col-id">
@@ -683,3 +692,4 @@ else if(mod==="scholarship")html=wrapPages(printMonths.map(m=>scholarship(m)));
 else if(mod==="volunteer")html=wrapPages(printMonths.map(m=>volunteer(m)));
 else if(mod==="homeroom")html=wrapPages(homeroomPagesForPrint(printMonths));
 const sheet=document.getElementById("sheet");if(all)sheet.classList.add("multi");if(mod==="book")sheet.classList.add("book-print");sheet.innerHTML=html;applyVerticalIdentityHeaders(sheet);
+
