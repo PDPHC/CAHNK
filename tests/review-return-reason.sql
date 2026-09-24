@@ -1,0 +1,21 @@
+BEGIN;
+CREATE TEMP TABLE delete_test_ids AS SELECT gen_random_uuid() actor,gen_random_uuid() target,gen_random_uuid() room,gen_random_uuid() sub,gen_random_uuid() archive;
+GRANT SELECT ON delete_test_ids TO authenticated;
+INSERT INTO auth.users(id,email) SELECT actor,actor::text||'@example.invalid' FROM delete_test_ids UNION ALL SELECT target,target::text||'@example.invalid' FROM delete_test_ids;
+UPDATE public.profiles SET role='admin' WHERE id=(SELECT actor FROM delete_test_ids);
+INSERT INTO public.classrooms(id,class_level,room,academic_year,term,created_by) SELECT room,'TEST',actor::text,2569,1,target FROM delete_test_ids;
+INSERT INTO public.classroom_teachers(classroom_id,teacher_id) SELECT room,target FROM delete_test_ids;
+INSERT INTO public.classroom_submissions(id,classroom_id,report_month,due_date,status,submitted_by) SELECT sub,room,'2026-08-01','2026-09-05','submitted_to_academic',target FROM delete_test_ids;
+INSERT INTO public.submission_comments(submission_id,author_id,comment) SELECT sub,target,'preserve test comment' FROM delete_test_ids;
+INSERT INTO public.classroom_monthly_archives(id,submission_id,classroom_id,academic_year,term,report_month,due_date,approved_by,approved_name,approved_at,snapshot) SELECT archive,sub,room,2569,1,'2026-08-01','2026-09-05',target,'Preserved signer',now(),'{"test":true}'::jsonb FROM delete_test_ids;
+UPDATE public.profiles SET role='academic' WHERE id=(SELECT actor FROM delete_test_ids);
+SELECT set_config('request.jwt.claim.sub',(SELECT actor::text FROM delete_test_ids),true);
+SET LOCAL ROLE authenticated;
+SELECT public.return_submission_for_revision((SELECT sub FROM delete_test_ids),'กรุณาแก้ไขข้อมูลการมาเรียน');
+RESET ROLE;
+DO $$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM public.classroom_submissions WHERE id=(SELECT sub FROM delete_test_ids) AND status='returned_by_academic') THEN RAISE EXCEPTION 'Return failed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM public.workflow_events WHERE classroom_id=(SELECT room FROM delete_test_ids) AND action='comment' AND reason='กรุณาแก้ไขข้อมูลการมาเรียน') THEN RAISE EXCEPTION 'Reason missing'; END IF;
+END $$;
+ROLLBACK;
+SELECT 'PASS: academic return and reason audit are atomic under authenticated RLS' result;

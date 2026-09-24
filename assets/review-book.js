@@ -3,15 +3,17 @@
   const message=document.getElementById("bookMessage"),sb=window.cloudClient;
   try{
     if(!sb)throw new Error("เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่");
-    const params=new URLSearchParams(location.search),id=params.get("submission"),archiveId=params.get("archive");
-    if(!id&&!archiveId)throw new Error("ไม่พบรายการส่งตรวจ กรุณาเปิดเล่มจากรายการงานอีกครั้ง");
+    const params=new URLSearchParams(location.search),id=params.get("submission"),archiveId=params.get("archive"),eventId=params.get("event");
+    if(!id&&!archiveId&&!eventId)throw new Error("ไม่พบรายการส่งตรวจ กรุณาเปิดเล่มจากรายการงานอีกครั้ง");
     const auth=await sb.auth.getSession();if(auth.error)throw auth.error;
     if(!auth.data.session)throw new Error("กรุณาเข้าสู่ระบบ แล้วเปิดเล่มจากหน้ารายการงานอีกครั้ง");
     const profile=await sb.from("profiles").select("role").eq("id",auth.data.session.user.id).single();
     if(profile.error)throw profile.error;
     document.getElementById("backLink").href=(window.cloudRoleDashboardPath(profile.data.role)||"classrooms.html");
     let sub,archivedSnapshot=null;
-    if(archiveId){
+    if(eventId){
+      const historical=await sb.from("workflow_events").select("snapshot").eq("id",eventId).single();if(historical.error)throw historical.error;archivedSnapshot=historical.data.snapshot;if(!archivedSnapshot)throw new Error("รายการนี้ไม่มีเล่มย้อนหลัง");sub=archivedSnapshot.submission;
+    }else if(archiveId){
       const archived=await sb.from("classroom_monthly_archives").select("snapshot").eq("id",archiveId).single();
       if(archived.error)throw archived.error;
       archivedSnapshot=archived.data.snapshot;sub=archivedSnapshot.submission;
@@ -46,7 +48,7 @@
     const month=new Date(ym+"-01T12:00:00").toLocaleDateString("th-TH",{month:"long",year:"numeric"});
     document.getElementById("bookTitle").textContent="เล่มธุรการ "+c.class_level+"/"+c.room+" • "+month+" • ภาคเรียน "+c.term+" ปีการศึกษา "+c.academic_year;
     document.title=document.getElementById("bookTitle").textContent;
-    document.getElementById("bookStatus").textContent=sub.status==="approved"?"ฉบับอนุมัติจากคลังเอกสาร":"ข้อมูลปัจจุบันของห้องสำหรับตรวจงานเดือนที่ส่ง • อ่านอย่างเดียว";
+    document.getElementById("bookStatus").textContent=eventId?"เล่มรอบเดิมก่อนคืนแก้ไข • ไม่ใช่ฉบับอนุมัติปัจจุบัน":sub.status==="approved"?"ฉบับอนุมัติจากคลังเอกสาร":"ข้อมูลปัจจุบันของห้องสำหรับตรวจงานเดือนที่ส่ง • อ่านอย่างเดียว";
     await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="print/print.js";script.onload=resolve;script.onerror=()=>reject(new Error("โหลดแบบพิมพ์ไม่สำเร็จ"));document.body.appendChild(script)});
     if(!document.getElementById("sheet").textContent.trim())throw new Error("สร้างเล่มไม่สำเร็จ กรุณาลองใหม่");
     message.hidden=true;document.getElementById("printBook").disabled=false;
@@ -57,4 +59,3 @@
     }
   }catch(e){document.getElementById("sheet").textContent="";message.textContent=e.message||String(e);document.getElementById("bookTitle").textContent="เปิดเล่มไม่สำเร็จ";}
 })();
-

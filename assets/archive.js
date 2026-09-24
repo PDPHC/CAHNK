@@ -26,7 +26,7 @@
       return '<article class="archive-card"><div><h3>'+esc(roomLabel(r))+' • '+esc(monthLabel(x.report_month))+'</h3>'+
       '<div class="sub">ภาคเรียนที่ '+esc(x.term)+' ปีการศึกษา '+esc(x.academic_year)+'</div>'+
       '<div class="archive-meta"><span>ส่ง: '+esc(thaiDate(x.submitted_at))+(late?' • ล่าช้า':'')+'</span><span>Academic: '+esc(x.academic_approved_name||"-")+'</span><span>Deputy: '+esc(x.approved_name||"-")+'</span><span>อนุมัติ: '+esc(thaiDate(x.approved_at))+'</span></div></div>'+
-      '<div class="actions"><a class="btn primary" href="review-book.html?archive='+encodeURIComponent(x.id)+'" target="_blank" rel="noopener">📖 ดูเล่มธุรการ</a><a class="btn gray" href="review-book.html?archive='+encodeURIComponent(x.id)+'&amp;print=1" target="_blank" rel="noopener">พิมพ์ / บันทึก PDF</a><button class="btn gray" onclick="archiveOpenRoom(\''+x.classroom_id+'\')">เปิดห้องปัจจุบัน</button><button class="btn gray" onclick="archiveDownload(\''+x.id+'\')">ดาวน์โหลดข้อมูลที่อนุมัติ</button>'+(state.profile.role==='deputy_director'?'<button class="btn danger" type="button" onclick="archiveDelete(\''+x.id+'\',this)">ลบเล่ม</button>':'')+'</div></article>';
+      '<div class="actions"><a class="btn primary" href="review-book.html?archive='+encodeURIComponent(x.id)+'" target="_blank" rel="noopener">📖 ดูเล่มธุรการ</a><a class="btn gray" href="review-book.html?archive='+encodeURIComponent(x.id)+'&amp;print=1" target="_blank" rel="noopener">พิมพ์ / บันทึก PDF</a><button class="btn gray" onclick="archiveOpenRoom(\''+x.classroom_id+'\')">เปิดห้องปัจจุบัน</button><button class="btn gray" onclick="archiveDownload(\''+x.id+'\')">ดาวน์โหลดข้อมูลที่อนุมัติ</button>'+'<button class="btn gray" onclick="workflowHistory(\''+x.classroom_id+'\',\''+x.report_month+'\')">ประวัติ</button>'+(state.profile.role==='deputy_director'?'<button class="btn primary" onclick="workflowReturnBook(\''+x.id+'\',this.closest(\'article\').querySelector(\'h3\').textContent)">คืนให้ครูแก้ไข</button>':'')+(state.profile.role==='deputy_director'?'<button class="btn danger" type="button" onclick="archiveDelete(\''+x.id+'\',this)">ลบเล่ม</button>':'')+'</div></article>';
     }).join(""):'<div class="empty-room-state">ไม่พบข้อมูลที่อนุมัติในตัวกรองนี้</div>';
   }
   window.archiveOpenRoom=function(cid){localStorage.setItem(ACTIVE_KEY,cid);location.href="index.html"};
@@ -47,11 +47,12 @@
       var result=await sb.from("classroom_monthly_archives").delete().eq("id",id).select("id");
       if(result.error)throw result.error;
       if(!result.data||result.data.length!==1)throw new Error("ไม่พบเล่ม หรือไม่มีสิทธิ์ลบ กรุณาโหลดหน้าใหม่");
-      state.rows=state.rows.filter(function(r){return r.id!==id});render();
+      state.rows=state.rows.filter(function(r){return r.id!==id});render();if(window.workflowToast)workflowToast("ลบเล่มแล้ว สถานะกลับเป็นยังไม่ส่ง");
     }catch(e){alert("ลบเล่มไม่สำเร็จ: "+e.message)}
     finally{deleting=false;if(button){button.disabled=false;button.textContent="ลบเล่ม"}}
   };
   window.archiveRender=render;
+  window.workflowRefresh=async function(){await window.startArchivePage()};
   window.startArchivePage=async function(){
     try{
       var s=await sb.auth.getSession();if(s.error)throw s.error;state.user=s.data.session?s.data.session.user:null;if(!state.user){location.href="login.html";return}

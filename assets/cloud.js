@@ -266,7 +266,7 @@
     document.querySelectorAll("input,select,textarea").forEach(x=>{if(!x.classList.contains("cloud-allow"))x.disabled=true});
     document.querySelectorAll("button").forEach(btn=>{
       const code=btn.getAttribute("onclick")||"";
-      if(/openPrint|openClassroomBook|cloudPrintMonthlyBook|cloudLogout/.test(code))return;
+      if(/openPrint|openClassroomBook|cloudPrintMonthlyBook|workflowHistory|cloudLogout/.test(code))return;
       btn.disabled=true;
     });
     const content=document.querySelector(".content");
@@ -694,15 +694,18 @@
         <div><span>การส่ง</span><b class="${late||submittedLate?"workflow-late":"workflow-ok"}">${sub?.submitted_at?(submittedLate?"ส่งล่าช้า":"ส่งตรงเวลา"):(late?"เกินกำหนด":"ยังไม่ส่ง")}</b></div>
       </div>
       ${sub?.status==="approved"?`<div class="notice workflow-approved-note">✓ เดือนนี้ผ่านการอนุมัติขั้นสุดท้ายแล้ว และบันทึกเข้าคลังฐานข้อมูลปีการศึกษาเรียบร้อย</div>`:""}
-      ${teacherCanSubmit?`<div class="notice"><b>ตรวจข้อมูลก่อนส่ง</b><p>ต้องกรอกโฮมรูม การมาเรียน พฤติกรรม และสุขภาพให้ครบ • จิตอาสาไม่บังคับ</p><p>ถ้าไม่มีรายการ ให้ยืนยันเฉพาะเดือนนี้ ระบบจะแสดงหมายเหตุในเล่ม:</p>${[["savings_none","เดือนนี้ไม่มีการออมทรัพย์"],["scholarship_none","เดือนนี้ไม่มีการมอบทุนใด ๆ"]].map(([key,label])=>`<label style="display:block;margin:8px 0"><input class="cloud-allow" type="checkbox" ${hget("module_report_checks",{})[ym]?.[key]?"checked":""} onchange="cloudSetNoActivity('${ym}','${key}',this.checked)"> ${label}</label>`).join("")}<button class="btn gray cloud-allow" onclick="cloudCheckMonthlySubmission()">ตรวจความครบถ้วน</button></div>`:""}
+      ${teacherCanSubmit?`<div class="notice"><b>ความพร้อมของเล่มประจำเดือน</b><div id="monthlyReadiness" class="readiness-grid" aria-live="polite">กำลังตรวจข้อมูลทั้ง 7 แบบ...</div><p>ต้องกรอกโฮมรูม การมาเรียน พฤติกรรม และสุขภาพให้ครบ • จิตอาสาไม่บังคับ</p><p>ถ้าไม่มีรายการ ให้ยืนยันเฉพาะเดือนนี้ ระบบจะแสดงหมายเหตุในเล่ม:</p>${[["savings_none","เดือนนี้ไม่มีการออมทรัพย์"],["scholarship_none","เดือนนี้ไม่มีการมอบทุนใด ๆ"]].map(([key,label])=>`<label style="display:block;margin:8px 0"><input class="cloud-allow" type="checkbox" ${hget("module_report_checks",{})[ym]?.[key]?"checked":""} onchange="cloudSetNoActivity('${ym}','${key}',this.checked)"> ${label}</label>`).join("")}<button class="btn gray cloud-allow" onclick="cloudCheckMonthlySubmission()">ตรวจความครบถ้วน</button></div>`:""}
       <div class="actions">
-        ${teacherCanSubmit?`<button class="btn primary" onclick="cloudSubmitClassroomBook()">📤 ${sub?"ส่งแก้ไข":"ส่ง"} ${esc(reportMonthLabel(ym))} ให้ Academic ตรวจ</button>`:""}
+        ${teacherCanSubmit?`<button class="btn primary" onclick="cloudSubmitClassroomBook()">📤 ${sub?"ส่งแก้ไข":"ส่ง"} ${esc(reportMonthLabel(ym))} ให้วิชาการตรวจ</button>`:""}
+        ${ym?`<button class="btn gray" onclick="workflowHistory('${state.classroom.id}','${ym}')">ประวัติการดำเนินการ</button>`:""}
         ${ym?`<button class="btn gray" onclick="cloudPrintMonthlyBook('${ym}')">🖨 พิมพ์เล่มเดือนนี้</button>`:""}
       </div>
       ${comments.length?`<div class="workflow-comments"><b>ความคิดเห็นล่าสุด</b>${comments.slice(0,5).map(x=>`<div class="workflow-comment"><span>${esc(x.comment)}</span><small>${new Date(x.created_at).toLocaleString("th-TH")}</small></div>`).join("")}</div>`:"<div class='sub'>ยังไม่มีความคิดเห็นจากผู้ตรวจ</div>"}
     `;
+    if(teacherCanSubmit)window.cloudRefreshReadiness();
   }
 
+  window.workflowRefresh=async()=>{if(state.classroom?.id){await syncWorkflowApproval(state.classroom.id);await renderCurrentSubmission()}};
   window.cloudPrintMonthlyBook=async ym=>{
     const target=rootPath()+"print/form.html?module=book&month="+encodeURIComponent(ym);
     const win=window.open("about:blank","_blank");
@@ -717,6 +720,21 @@
     checks[ym]={...(checks[ym]||{}),[key]:!!value};
     hset("module_report_checks",checks);
     window.cloudQueueModuleSave("report_checks",checks);
+    if(document.getElementById("monthlyReadiness"))await window.cloudRefreshReadiness();
+  };
+
+
+  function renderReadiness(issues,ym){
+    const host=document.getElementById('monthlyReadiness');if(!host||ym!==state.reportMonth)return;
+    const modules=[['homeroom','โฮมรูม'],['attendance','การมาเรียน'],['savings','ออมทรัพย์'],['behavior','พฤติกรรม'],['health','สุขภาพ'],['scholarship','รับทุน'],['volunteer','จิตอาสา']];
+    const general=issues.filter(x=>!modules.some(m=>m[0]===x.module));
+    host.innerHTML=(general.length?'<div class="readiness-general">'+general.map(x=>esc(x.message)).join('<br>')+'</div>':'')+modules.map(([key,label])=>{const missing=issues.filter(x=>x.module===key),optional=key==='volunteer',ready=!missing.length&&!general.length;return '<a class="readiness-item '+(optional?'optional':ready?'ready':'incomplete')+'" href="'+rootPath()+'modules/'+key+'.html?month='+encodeURIComponent(ym)+'"><span>'+esc(label)+'</span><strong>'+(optional?'ไม่บังคับ':missing.length?'ต้องแก้ไข':general.length?'รอตรวจข้อมูลพื้นฐาน':'ครบแล้ว ✓')+'</strong><small>'+esc(missing.map(x=>x.message).join(' • ')||(optional?'บันทึกเมื่อมีกิจกรรม':ready?'เปิดตรวจหรือแก้ไขข้อมูล':'กรอกข้อมูลห้องเรียนให้ครบก่อน'))+'</small></a>'}).join('');
+  }
+  let readinessRequest=0;
+  window.cloudRefreshReadiness=async()=>{
+    const request=++readinessRequest,ym=state.reportMonth;
+    try{await window.cloudFlushPending();const r=await sb.rpc('validate_monthly_submission',{p_classroom_id:state.classroom.id,p_report_month:reportMonthDate(ym)});if(r.error)throw r.error;if(!Array.isArray(r.data))throw new Error('ไม่ได้รับผลตรวจ');if(request===readinessRequest)renderReadiness(r.data,ym)}
+    catch(e){const host=document.getElementById('monthlyReadiness');if(host&&request===readinessRequest)host.textContent='ตรวจไม่สำเร็จ กดตรวจความครบถ้วนเพื่อลองใหม่: '+e.message}
   };
 
   function showSubmissionIssues(issues){
@@ -734,6 +752,7 @@
     const {data,error}=await sb.rpc("validate_monthly_submission",{p_classroom_id:state.classroom.id,p_report_month:reportMonthDate(state.reportMonth)});
     if(error)throw error;
     if(!Array.isArray(data))throw new Error("ตรวจข้อมูลไม่สำเร็จ กรุณาลองใหม่");
+    renderReadiness(data,state.reportMonth);
     if(data.length){showSubmissionIssues(data);return false}
     return true;
   }
@@ -750,7 +769,7 @@
       const existing=await getCurrentSubmission(ym);
       if(existing&&existing.status!=="returned_by_academic")return alert("รายการเดือนนี้อยู่ระหว่างการตรวจหรืออนุมัติแล้ว");
       if(!await checkMonthlySubmission())return;
-      if(!confirm("ข้อมูลครบแล้ว ยืนยันส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic ตรวจ?"))return;
+      if(!confirm("ข้อมูลครบแล้ว ยืนยันส่งธุรการ "+reportMonthLabel(ym)+" ให้วิชาการตรวจ?"))return;
       await window.cloudFlushPending();
       const now=new Date().toISOString();
       const payload={classroom_id:state.classroom.id,report_month:reportMonthDate(ym),due_date:reportDueDate(ym),status:"submitted_to_academic",submitted_by:existing?.submitted_by||state.user.id,submitted_at:existing?.submitted_at||now,forwarded_by:null,forwarded_at:null,academic_approved_by:null,academic_approved_at:null,academic_approved_name:null,academic_signature_data:null,approved_by:null,approved_at:null,approved_name:null,deputy_signature_data:null,updated_at:now};
@@ -759,7 +778,7 @@
         :await sb.from("classroom_submissions").insert(payload).select("id");
       if(res.error){let issues;try{issues=JSON.parse(res.error.details)}catch(_){}if(Array.isArray(issues)){showSubmissionIssues(issues);return}throw res.error}
       if(!res.data?.length)throw new Error("สถานะงานเปลี่ยนไปแล้ว กรุณาโหลดรายการใหม่");
-      alert("ส่งธุรการ "+reportMonthLabel(ym)+" ให้ Academic เรียบร้อย");
+      alert("ส่งธุรการ "+reportMonthLabel(ym)+" ให้วิชาการเรียบร้อย");
       await syncWorkflowApproval(state.classroom.id);await renderCurrentSubmission();
     }catch(e){alert("ส่งไม่สำเร็จ: "+e.message)}
     finally{submitting=false}

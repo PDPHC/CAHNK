@@ -1,0 +1,37 @@
+@media screen {
+ :root{--workflow-purple:#6935a1;--workflow-muted:#756680}
+ .role-dashboard-page{max-width:1400px;margin:auto;padding:28px clamp(16px,3vw,44px)}
+ .role-dashboard-head{background:linear-gradient(120deg,#fff 45%,#eee4fa);border:1px solid #e6d8f2;box-shadow:0 8px 30px #54248308}
+ .role-dashboard-head h1{font-size:clamp(23px,2.4vw,32px);letter-spacing:-.5px}
+ .role-dashboard-toolbar{display:flex!important;flex-wrap:wrap;gap:10px;align-items:center}
+ .role-dashboard-toolbar select{width:auto!important;min-width:195px;flex:1}
+ .role-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+ .role-summary-card{padding:16px 20px!important;box-shadow:none!important;border:1px solid #eee5f5!important}
+ .role-summary-card strong{font-size:28px!important}.role-summary-card span{font-size:13px}
+ .job-toolbar{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:30px 0 18px}
+ .job-toolbar>div{margin-right:auto}.job-toolbar h2{margin:0;font-size:22px}.job-toolbar p{margin:5px 0}
+ .job-toolbar label{font-size:13px;color:var(--workflow-muted)}.job-toolbar input{display:block;min-width:220px}
+ .workflow-tabs{display:flex;gap:8px;overflow-x:auto;margin:16px 0 22px;padding-bottom:5px}
+ .workflow-tab{white-space:nowrap;background:white;border:1px solid #e5d8ef;border-radius:100px;padding:10px 18px;color:#6c527e;font:inherit;cursor:pointer}
+ .workflow-tab b{margin-left:8px;border-radius:30px;padding:2px 7px;background:#f3edf9}
+ .workflow-tab[aria-pressed=true]{background:#6935a1;color:white;border-color:#6935a1}.workflow-tab[aria-pressed=true] b{background:#ffffff24}
+ .role-room-card{border:1px solid #e7dbf0!important;border-radius:20px!important;box-shadow:0 4px 18px #56278206!important;padding:24px!important}
+ .role-room-card h3{font-size:23px!important}.room-month-label{font-size:13px;color:#775887;background:#f7f2fc;padding:9px 12px;border-radius:8px}
+ .role-room-tools{display:inline-flex;gap:8px;margin:8px 8px 0 0;flex-wrap:wrap}
+ .role-action-box{background:#f8f5fc!important;border:1px solid #eee4f5!important;border-radius:14px;padding:16px;margin-top:18px}
+ .role-action-box textarea{background:white;min-height:85px}.role-status{white-space:normal}
+ .director-charts{margin-top:28px}.role-overview-panel{padding:18px!important}.role-overview-panel h2{font-size:17px}
+ .workflow-card{border:1px solid #d9c3ef!important;box-shadow:0 10px 35px #54248309;margin:24px 0!important}
+ .workflow-head h2{font-size:24px;color:#53277d}.workflow-month-summary{background:#f8f4fd;border-radius:14px;padding:16px}
+ .readiness-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+ .readiness-item{display:grid;grid-template-columns:1fr auto;gap:6px 10px;background:#fff;border:1px solid #e4d9ee;padding:14px;border-radius:12px;text-decoration:none;color:#4e365f}
+ .readiness-item strong{font-size:12px;padding:3px 8px;border-radius:20px;background:#fff0dd;color:#99610e}.readiness-item.ready strong{background:#e7f6ed;color:#257341}.readiness-item.optional strong{background:#f0eaf8;color:#75518d}
+ .readiness-item small{grid-column:1/-1;color:#746480;line-height:1.65}.readiness-general{grid-column:1/-1;color:#9b382f;background:#fff0ed;padding:14px;border-radius:12px}
+ .workflow-dialog{width:min(680px,calc(100vw - 32px));max-height:85vh;box-sizing:border-box;border:1px solid #e5d8ef;border-radius:24px;padding:28px;box-shadow:0 24px 90px #32124b40;color:#43324d}
+ .workflow-dialog::backdrop{background:#24103475;backdrop-filter:blur(3px)}.dialog-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.dialog-heading h2{font-size:23px;margin:0 0 12px;color:#552b7a}
+ .workflow-dialog textarea{width:100%;box-sizing:border-box;margin-top:8px}.return-context{background:#f3eafa;border-radius:12px;padding:14px;font-weight:700;margin:16px 0}#returnBookError{color:#b33535}
+ .workflow-timeline{list-style:none;padding-left:20px;border-left:2px solid #e6d7f3}.workflow-timeline li{position:relative;margin:0 0 22px;padding-left:8px}.workflow-timeline li:before{content:'';position:absolute;left:-27px;top:6px;width:10px;height:10px;border-radius:50%;background:#9255bf;border:2px solid white}.workflow-timeline p{font-size:14px;color:#756780;margin:6px 0}
+ #workflowToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;background:#3e205b;color:white;padding:15px 24px;border-radius:14px;box-shadow:0 8px 30px #29103930;max-width:calc(100vw - 60px)}
+ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #be90dd;outline-offset:3px}button:disabled{opacity:.55;cursor:wait}
+ @media(max-width:700px){.role-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.role-dashboard-toolbar select{width:100%!important}.job-toolbar>*{width:100%}.job-toolbar input{min-width:0;width:100%;box-sizing:border-box}.readiness-grid{grid-template-columns:1fr}.role-room-card{padding:18px!important}.role-room-head{flex-direction:column;align-items:start}.workflow-dialog{padding:20px}.role-action-buttons .btn{flex:1}.role-room-tools .btn{font-size:13px}}
+}
