@@ -23,5 +23,11 @@ const JSZip=require('../assets/vendor/jszip-3.10.1.min.js'),{Calculator,parse}=r
  const full={};for(let i=0;i<44;i++){full['IN!C'+(i+4)]='T'+(i+1);full['IN!D'+(i+4)]='นักเรียน '+(i+1);full['IN!E'+(i+4)]=20;full['IN!J'+(i+4)]=30}
  calc=new Calculator(data.cells,full);for(const p of data.pages)for(const [,,ref] of p.cells)calc.get(p.sheet,ref);
  ok(calc.get('E','C52'),'T44');ok(data.pages.length,10);
+ // Regression: serialized OOXML widths include padding; adding another 5px
+ // distorted wide sheets and forced inconsistent zoom between printed pages.
+ ok(data.pages[0].widths[0],15.75);
+ ok(data.pages.filter(p=>p.sheet==='C').map(p=>p.scale),[.96,.96,.96]);
+ ok(data.pages.filter(p=>p.sheet==='B').every(p=>p.centerX),true);
+ for(const p of data.pages){const w=p.widths.reduce((a,b)=>a+b,0),h=p.heights.reduce((a,b)=>a+b,0),pw=p.paper==='legal'?612:210*72/25.4,ph=p.paper==='legal'?1008:297*72/25.4,[l,r,t,b]=p.margins,scale=p.fit?Math.min((pw-l-r)/w,(ph-t-b)/h,1):p.scale;assert.ok(w*scale<=pw-l-r+.01,p.area+' width');assert.ok(h*scale<=ph-t-b+.01,p.area+' height');checks++}
  console.log(JSON.stringify({passed:checks,formulasParsed:formulas,pagesRenderedWithoutFormulaErrors:10,rosterBoundary:44}));
 })().catch(e=>{console.error(e);process.exitCode=1});
