@@ -24,9 +24,34 @@
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);span.textContent=display(v,s)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
+    // These Excel labels overflow narrow, unmerged cells. Render a complete
+    // signature row below instead of clipping wrapped text to column C.
+    if(page.sheet==='A'&&['C37','C39','C41','C44','C46','C47','L47'].includes(ref))span.textContent='';
+    if(page.sheet==='G'&&['C31','D31','E31','F31','G31'].includes(ref))span.textContent='';
+    if(page.sheet==='G'&&['A32','A33'].includes(ref)){
+     // Template indentation was made from spaces and manual line breaks.
+     // Keep every word while letting the browser wrap each instruction normally.
+     span.textContent=String(v??'').replace(/\s+/g,' ').trim().replace(/ +(?=\*\*|-(?:ช่วงคะแนน|ความหมาย|ระดับผล))/g,'\n');
+     cell.classList.add('criteria-notes');cell.style.alignItems='flex-start';
+    }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';cell.append(span);sheet.append(cell);
    }
    if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
+   if(page.sheet==='A'){
+    const roles={37:'ครูผู้สอน/ครูประจำรายวิชา',39:'หัวหน้ากลุ่มสาระการเรียนรู้',41:'วัดผลช่วงชั้นมัธยมศึกษาตอนต้น',44:'รองผู้อำนวยการกลุ่มงานวิชาการ',47:'ผู้อำนวยการโรงเรียน'};
+    for(const [row,role] of Object.entries(roles)){
+     const line=document.createElement('div');line.className='signature-row';line.dataset.signatureRow=row;
+     Object.assign(line.style,{left:xs[3]+'pt',top:ys[Number(row)-3]+'pt',width:(xs[xs.length-1]-xs[3]-4)+'pt',height:page.heights[Number(row)-3]+'pt'});
+     const label=document.createElement('span');label.textContent='ลงชื่อ';
+     const rule=document.createElement('span');rule.className='signature-rule';
+     const title=document.createElement('span');title.className='signature-role';title.textContent=role;
+     line.append(label,rule,title);sheet.append(line);
+    }
+    const choices=document.createElement('div');choices.className='approval-choices';
+    Object.assign(choices.style,{left:xs[3]+'pt',top:ys[43]+'pt',width:(xs[xs.length-1]-xs[3]-4)+'pt',height:page.heights[43]+'pt'});
+    for(const text of ['อนุมัติ','ไม่อนุมัติ']){const choice=document.createElement('span');choice.className='approval-choice';const box=document.createElement('span');box.className='approval-box';box.setAttribute('aria-hidden','true');choice.append(box,document.createTextNode(text));choices.append(choice)}
+    sheet.append(choices);
+   }
    paper.append(sheet);pages.append(paper);
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
