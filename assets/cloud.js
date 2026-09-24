@@ -628,6 +628,7 @@
 
   window.cloudChangeReportMonth=async ym=>{
     state.reportMonth=ym;
+    sessionStorage.setItem("hnk_report_month",ym);
     await renderCurrentSubmission();
   };
 
@@ -704,7 +705,7 @@
     if(!dialog){dialog=document.createElement("dialog");dialog.id="submissionIssuesDialog";document.body.appendChild(dialog)}
     dialog.style.cssText="max-width:680px;width:90%;max-height:85vh;overflow:auto;padding:24px;border:1px solid #ddd;border-radius:12px";
     const links={settings:"settings.html",students:"settings.html",homeroom:"modules/homeroom.html",attendance:"modules/attendance.html",savings:"modules/savings.html",behavior:"modules/behavior.html",health:"modules/health.html",scholarship:"modules/scholarship.html"};
-    dialog.innerHTML='<h2 id="submissionIssuesTitle">ข้อมูลยังไม่ครบ — ยังส่งไม่ได้</h2><p>กรุณาแก้ไขรายการต่อไปนี้ แล้วตรวจอีกครั้ง</p><ul>'+issues.map(x=>'<li style="margin:12px 0">'+esc(x.message)+(links[x.module]?' <a href="'+rootPath()+links[x.module]+'">เปิดแบบบันทึก</a>':"")+'</li>').join("")+'</ul><button class="btn primary cloud-allow" id="closeSubmissionIssues">กลับไปแก้ไข</button>';
+    dialog.innerHTML='<h2 id="submissionIssuesTitle">ข้อมูลยังไม่ครบ — ยังส่งไม่ได้</h2><p>กรุณาแก้ไขรายการต่อไปนี้ แล้วตรวจอีกครั้ง</p><ul>'+issues.map(x=>'<li style="margin:12px 0">'+esc(x.message)+(links[x.module]?' <a href="'+rootPath()+links[x.module]+'?month='+encodeURIComponent(state.reportMonth)+'">เปิดแบบบันทึก</a>':"")+'</li>').join("")+'</ul><button class="btn primary cloud-allow" id="closeSubmissionIssues">กลับไปแก้ไข</button>';
     dialog.setAttribute("aria-labelledby","submissionIssuesTitle");
     document.getElementById("closeSubmissionIssues").onclick=()=>dialog.close();
     if(!dialog.open)dialog.showModal();
