@@ -20,6 +20,7 @@
  }
  const sidebar=document.querySelector('.sidebar');
  if(sidebar){
+   const pp5nav=sidebar.querySelector('.nav');if(pp5nav&&!pp5nav.querySelector('a[href$="pp5.html"]')){const a=document.createElement('a');a.href=root+'modules/pp5.html';a.textContent='ปพ.5 ผลการเรียน';pp5nav.append(a)}
    sidebar.id='suiteSidebar';sidebar.setAttribute('aria-label','เมนูหลัก');
    const brand=sidebar.querySelector('.brand');if(brand)brand.innerHTML=icon('rooms')+'<div>ธุรการชั้นเรียน<small>พื้นที่ทำงานของครู</small></div>';
    sidebar.querySelectorAll('.nav a').forEach(a=>{const file=a.getAttribute('href').split('/').pop(),label=labels[file]||clean(a.textContent);a.replaceChildren();a.insertAdjacentHTML('beforeend',icon(iconFor(file)));const span=document.createElement('span');span.textContent=label;a.append(span);if(a.classList.contains('active'))a.setAttribute('aria-current','page')});

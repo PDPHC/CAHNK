@@ -1,0 +1,43 @@
+begin;
+create temp table pp5_ids as select gen_random_uuid() actor,gen_random_uuid() outsider,gen_random_uuid() room,gen_random_uuid() book;
+grant select on pp5_ids to authenticated;
+insert into auth.users(id,email) select actor,actor::text||'@example.invalid' from pp5_ids union all select outsider,outsider::text||'@example.invalid' from pp5_ids;
+update public.profiles set role='teacher' where id in (select actor from pp5_ids union select outsider from pp5_ids);
+insert into public.classrooms(id,class_level,room,academic_year,term,created_by) select room,'TEST',actor::text,2569,1,actor from pp5_ids;
+insert into public.classroom_teachers(classroom_id,teacher_id,permission) select room,actor,'editor' from pp5_ids;
+select set_config('request.jwt.claim.sub',(select actor::text from pp5_ids),true);
+set local role authenticated;
+insert into public.pp5_books(id,classroom_id,title,template_name,template_base64,updated_by) select book,room,'PP5 RLS TEST','test.xlsx','AA==',actor from pp5_ids;
+update public.pp5_books set patches='{"IN!E4":12}',updated_by=(select actor from pp5_ids) where id=(select book from pp5_ids) and revision=1;
+do $$ begin if not exists(select 1 from public.pp5_books where id=(select book from pp5_ids) and revision=2) then raise exception 'revision failed'; end if; end $$;
+update public.pp5_books set patches='{}' where id=(select book from pp5_ids) and revision=1;
+do $$ begin if not exists(select 1 from public.pp5_books where id=(select book from pp5_ids) and patches='{"IN!E4":12}') then raise exception 'stale update overwrote data'; end if; end $$;
+reset role;
+update public.classroom_teachers set permission='viewer' where classroom_id=(select room from pp5_ids);
+set local role authenticated;
+do $$ declare changed int; begin
+ update public.pp5_books set title='DENIED' where id=(select book from pp5_ids); get diagnostics changed=row_count;
+ if changed<>0 then raise exception 'viewer wrote book'; end if;
+ if not exists(select 1 from public.pp5_books where id=(select book from pp5_ids)) then raise exception 'viewer cannot read'; end if;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select outsider::text from pp5_ids),true);
+set local role authenticated;
+do $$ begin
+ if exists(select 1 from public.pp5_books where id=(select book from pp5_ids)) then raise exception 'other classroom exposed'; end if;
+ begin insert into public.pp5_books(classroom_id,title,template_name,template_base64,updated_by) select room,'DENIED','x','AA==',outsider from pp5_ids; raise exception 'outsider insert allowed'; exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+update public.profiles set role='academic' where id=(select outsider from pp5_ids);
+set local role authenticated;
+do $$ declare changed int; begin
+ if not exists(select 1 from public.pp5_books where id=(select book from pp5_ids)) then raise exception 'academic cannot read'; end if;
+ update public.pp5_books set title='DENIED' where id=(select book from pp5_ids); get diagnostics changed=row_count;
+ if changed<>0 then raise exception 'academic wrote book'; end if;
+end $$;
+reset role;
+set local role anon;
+do $$ begin begin perform 1 from public.pp5_books; raise exception 'anon access allowed'; exception when insufficient_privilege then null; end; end $$;
+reset role;
+select 'PASS: editor read/write, optimistic version, viewer read-only, classroom isolation, academic read-only, anonymous denied' as result;
+rollback;
