@@ -265,6 +265,7 @@
     if(state.permission!=="viewer")return;
     document.querySelectorAll("input,select,textarea").forEach(x=>{if(!x.classList.contains("cloud-allow"))x.disabled=true});
     document.querySelectorAll("button").forEach(btn=>{
+      if(btn.classList.contains("suite-menu-button")||btn.classList.contains("suite-nav-backdrop"))return;
       const code=btn.getAttribute("onclick")||"";
       if(/openPrint|openClassroomBook|cloudPrintMonthlyBook|workflowHistory|cloudLogout/.test(code))return;
       btn.disabled=true;
