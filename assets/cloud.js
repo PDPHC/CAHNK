@@ -551,6 +551,7 @@
     ]);
     if(pr.error)throw pr.error;if(cr.error)throw cr.error;if(ar.error)throw ar.error;
     const profiles=pr.data||[],rooms=cr.data||[],assignments=ar.data||[],pm=new Map(profiles.map(x=>[x.id,x])),cm=new Map(rooms.map(x=>[x.id,x]));
+    state.adminProfiles=profiles;
     document.getElementById("assignTeacher").innerHTML=profiles.filter(p=>p.role==="teacher").map(p=>`<option value="${p.id}">${esc(p.display_name||p.email)} — ${esc(p.email||"")}</option>`).join("");
     document.getElementById("assignClassroom").innerHTML=rooms.map(r=>`<option value="${r.id}">${esc(r.class_level)}/${esc(r.room)} • ${esc(r.academic_year)}/${esc(r.term)}</option>`).join("");
     document.getElementById("teacherTableBody").innerHTML=profiles.map(p=>`<tr><td>${esc(p.display_name||"")}</td><td>${esc(p.email||"")}</td>
@@ -560,7 +561,7 @@
         <option value="admin" ${p.role==="admin"?"selected":""}>Admin</option>
         <option value="academic" ${p.role==="academic"?"selected":""}>Academic</option>
         <option value="teacher" ${p.role==="teacher"?"selected":""}>Teacher</option>
-      </select></td><td><button class="btn gray" type="button" onclick="cloudRenameProfile('${p.id}','${esc(p.display_name||"")}')">แก้ชื่อ</button></td></tr>`).join("");
+      </select></td><td><button class="btn gray" type="button" onclick="cloudRenameProfile('${p.id}','${esc(p.display_name||"")}')">แก้ชื่อ</button> ${state.profile.role==="admin"&&p.id!==state.user.id?`<button class="btn danger" type="button" onclick="cloudAdminDeleteUser('${p.id}',this)">ลบบัญชี</button>`:""}</td></tr>`).join("");
     document.getElementById("assignmentTableBody").innerHTML=assignments.length?assignments.map(a=>{
       const p=pm.get(a.teacher_id),r=cm.get(a.classroom_id);
       return `<tr><td>${esc(p?.display_name||p?.email||a.teacher_id)}</td><td>${esc(r?`${r.class_level}/${r.room} • ${r.academic_year}/${r.term}`:a.classroom_id)}</td>
@@ -598,6 +599,24 @@
     const {error}=await sb.from("profiles").update({role}).eq("id",userId);
     if(error)return alert("เปลี่ยนสิทธิ์ไม่สำเร็จ: "+error.message);
     await adminReload();
+  };
+
+  let deletingUser=false;
+  window.cloudAdminDeleteUser=async(userId,button)=>{
+    if(state.profile?.role!=="admin")return alert("เฉพาะ Admin เท่านั้นที่ลบบัญชีได้");
+    if(userId===state.user?.id)return alert("ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่");
+    const profile=(state.adminProfiles||[]).find(p=>p.id===userId);
+    if(!profile||deletingUser)return;
+    if(!confirm("ยืนยันลบบัญชี "+(profile.display_name||"")+" ("+(profile.email||userId)+") ถาวร?\nบัญชีจะเข้าสู่ระบบไม่ได้และสิทธิ์ประจำห้องจะถูกถอน ข้อมูลห้องเรียนและเล่มที่อนุมัติแล้วจะยังคงอยู่"))return;
+    deletingUser=true;if(button){button.disabled=true;button.textContent="กำลังลบ..."}
+    try{
+      const {data,error}=await sb.functions.invoke("admin-delete-user",{body:{user_id:userId}});
+      if(error){let detail;try{detail=await error.context?.json()}catch(_){}throw new Error(detail?.error||error.message)}
+      if(data?.error||!data?.ok)throw new Error(data?.error||"ไม่ได้รับการยืนยันการลบบัญชี");
+      await adminReload();
+      alert("ลบบัญชีเรียบร้อยแล้ว");
+    }catch(e){alert("ลบบัญชีไม่สำเร็จ: "+e.message)}
+    finally{deletingUser=false;if(button){button.disabled=false;button.textContent="ลบบัญชี"}}
   };
 
   window.cloudAdminInviteUser=async()=>{
@@ -920,4 +939,3 @@
   };
 
 })();
-
