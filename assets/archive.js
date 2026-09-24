@@ -41,7 +41,7 @@
   window.archiveDelete=async function(id,button){
     if(!state.profile||state.profile.role!=="deputy_director")return alert("เฉพาะรองผู้อำนวยการเท่านั้นที่ลบเล่มได้");
     var x=state.rows.find(function(r){return r.id===id});if(!x||deleting)return;
-    if(!confirm("ยืนยันลบเล่ม "+roomLabel(x.classrooms)+" • "+monthLabel(x.report_month)+" ออกจากคลังถาวร?\nข้อมูลห้องเรียนและสถานะอนุมัติยังคงเดิม แต่จะเปิดหรือดาวน์โหลดเล่มที่เก็บไว้นี้ไม่ได้อีก"))return;
+    if(!confirm("ยืนยันลบเล่ม "+roomLabel(x.classrooms)+" • "+monthLabel(x.report_month)+" ออกจากคลังถาวร?\nสถานะการส่ง การอนุมัติ และความคิดเห็นของรอบนี้จะถูกลบ ห้องนี้จะกลับเป็นยังไม่ส่งสำหรับเดือนดังกล่าว ครูสามารถตรวจข้อมูลและส่งใหม่ได้ ข้อมูลที่ครูกรอกยังคงอยู่"))return;
     deleting=true;if(button){button.disabled=true;button.textContent="กำลังลบ..."}
     try{
       var result=await sb.from("classroom_monthly_archives").delete().eq("id",id).select("id");

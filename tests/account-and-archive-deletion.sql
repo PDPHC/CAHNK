@@ -34,6 +34,9 @@ SET LOCAL ROLE authenticated;
 DO $$ DECLARE n integer; BEGIN DELETE FROM public.classroom_monthly_archives WHERE id=(SELECT archive FROM delete_test_ids); GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Delete role assertion failed: deputy_director'; END IF; END $$;
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub','',true);
+-- Archive deletion now also removes the linked submission; recreate the fixture for account deletion checks.
+INSERT INTO public.classroom_submissions(id,classroom_id,report_month,due_date,status,submitted_by) SELECT sub,room,'2026-08-01','2026-09-05','submitted_to_academic',target FROM delete_test_ids;
+INSERT INTO public.submission_comments(submission_id,author_id,comment) SELECT sub,target,'preserve test comment' FROM delete_test_ids;
 INSERT INTO public.classroom_monthly_archives(id,submission_id,classroom_id,academic_year,term,report_month,due_date,approved_by,approved_name,approved_at,snapshot) SELECT archive,sub,room,2569,1,'2026-08-01','2026-09-05',target,'Preserved signer',now(),'{"test":true}'::jsonb FROM delete_test_ids;
 DELETE FROM auth.users WHERE id=(SELECT target FROM delete_test_ids);
 DO $$ BEGIN
