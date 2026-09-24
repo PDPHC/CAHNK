@@ -60,7 +60,6 @@ function approvedSignature(name,at,signatureData,fallbackName,roleHtml){
  return `<div class="approved-signature-block">
    <div class="signature-space electronic-signature">
      ${image}
-     <div class="electronic-signature-person">${esc(display||"ผู้อนุมัติ")}</div>
    </div>
    <div class="signature-name">${spacedSignatureName(display)}</div>
    <div class="signature-role">${roleHtml}<div class="signature-approved-date">อนุมัติ ${esc(approvalThaiDate(at))}</div></div>
