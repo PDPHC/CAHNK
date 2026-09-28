@@ -43,14 +43,14 @@
   const s=settings(),p={};roster.forEach((student,i)=>{p['IN!C'+(i+4)]=String(student.id||'');p['IN!D'+(i+4)]=student.name||''});
   const fields={Q4:s.classLevel?.includes('มัธยม')?(Number(s.classLevel.match(/\d+/)?.[0])>3?'ม.ปลาย':'ม.ต้น'):s.classLevel,Q5:s.teacher1,Q6:s.teacher2,Q11:s.deputy,Q12:Number(s.academicYear)||'',Q13:Number(s.term)||'',Q16:cloudState.profile?.display_name||'',Q20:s.school,Q22:s.office,Q23:(s.classLevel||'').replace('มัธยมศึกษาปีที่ ','ม.').replace('ประถมศึกษาปีที่ ','ป.')+'/'+(s.room||'')};
   for(const [ref,v] of Object.entries(fields))p['IN!'+ref]=v??'';
-  book=next;record={template_name:template.filename,title:'รายวิชาใหม่'};patches=p;dirty=true;tab='indicators';
+  book=next;await PP5SheetForm.prepare(book);record={template_name:template.filename,title:'รายวิชาใหม่'};patches=p;dirty=true;tab='indicators';
   document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);b.setAttribute('aria-selected',String(b.dataset.tab===tab))});
   show();$('bookSelect').value='';status('ดึงรายชื่อ '+roster.length+' คนจากห้องนี้แล้ว — กรอกข้อมูลรายวิชาและบันทึก');
  }
  function options(){const selected=record?.id||'';$('bookSelect').innerHTML='<option value="">เลือกรายวิชา</option>'+list.map(r=>'<option value="'+r.id+'">'+esc(r.title)+'</option>').join('');$('bookSelect').value=selected}
  async function refreshList(){const {data,error}=await cloudClient.from('pp5_books').select('id,title,template_name,revision,updated_at').eq('classroom_id',cloudState.classroom.id).order('updated_at',{ascending:false});if(error)throw error;list=data||[];options()}
  function show(){ applyNames(); $('emptyBook').hidden=true;$('bookEditor').hidden=false;$('bookMeta').textContent=record.template_name;updateHeading();render();status(book.externalLinks?'แม่แบบมีสูตรอ้างอิงไฟล์ภายนอก โปรดตรวจลิงก์ใน Excel ก่อนใช้ผลสรุป':'พร้อมกรอกข้อมูล');$('saveState').textContent=dirty?'เล่มใหม่ — ยังไม่บันทึกบนคลาวด์':'บันทึกล่าสุด '+new Date(record.updated_at).toLocaleString('th-TH')}
- async function open(id){await loadNames();const {data,error}=await cloudClient.from('pp5_books').select('*').eq('id',id).eq('classroom_id',cloudState.classroom.id).single();if(error)throw error;const next=await PP5Workbook.Book.open(fromBase64(data.template_base64));record=data;book=next;patches=data.patches||{};assignment=data.assignment_id?await getAssignment(data.assignment_id):null;await loadNames();dirty=false;centralDirty=false;show();options()}
+ async function open(id){await loadNames();const {data,error}=await cloudClient.from('pp5_books').select('*').eq('id',id).eq('classroom_id',cloudState.classroom.id).single();if(error)throw error;const next=await PP5Workbook.Book.open(fromBase64(data.template_base64));record=data;book=next;await PP5SheetForm.prepare(book);patches=data.patches||{};assignment=data.assignment_id?await getAssignment(data.assignment_id):null;await loadNames();dirty=false;centralDirty=false;show();options()}
  function validate(){const errors=[];let count=0;const codes=new Set();
   for(let r=4;r<=63;r++){const code=String(value('IN','C'+r)).trim(),name=String(value('IN','D'+r)).trim();if(!code&&!name)continue;count++;
    if(!code||!name)errors.push('เลขที่ '+(r-3)+': กรอกเลขประจำตัวและชื่อให้ครบ');
@@ -110,6 +110,7 @@
    render();
   };
  }
+ PP5SheetForm.show(panel,{book,patches,tab,week,input,editable:editable(),value});
  const departmentSelect=$('pp5Department');if(departmentSelect&&assignment)departmentSelect.disabled=true;if(departmentSelect)departmentSelect.onchange=()=>{if(!editable()||busy||assignment)return;if(centralDirty){departmentSelect.value=String(departmentIndex());message('ยังไม่บันทึกรายชื่อ','กรุณาบันทึกรายชื่อส่วนกลางก่อนเปลี่ยนกลุ่มสาระ');return}const i=Number(departmentSelect.value);if(departmentSelect.value===''||departmentSelect.value==='legacy')return;put('IN','Q17',departments[i]);applyNames();render()};
  if($('saveNames'))$('saveNames').onclick=()=>guard(saveNames);
  panel.querySelectorAll('[data-head],#centralDirector').forEach(el=>el.addEventListener('input',()=>{centralDirty=true;$('centralState').textContent=' มีชื่อที่ยังไม่บันทึก'}));
@@ -118,7 +119,7 @@
   el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{if(blockedCell(el.dataset.sheet,el.dataset.ref))return;const v=el.type==='date'?(el.value?Math.round(Date.parse(el.value+'T00:00:00Z')/86400000)+25569:''):el.type==='number'&&el.value!==''?Number(el.value):el.value;if(el.dataset.sheet==='F'&&v===''){delete patches['F!'+el.dataset.ref];mark()}else put(el.dataset.sheet,el.dataset.ref,v);if(el.dataset.sheet==='D'){const row=el.dataset.ref.match(/\d+/)[0],out=panel.querySelector('[data-ind-total="'+row+'"]');if(out)out.textContent=['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+row)||0),0)}if(el.dataset.sheet==='W1')panel.querySelectorAll('[data-week-date="'+el.dataset.ref[0]+'"]').forEach(cell=>cell.textContent=v===''?'—':serialToDate(Number(v)+Number(cell.dataset.weekOffset)*7))});
  });
  }
- window.initPP5=async()=>{
+ window.initPP5=async()=>{await PP5SheetForm.load();
   const room=cloudState.classroom;$('pp5RoomLabel').textContent=[room.class_level+'/'+room.room,'ปีการศึกษา '+room.academic_year,'ภาคเรียน '+room.term].join(' • ');await loadNames();await refreshList();status(list.length?'เลือกรายวิชาที่ต้องการ':'ยังไม่มีเล่ม ปพ.5 ในห้องนี้');lock(false);
   $('newBook').onclick=()=>{if((dirty||centralDirty)&&!confirm('มีข้อมูลที่ยังไม่บันทึก ต้องการละทิ้งแล้วเพิ่มเล่มใหม่หรือไม่?'))return;guard(chooseAssignment)};
   $('bookSelect').onchange=e=>{const id=e.target.value;if(!id){e.target.value=record?.id||'';return}if((dirty||centralDirty)&&!confirm('ละทิ้งการแก้ไขที่ยังไม่บันทึกแล้วเปิดเล่มอื่นหรือไม่?')){e.target.value=record?.id||'';return}guard(()=>open(id))};
@@ -132,7 +133,6 @@
   window.addEventListener('beforeunload',e=>{if(dirty||centralDirty){e.preventDefault();e.returnValue=''}});
  };
 })();
-
 
 
 
