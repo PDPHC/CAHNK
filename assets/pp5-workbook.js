@@ -47,6 +47,7 @@
    if(!Object.keys(patches).length)return new Uint8Array(this.bytes);
    const zip=await JSZip.loadAsync(this.bytes),groups={};
    for(const [key,value] of Object.entries(patches)){
+    if(/^__pp5_head_[0-7]$/.test(key)){if(typeof value!=='string'||value.length>160)throw Error('ชื่อหัวหน้ากลุ่มสาระไม่ถูกต้อง');continue}
     const [sheet,ref]=key.split('!');if(!allowed(sheet,ref)||!['string','number'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))throw Error('ตำแหน่งหรือข้อมูลที่แก้ไขไม่ถูกต้อง: '+key);
     if(sheet!=='F'&&this.cells[sheet]?.[ref]?.formula!==null&&this.cells[sheet]?.[ref]?.formula!==undefined)throw Error('ไม่อนุญาตให้ทับสูตร: '+key);
     (groups[sheet]??=[]).push([ref,value]);
@@ -81,3 +82,4 @@
  }
  window.PP5Workbook={Book,col,allowed};
 })();
+

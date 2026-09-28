@@ -2,6 +2,14 @@
  'use strict';
  const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let list=[],record=null,book=null,patches={},dirty=false,tab='scores',busy=false,week=1;
+ const departments=['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี','สังคมศึกษา ศาสนา และวัฒนธรรม','สุขศึกษาและพลศึกษา','ศิลปะ','การงานอาชีพ','ภาษาต่างประเทศ'];
+ const departmentIndex=()=>departments.findIndex(n=>String(value('IN','Q17')).replace(/\s/g,'').includes(n.replace(/\s/g,'')));
+ let signatories=null,centralDirty=false;
+ const manageNames=()=>['admin','director','deputy_director'].includes(cloudState.profile?.role);
+ async function loadNames(){const {data,error}=await cloudClient.from('school_signatories').select('*').eq('id',1).single();if(error)throw Error('โหลดรายชื่อส่วนกลางไม่สำเร็จ: '+error.message);signatories=data}
+ function applyNames(){if(!signatories||!book)return;patches['IN!Q10']=signatories.director_name;const i=departmentIndex();patches['IN!Q18']=i>=0?(signatories.department_heads[i]||''):'';for(let j=0;j<8;j++)delete patches['__pp5_head_'+j]}
+ async function freshNames(){if(centralDirty)throw Error('กรุณาบันทึกรายชื่อส่วนกลางก่อนส่งออก');await loadNames();applyNames()}
+ async function saveNames(){if(!manageNames())throw Error('ไม่มีสิทธิ์แก้ไขรายชื่อส่วนกลาง');const director=$('centralDirector').value.trim(),heads=Array.from(document.querySelectorAll('[data-head]'),el=>el.value.trim());if(heads.length!==8)throw Error('รายชื่อไม่ครบ 8 ช่อง');const {data,error}=await cloudClient.from('school_signatories').update({director_name:director,department_heads:heads,revision:signatories.revision+1,updated_at:new Date().toISOString()}).eq('id',1).eq('revision',signatories.revision).select('*').maybeSingle();if(error)throw error;if(!data)throw Error('รายชื่อถูกแก้ไขจากหน้าต่างอื่น กรุณาจดชื่อที่กรอกไว้แล้วรีเฟรชหน้า');signatories=data;centralDirty=false;applyNames();render();status('บันทึกรายชื่อส่วนกลางแล้ว — ทุกห้องใช้รายชื่อชุดนี้')}
  const columns=['E','F','G','H','I','J'],names=['ก่อนกลางภาค','กลางภาค','แก้/ซ่อม','หลังกลางภาค','ชิ้นงาน','ปลายภาค'];
  const editable=()=>['owner','editor'].includes(window.cloudState?.permission);
  const value=(s,r)=>book.value(s,r,patches);
@@ -9,14 +17,14 @@
  function status(text){$('pp5Status').textContent=text}
  function mark(){dirty=true;$('saveState').textContent='มีการแก้ไขที่ยังไม่บันทึก';updateHeading()}
  function put(sheet,ref,v){if(!editable())throw Error('ไม่มีสิทธิ์แก้ไข');patches[sheet+'!'+ref]=v;mark()}
- function input(sheet,ref,options={}){const v=value(sheet,ref);return '<input data-sheet="'+sheet+'" data-ref="'+ref+'" aria-label="'+esc(options.label||ref)+'" '+(options.numeric?'type="number" min="0" step="any"':'type="text"')+' class="'+(options.className||'')+'" value="'+esc(v)+'" '+(!editable()?'disabled':'')+'>'}
+ function input(sheet,ref,options={}){const v=value(sheet,ref);if(sheet==='IN'&&['Q10','Q18'].includes(ref))return '<input readonly aria-label="'+esc(options.label||ref)+'" value="'+esc(v)+'">';return '<input data-sheet="'+sheet+'" data-ref="'+ref+'" aria-label="'+esc(options.label||ref)+'" '+(options.numeric?'type="number" min="0" step="any"':'type="text"')+' class="'+(options.className||'')+'" value="'+esc(v)+'" '+(!editable()?'disabled':'')+'>'}
  function updateHeading(){$('bookHeading').textContent=[value('IN','Q7'),value('IN','Q8')].filter(Boolean).join(' · ')||record?.title||'เล่มรายวิชาใหม่'}
- function lock(on){busy=on;for(const id of ['saveBook','newBook','exportBook','exportPdf','bookSelect'])$(id).disabled=on||(['saveBook','newBook'].includes(id)&&!editable());document.querySelectorAll('#pp5Panel [data-ref]').forEach(el=>el.disabled=on||!editable());document.querySelectorAll('[data-tab],[data-report],#editCourse').forEach(el=>el.disabled=on)}
+ function lock(on){busy=on;for(const id of ['saveBook','newBook','exportBook','exportPdf','bookSelect'])$(id).disabled=on||(['saveBook','newBook'].includes(id)&&!editable());document.querySelectorAll('#pp5Panel [data-ref],#pp5Panel [data-head],#pp5Department').forEach(el=>el.disabled=on||!editable());document.querySelectorAll('[data-head],#centralDirector,#saveNames').forEach(el=>el.disabled=on||!manageNames());document.querySelectorAll('[data-tab],[data-report],#editCourse').forEach(el=>el.disabled=on)}
  async function guard(fn){if(busy)return;lock(true);try{await fn()}catch(e){message('ดำเนินการไม่สำเร็จ',e.message||String(e));status('ดำเนินการไม่สำเร็จ — ข้อมูลที่แก้ไขยังอยู่ในหน้านี้')}finally{lock(false)}}
  const toBase64=bytes=>{let s='';for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s)};
  const fromBase64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
  const serialToDate=n=>n===''?'':new Date((Number(n)-25569)*86400000).toISOString().slice(0,10);
- async function createFromRoom(){
+ async function createFromRoom(){await loadNames();centralDirty=false;
   const roster=students();if(!roster.length)throw Error('ยังไม่มีนักเรียนในห้องนี้ กรุณาเพิ่มรายชื่อในข้อมูลห้องเรียนก่อน');
   if(roster.length>60)throw Error('แม่แบบรองรับไม่เกิน 60 คน');
   const response=await fetch('../assets/pp5-template.json?v=2');if(!response.ok)throw Error('โหลดแม่แบบไม่สำเร็จ กรุณาลองอีกครั้ง');
@@ -30,8 +38,8 @@
  }
  function options(){const selected=record?.id||'';$('bookSelect').innerHTML='<option value="">เลือกรายวิชา</option>'+list.map(r=>'<option value="'+r.id+'">'+esc(r.title)+'</option>').join('');$('bookSelect').value=selected}
  async function refreshList(){const {data,error}=await cloudClient.from('pp5_books').select('id,title,template_name,revision,updated_at').eq('classroom_id',cloudState.classroom.id).order('updated_at',{ascending:false});if(error)throw error;list=data||[];options()}
- function show(){ $('emptyBook').hidden=true;$('bookEditor').hidden=false;$('bookMeta').textContent=record.template_name;updateHeading();render();status(book.externalLinks?'แม่แบบมีสูตรอ้างอิงไฟล์ภายนอก โปรดตรวจลิงก์ใน Excel ก่อนใช้ผลสรุป':'พร้อมกรอกข้อมูล');$('saveState').textContent=dirty?'เล่มใหม่ — ยังไม่บันทึกบนคลาวด์':'บันทึกล่าสุด '+new Date(record.updated_at).toLocaleString('th-TH')}
- async function open(id){const {data,error}=await cloudClient.from('pp5_books').select('*').eq('id',id).eq('classroom_id',cloudState.classroom.id).single();if(error)throw error;const next=await PP5Workbook.Book.open(fromBase64(data.template_base64));record=data;book=next;patches=data.patches||{};dirty=false;show();options()}
+ function show(){ applyNames(); $('emptyBook').hidden=true;$('bookEditor').hidden=false;$('bookMeta').textContent=record.template_name;updateHeading();render();status(book.externalLinks?'แม่แบบมีสูตรอ้างอิงไฟล์ภายนอก โปรดตรวจลิงก์ใน Excel ก่อนใช้ผลสรุป':'พร้อมกรอกข้อมูล');$('saveState').textContent=dirty?'เล่มใหม่ — ยังไม่บันทึกบนคลาวด์':'บันทึกล่าสุด '+new Date(record.updated_at).toLocaleString('th-TH')}
+ async function open(id){await loadNames();const {data,error}=await cloudClient.from('pp5_books').select('*').eq('id',id).eq('classroom_id',cloudState.classroom.id).single();if(error)throw error;const next=await PP5Workbook.Book.open(fromBase64(data.template_base64));record=data;book=next;patches=data.patches||{};dirty=false;centralDirty=false;show();options()}
  function validate(){const errors=[];let count=0;const codes=new Set();
   for(let r=4;r<=63;r++){const code=String(value('IN','C'+r)).trim(),name=String(value('IN','D'+r)).trim();if(!code&&!name)continue;count++;
    if(!code||!name)errors.push('เลขที่ '+(r-3)+': กรอกเลขประจำตัวและชื่อให้ครบ');
@@ -43,7 +51,7 @@
   for(const [key,v] of Object.entries(patches)){if(key.startsWith('F!')&&v!==''&&(!Number.isFinite(Number(v))||Number(v)<0))errors.push('คะแนนย่อย '+key+' ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป');if(key.startsWith('F!')&&v!==''){const c=key.match(/^F!([A-Z]+)/)?.[1],max=Number(value('F',c+'6'));if(max>0&&Number(v)>max)errors.push('คะแนนย่อย '+key+' ต้องไม่เกิน '+max)}}
   if(!count)errors.push('ยังไม่มีรายชื่อนักเรียน');return errors;
  }
- async function save(){if(!editable())throw Error('ไม่มีสิทธิ์บันทึก');const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));const title=[value('IN','Q7'),value('IN','Q8')].filter(Boolean).join(' · ');if(!title)throw Error('กรอกรหัสวิชาหรือชื่อวิชาก่อนบันทึก');
+ async function save(){if(!editable())throw Error('ไม่มีสิทธิ์บันทึก');await freshNames();const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));const title=[value('IN','Q7'),value('IN','Q8')].filter(Boolean).join(' · ');if(!title)throw Error('กรอกรหัสวิชาหรือชื่อวิชาก่อนบันทึก');
   const base={title:title.slice(0,160),patches,updated_by:cloudState.user.id};let query;
   if(record.id)query=cloudClient.from('pp5_books').update(base).eq('id',record.id).eq('classroom_id',cloudState.classroom.id).eq('revision',record.revision);
   else query=cloudClient.from('pp5_books').insert({...base,classroom_id:cloudState.classroom.id,template_name:record.template_name,template_base64:toBase64(book.bytes)});
@@ -51,7 +59,7 @@
   Object.assign(record,data);dirty=false;$('saveState').textContent='บันทึกบนคลาวด์แล้ว '+new Date(data.updated_at).toLocaleTimeString('th-TH');status('บันทึกสำเร็จ');await refreshList();
  }
  function download(bytes,name,type){const url=URL.createObjectURL(new Blob([bytes],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
- function pdf(report=null){
+ async function pdf(report=null){await freshNames();
   const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));
   if(book.externalLinks)throw Error('เล่มนี้ใช้ไฟล์นำเข้ารุ่นเก่าที่มีลิงก์ภายนอก กรุณาดาวน์โหลด Excel เพื่อพิมพ์ หรือสร้างเล่มด้วยแม่แบบในระบบ');
   for(let r=48;r<=63;r++)if(value('IN','C'+r)||value('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบทุกคน');
@@ -63,10 +71,12 @@
   window.addEventListener('message',listener);const timeout=setTimeout(()=>window.removeEventListener('message',listener),60000);
   status('เปิดหน้าพิมพ์แล้ว — กดพิมพ์และเลือก Save as PDF');
  }
- async function excel(){const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));download(await book.export(patches),'ปพ5_'+String(value('IN','Q7')||'รายวิชา').replace(/[\\/:*?"<>|]/g,'_')+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('ดาวน์โหลด Excel แล้ว — เปิดไฟล์เพื่อคำนวณสูตรล่าสุดก่อนพิมพ์')}
+ async function excel(){await freshNames();const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));download(await book.export(patches),'ปพ5_'+String(value('IN','Q7')||'รายวิชา').replace(/[\\/:*?"<>|]/g,'_')+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('ดาวน์โหลด Excel แล้ว — เปิดไฟล์เพื่อคำนวณสูตรล่าสุดก่อนพิมพ์')}
  function render(){const panel=$('pp5Panel');panel.classList.add('pp5-form-panel');panel.dataset.formPage=tab;$('editCourse').hidden=!['scores','info'].includes(tab);if(tab==='info'){
+  const headIndex=departmentIndex();
+  const departmentField='<label class="pp5-line-field"><span>กลุ่มสาระการเรียนรู้</span><select id="pp5Department" '+(!editable()?'disabled':'')+' aria-label="กลุ่มสาระการเรียนรู้"><option value="">เลือกกลุ่มสาระ</option>'+departments.map((n,i)=>'<option value="'+i+'" '+(i===headIndex?'selected':'')+'>'+n+'</option>').join('')+(headIndex<0&&value('IN','Q17')?'<option value="legacy" selected>'+esc(value('IN','Q17'))+'</option>':'')+'</select></label>';
   const field=(ref,label,numeric=false)=>'<label class="pp5-line-field"><span>'+label+'</span>'+input('IN',ref,{label,numeric})+'</label>';
-  panel.innerHTML='<article class="pp5-cover"><div class="pp5-form-code">ปพ.5 '+esc(value('IN','Q4'))+'</div><div class="pp5-cover-title"><div class="pp5-form-emblem" aria-hidden="true">ปพ.5</div><h2>แบบบันทึกผลการเรียนประจำวิชา</h2>'+field('Q20','โรงเรียน')+field('Q21','ที่อยู่โรงเรียน')+field('Q22','สังกัด')+'</div><section class="pp5-form-section"><h3>ข้อมูลรายวิชา</h3><div class="pp5-form-row three">'+field('Q4','ระดับ')+field('Q23','ชั้น / ห้อง')+field('Q15','ช่วงชั้น',true)+'</div><div class="pp5-form-row two">'+field('Q13','ภาคเรียน',true)+field('Q12','ปีการศึกษา',true)+'</div><div class="pp5-form-row course">'+field('Q7','รหัสวิชา')+field('Q8','ชื่อวิชา')+'</div><div class="pp5-form-row two">'+field('Q9','หน่วยกิต',true)+field('Q14','ชั่วโมง / สัปดาห์',true)+'</div>'+field('Q17','กลุ่มสาระการเรียนรู้')+'</section><section class="pp5-form-section"><h3>ครูผู้สอนและครูที่ปรึกษา</h3>'+field('Q16','ครูผู้สอน / ครูประจำวิชา')+field('Q5','ครูที่ปรึกษา 1')+field('Q6','ครูที่ปรึกษา 2')+'</section><section class="pp5-form-section"><h3>ผู้ตรวจและผู้อนุมัติ</h3>'+field('Q18','หัวหน้ากลุ่มสาระการเรียนรู้')+field('Q19','หัวหน้างานวัดผล')+field('Q11','รองผู้อำนวยการฝ่ายวิชาการ')+field('Q10','ผู้อำนวยการโรงเรียน')+'</section><p class="pp5-form-help">กรอกข้อมูลบนเส้นสีม่วง แล้วกด “บันทึกบนคลาวด์” • คะแนนและเวลาเรียนกรอกได้จากแท็บด้านบน</p></article>';
+  panel.innerHTML='<article class="pp5-cover"><div class="pp5-form-code">ปพ.5 '+esc(value('IN','Q4'))+'</div><div class="pp5-cover-title"><div class="pp5-form-emblem" aria-hidden="true">ปพ.5</div><h2>แบบบันทึกผลการเรียนประจำวิชา</h2>'+field('Q20','โรงเรียน')+field('Q21','ที่อยู่โรงเรียน')+field('Q22','สังกัด')+'</div><section class="pp5-form-section"><h3>ข้อมูลรายวิชา</h3><div class="pp5-form-row three">'+field('Q4','ระดับ')+field('Q23','ชั้น / ห้อง')+field('Q15','ช่วงชั้น',true)+'</div><div class="pp5-form-row two">'+field('Q13','ภาคเรียน',true)+field('Q12','ปีการศึกษา',true)+'</div><div class="pp5-form-row course">'+field('Q7','รหัสวิชา')+field('Q8','ชื่อวิชา')+'</div><div class="pp5-form-row two">'+field('Q9','หน่วยกิต',true)+field('Q14','ชั่วโมง / สัปดาห์',true)+'</div>'+departmentField+'</section><section class="pp5-form-section"><h3>ครูผู้สอนและครูที่ปรึกษา</h3>'+field('Q16','ครูผู้สอน / ครูประจำวิชา')+field('Q5','ครูที่ปรึกษา 1')+field('Q6','ครูที่ปรึกษา 2')+'</section><section class="pp5-form-section"><h3>ผู้ตรวจและผู้อนุมัติ</h3>'+field('Q18','หัวหน้ากลุ่มสาระการเรียนรู้')+field('Q19','หัวหน้างานวัดผล')+field('Q11','รองผู้อำนวยการฝ่ายวิชาการ')+field('Q10','ผู้อำนวยการโรงเรียน')+'</section><section class="pp5-form-section"><h3>รายชื่อส่วนกลางของโรงเรียน</h3><p class="pp5-form-help">ทุกห้องและทุกเล่มใช้รายชื่อชุดเดียวกัน • Admin / ผอ. / รอง ผอ. แก้ไขได้</p><label class="pp5-line-field"><span>ผู้อำนวยการโรงเรียน</span><input id="centralDirector" aria-label="ชื่อ ผอ. ส่วนกลาง" maxlength="160" value="'+esc(signatories?.director_name||'')+'" '+(!manageNames()?'disabled':'')+'></label>'+departments.map((name,i)=>'<label class="pp5-line-field"><span>'+name+'</span><input data-head="'+i+'" aria-label="หัวหน้ากลุ่มสาระ '+name+'" maxlength="160" value="'+esc(signatories?.department_heads[i]||'')+'" '+(!manageNames()?'disabled':'')+'></label>').join('')+'<button type="button" id="saveNames" class="btn primary" '+(!manageNames()?'disabled':'')+'>บันทึกรายชื่อส่วนกลาง</button><span id="centralState"></span></section><p class="pp5-form-help">กรอกข้อมูลบนเส้นสีม่วง แล้วกด “บันทึกบนคลาวด์” • คะแนนและเวลาเรียนกรอกได้จากแท็บด้านบน</p></article>';
  }else if(tab==='indicators'){
   panel.innerHTML='<h2>ตัวชี้วัด / ผลการเรียนรู้</h2><div class="table-wrap"><table class="pp5-table"><thead><tr><th>ข้อที่</th><th>ตัวชี้วัด / ผลการเรียนรู้</th><th>ก่อนกลางภาค</th><th>กลางภาค</th><th>หลังกลางภาค</th><th>ปลายภาค</th><th>รวม</th><th>ชั่วโมง</th></tr></thead><tbody>'+Array.from({length:15},(_,i)=>{const r=i+8;return '<tr><td>'+(i+1)+'</td><td>'+input('D','C'+r,{className:'pp5-indicator',label:'ตัวชี้วัดข้อ '+(i+1)})+'</td>'+['O','P','Q','R'].map(c=>'<td>'+input('D',c+r,{numeric:true,label:'คะแนนตัวชี้วัด '+(i+1)+' '+c})+'</td>').join('')+'<td data-ind-total="'+r+'">'+['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+r)||0),0)+'</td><td>'+input('D','T'+r,{numeric:true,label:'ชั่วโมงข้อ '+(i+1)})+'</td></tr>'}).join('')+'</tbody></table></div>';
  }else if(tab==='detail'){
@@ -89,20 +99,29 @@
    render();
   };
  }
+ const departmentSelect=$('pp5Department');if(departmentSelect)departmentSelect.onchange=()=>{if(!editable()||busy)return;if(centralDirty){departmentSelect.value=String(departmentIndex());message('ยังไม่บันทึกรายชื่อ','กรุณาบันทึกรายชื่อส่วนกลางก่อนเปลี่ยนกลุ่มสาระ');return}const i=Number(departmentSelect.value);if(departmentSelect.value===''||departmentSelect.value==='legacy')return;put('IN','Q17',departments[i]);applyNames();render()};
+ if($('saveNames'))$('saveNames').onclick=()=>guard(saveNames);
+ panel.querySelectorAll('[data-head],#centralDirector').forEach(el=>el.addEventListener('input',()=>{centralDirty=true;$('centralState').textContent=' มีชื่อที่ยังไม่บันทึก'}));
  panel.querySelectorAll('[data-ref]').forEach(el=>{
   if(el.dataset.sheet==='W1'){const serial=el.value;el.type='date';el.value=serialToDate(serial)}
   el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{const v=el.type==='date'?(el.value?Math.round(Date.parse(el.value+'T00:00:00Z')/86400000)+25569:''):el.type==='number'&&el.value!==''?Number(el.value):el.value;if(el.dataset.sheet==='F'&&v===''){delete patches['F!'+el.dataset.ref];mark()}else put(el.dataset.sheet,el.dataset.ref,v);if(el.dataset.sheet==='D'){const row=el.dataset.ref.match(/\d+/)[0],out=panel.querySelector('[data-ind-total="'+row+'"]');if(out)out.textContent=['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+row)||0),0)}if(el.dataset.sheet==='W1')panel.querySelectorAll('[data-week-date="'+el.dataset.ref[0]+'"]').forEach(cell=>cell.textContent=v===''?'—':serialToDate(Number(v)+Number(cell.dataset.weekOffset)*7))});
  });
  }
  window.initPP5=async()=>{
-  await refreshList();status(list.length?'เลือกรายวิชาที่ต้องการ':'ยังไม่มีเล่ม ปพ.5 ในห้องนี้');lock(false);
-  $('newBook').onclick=()=>{if(dirty&&!confirm('มีข้อมูลที่ยังไม่บันทึก ต้องการละทิ้งแล้วเพิ่มเล่มใหม่หรือไม่?'))return;guard(createFromRoom)};
-  $('bookSelect').onchange=e=>{const id=e.target.value;if(!id){e.target.value=record?.id||'';return}if(dirty&&!confirm('ละทิ้งการแก้ไขที่ยังไม่บันทึกแล้วเปิดเล่มอื่นหรือไม่?')){e.target.value=record?.id||'';return}guard(()=>open(id))};
+  await loadNames();await refreshList();status(list.length?'เลือกรายวิชาที่ต้องการ':'ยังไม่มีเล่ม ปพ.5 ในห้องนี้');lock(false);
+  $('newBook').onclick=()=>{if((dirty||centralDirty)&&!confirm('มีข้อมูลที่ยังไม่บันทึก ต้องการละทิ้งแล้วเพิ่มเล่มใหม่หรือไม่?'))return;guard(createFromRoom)};
+  $('bookSelect').onchange=e=>{const id=e.target.value;if(!id){e.target.value=record?.id||'';return}if((dirty||centralDirty)&&!confirm('ละทิ้งการแก้ไขที่ยังไม่บันทึกแล้วเปิดเล่มอื่นหรือไม่?')){e.target.value=record?.id||'';return}guard(()=>open(id))};
   $('saveBook').onclick=()=>guard(save);$('exportBook').onclick=()=>guard(excel);
   $('exportPdf').onclick=()=>guard(()=>pdf());
   document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>guard(()=>pdf(b.dataset.report)));
-  $('editCourse').onclick=()=>{tab='info';document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab==='scores');b.setAttribute('aria-selected',String(b.dataset.tab==='scores'))});render()};
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});render()});
-  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+  $('editCourse').onclick=()=>{if(centralDirty)return;tab='info';document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab==='scores');b.setAttribute('aria-selected',String(b.dataset.tab==='scores'))});render()};
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(centralDirty){message('ยังไม่บันทึกรายชื่อ','กรุณากดบันทึกรายชื่อส่วนกลางก่อนเปลี่ยนหน้า');return}tab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});render()});
+  window.addEventListener('beforeunload',e=>{if(dirty||centralDirty){e.preventDefault();e.returnValue=''}});
  };
 })();
+
+
+
+
+
+

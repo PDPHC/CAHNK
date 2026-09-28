@@ -33,3 +33,6 @@
 คะแนนย่อยกรอกแทนสูตรแจงอัตโนมัติเฉพาะช่องคะแนนที่เปิดให้แก้ และล้างช่องเพื่อคืนสูตรเดิม เก็บเป็น patches ตามเลขประจำตัวเมื่อเชื่อมรายชื่อใหม่ ตรวจค่าติดลบและคะแนนเกินเต็ม ตัวส่งออกขยาย shared formulas ของ F ก่อนแทนค่าเพื่อไม่ทำให้สูตรช่องอื่นเสีย คะแนนรวมใน IN ยังคงแยกตามรูปแบบต้นฉบับ ผู้กรอกต้องตรวจให้ตรงกับคะแนนย่อย
 
 `tests/pp5-detail-export.html` ทดสอบคะแนนย่อยหลังส่งออก การรักษาสูตรข้างเคียงและการป้องกันทับช่องผลรวม
+
+Shared signatories: apply database/school-signatories.sql before deploying the updated PP5 UI. This single-school deployment stores one director and eight department heads centrally. Management roles edit the names from course basic information; all signed-in users may read them. Books refresh central names on open and before save, Excel export, or print. Shared names have a separate save action with revision checking. Legacy per-book head metadata is removed when opening a book. The school_central_signatories cloud migration was applied on 2026-09-28.
+
