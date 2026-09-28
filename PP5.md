@@ -36,3 +36,5 @@
 
 Shared signatories: apply database/school-signatories.sql before deploying the updated PP5 UI. This single-school deployment stores one director and eight department heads centrally. Management roles edit the names from course basic information; all signed-in users may read them. Books refresh central names on open and before save, Excel export, or print. Shared names have a separate save action with revision checking. Legacy per-book head metadata is removed when opening a book. The school_central_signatories cloud migration was applied on 2026-09-28.
 
+PP5 opens through pp5-home.html in a separate tab. Select academic year/term, classroom, and subject book. Classroom visibility and editing follow existing classroom assignments and RLS. Editor URLs carry classroom and optional book IDs; PP5 caches use sessionStorage scoped by classroom, and do not change the administration tab's active classroom.
+

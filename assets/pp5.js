@@ -108,7 +108,7 @@
  });
  }
  window.initPP5=async()=>{
-  await loadNames();await refreshList();status(list.length?'เลือกรายวิชาที่ต้องการ':'ยังไม่มีเล่ม ปพ.5 ในห้องนี้');lock(false);
+  const room=cloudState.classroom;$('pp5RoomLabel').textContent=[room.class_level+'/'+room.room,'ปีการศึกษา '+room.academic_year,'ภาคเรียน '+room.term].join(' • ');await loadNames();await refreshList();status(list.length?'เลือกรายวิชาที่ต้องการ':'ยังไม่มีเล่ม ปพ.5 ในห้องนี้');lock(false);
   $('newBook').onclick=()=>{if((dirty||centralDirty)&&!confirm('มีข้อมูลที่ยังไม่บันทึก ต้องการละทิ้งแล้วเพิ่มเล่มใหม่หรือไม่?'))return;guard(createFromRoom)};
   $('bookSelect').onchange=e=>{const id=e.target.value;if(!id){e.target.value=record?.id||'';return}if((dirty||centralDirty)&&!confirm('ละทิ้งการแก้ไขที่ยังไม่บันทึกแล้วเปิดเล่มอื่นหรือไม่?')){e.target.value=record?.id||'';return}guard(()=>open(id))};
   $('saveBook').onclick=()=>guard(save);$('exportBook').onclick=()=>guard(excel);
@@ -116,6 +116,7 @@
   document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>guard(()=>pdf(b.dataset.report)));
   $('editCourse').onclick=()=>{if(centralDirty)return;tab='info';document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab==='scores');b.setAttribute('aria-selected',String(b.dataset.tab==='scores'))});render()};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(centralDirty){message('ยังไม่บันทึกรายชื่อ','กรุณากดบันทึกรายชื่อส่วนกลางก่อนเปลี่ยนหน้า');return}tab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});render()});
+  const chosen=new URLSearchParams(location.search).get('book');if(chosen&&list.some(r=>r.id===chosen))await guard(()=>open(chosen));
   window.addEventListener('beforeunload',e=>{if(dirty||centralDirty){e.preventDefault();e.returnValue=''}});
  };
 })();

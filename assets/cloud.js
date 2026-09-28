@@ -163,7 +163,7 @@
       if(r.module_name==="homeroom_times")hset("homeroom_time_settings",r.data||{});
       else if(MODULES.includes(r.module_name))hset("module_"+r.module_name,r.data||{});
     });
-    localStorage.setItem(ACTIVE_KEY,cid);
+    if(!location.pathname.endsWith("/modules/pp5.html"))localStorage.setItem(ACTIVE_KEY,cid);
     state.bootstrapped=true;
   }
 
@@ -257,7 +257,7 @@
       ${isManagementRole(p?.role)?`<a class="btn gray" href="${rootPath()}admin.html">จัดการผู้ใช้/สิทธิ์</a>`:""}
       ${roleDashboardPath(p?.role)?`<a class="btn gray" href="${rootPath()}${roleDashboardPath(p?.role)}">แดชบอร์ดภาพรวม</a>`:""}
       ${["director","deputy_director","admin","academic"].includes(p?.role)?`<a class="btn gray" href="${rootPath()}signature.html">ลายเซ็นของฉัน</a>`:""}
-      <a class="btn gray" href="${rootPath()}classrooms.html?rooms=1">เปลี่ยนห้อง</a>
+      <a class="btn gray" href="${rootPath()}${location.pathname.endsWith('/modules/pp5.html')?'pp5-home.html':'classrooms.html?rooms=1'}">เปลี่ยนห้อง</a>
       <button class="btn danger cloud-allow" type="button" onclick="cloudLogout()">ออกจากระบบ</button></div>`;
     content.insertBefore(bar,content.firstChild);
   }
@@ -288,11 +288,13 @@
     });
   }
 
+  window.startPP5Home=async initFn=>{try{if(!await getSessionUser()){go('login.html');return}await loadProfile();const rooms=await listClassrooms();showBody();await initFn(rooms)}catch(e){fatal(e.message||String(e))}};
   window.startProtectedPage=async initFn=>{
     try{
       const user=await getSessionUser();if(!user){go("login.html");return}
       await loadProfile();
-      const rooms=await listClassrooms(),active=localStorage.getItem(ACTIVE_KEY);
+      const isPP5=location.pathname.endsWith("/modules/pp5.html"),rooms=await listClassrooms(),active=isPP5?new URLSearchParams(location.search).get("classroom"):localStorage.getItem(ACTIVE_KEY);
+      if(isPP5&&(!active||!rooms.some(r=>r.id===active))){go("pp5-home.html");return}
       if(!active||!rooms.some(r=>r.id===active)){go("classrooms.html");return}
       await loadClassroom(active);renderUserBar();showBody();
       if(typeof initFn==="function")await initFn();
@@ -960,3 +962,4 @@
   };
 
 })();
+

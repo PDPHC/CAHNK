@@ -1,18 +1,20 @@
-const P="hnk_admin_v3_";
+const pp5Isolated=location.pathname.endsWith('/modules/pp5.html');
+const roomStorage=pp5Isolated?sessionStorage:localStorage;
+const P=pp5Isolated?"hnk_pp5_"+new URLSearchParams(location.search).get("classroom")+"_":"hnk_admin_v3_";
 const OLD_P="hnk_admin_v2_";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const get=(k,d=null)=>{
   try{
-    let v=localStorage.getItem(P+k);
-    if(v===null){
+    let v=roomStorage.getItem(P+k);
+    if(v===null&&!pp5Isolated){
       const old=localStorage.getItem(OLD_P+k);
-      if(old!==null){localStorage.setItem(P+k,old);v=old}
+      if(old!==null){roomStorage.setItem(P+k,old);v=old}
     }
     return v?JSON.parse(v):d
   }catch(e){return d}
 };
-const set=(k,v)=>localStorage.setItem(P+k,JSON.stringify(v));
+const set=(k,v)=>roomStorage.setItem(P+k,JSON.stringify(v));
 window.hnkGet=get;window.hnkSet=set;
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
