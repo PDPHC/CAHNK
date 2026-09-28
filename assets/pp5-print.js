@@ -15,9 +15,9 @@
   const selectedPages=template.pages.filter(p=>!data.report||p.sheet===data.report);if(!selectedPages.length)throw Error('ไม่พบรายงานที่เลือก');
   for(const [index,page] of selectedPages.entries()){
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
-   const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[ml,mr,mt,mb]=page.margins;
-   // Honor Excel's zoom and centering; do not independently shrink every page.
-   const scale=page.fit?Math.min((pw-ml-mr)/w,(ph-mt-mb)/h,1):(page.scale||1);
+   const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[originalLeft,mr,mt,mb]=page.margins,ml=Math.max(originalLeft,25*72/25.4);
+   // Reserve at least 25 mm on the binding edge; fit proportionally inside the remaining paper.
+   const scale=Math.min(page.fit?1:(page.scale||1),(pw-ml-mr)/w,(ph-mt-mb)/h);
    const left=ml+(page.centerX?Math.max(0,pw-ml-mr-w*scale)/2:0),top=mt+(page.centerY?Math.max(0,ph-mt-mb-h*scale)/2:0);
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
    const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m]));
