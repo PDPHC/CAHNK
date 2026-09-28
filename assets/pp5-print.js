@@ -54,7 +54,16 @@
      span.textContent=String(v??'').replace(/\s+/g,' ').trim().replace(/ +(?=\*\*|-(?:ช่วงคะแนน|ความหมาย|ระดับผล))/g,'\n');
      cell.classList.add('criteria-notes');cell.style.alignItems='flex-start';
     }
-    if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';cell.append(span);sheet.append(cell);
+    if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
+    if(page.sheet==='B'&&ref==='DO6'){
+     // The template stores a rotated, non-wrapped heading with a manual break.
+     // Render its two words explicitly instead of inheriting rotated nowrap CSS.
+     cell.classList.remove('rotated');cell.dataset.shrink='true';
+     Object.assign(cell.style,{whiteSpace:'pre-line',overflow:'hidden',justifyContent:'center',textAlign:'center',padding:'2pt',lineHeight:'1.2'});
+     Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
+     span.textContent='หมาย\nเหตุ';
+    }
+    cell.append(span);sheet.append(cell);
    }
    if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
    if(page.sheet==='A'){
@@ -79,6 +88,9 @@
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
+  // Use one shared font size for the six attendance summary headings.
+  const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
+  if(attendanceHeads.length){const size=Math.min(...attendanceHeads.map(cell=>parseFloat(cell.firstChild.style.fontSize||cell.style.fontSize)));attendanceHeads.forEach(cell=>cell.firstChild.style.fontSize=size+'pt')}
   if(errors.length)throw Error('พบสูตรที่คำนวณไม่ได้ '+errors.slice(0,4).join(' • ')+' กรุณาส่งออก Excel เพื่อตรวจสอบ');
   document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+selectedPages.length+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
  }
