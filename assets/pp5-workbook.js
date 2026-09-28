@@ -10,7 +10,7 @@
  const index=ref=>{const [,c,r]=ref.match(/^([A-Z]+)(\d+)$/);return Number(r)*16384+number(c)};
  const allowed=(sheet,ref)=>{
   const m=ref.match(/^([A-Z]+)(\d+)$/);if(!m)return false;const c=number(m[1]),r=+m[2];
-  return sheet==='A'&&ref==='C41'||sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
+  return sheet==='D'&&ref==='N24'||sheet==='A'&&ref==='C41'||sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
    ||sheet==='D'&&r>=8&&r<=47&&[3,15,16,17,18,19,20].includes(c)
    ||sheet==='W1'&&r===5&&c>=6&&c<=10
    ||sheet==='F'&&r>=7&&r<=66&&['H','I','J','K','L','M','N','O','P','Q','Z','AB','AD','AF','AH','AJ','AL','AN','AP','AR','BB','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BW','BX','CD','CE','CF','CG','CH','CI','CJ','CK','CL','CM','CV','CW','CX','CY','DC','DD','DE','DF','DG','DH','DI','DJ'].includes(m[1])
@@ -81,11 +81,20 @@
     const path=this.sheets[name].path;let sheet=await zip.file(path).async('string');
     sheet=sheet.replace(/<row\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="(\d+)"/)?.[1]);if(row<start||row>end)return tag;tag=tag.replace(/\s+hidden="[^"]*"/g,'');return row>=start+last?tag.replace(/(\/?>)$/,' hidden="1"$1'):tag});
     sheet=sheet.replace(/<c\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="D(\d+)"/)?.[1]);if(!(row>=start&&row<=end))return tag;const id=Number(tag.match(/\bs="(\d+)"/)?.[1]||0),style=fitStyle(id);return /\bs="/.test(tag)?tag.replace(/\bs="\d+"/,'s="'+style+'"'):tag.replace(/(\/?>)$/,' s="'+style+'"$1')});
+    if(name==='B')sheet=sheet.replace(/<c\b[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g,cell=>{const index=cell.match(/<v>(\d+)<\/v>/)?.[1];if(!/\bt="s"/.test(cell)||!['มา','ป่วย','ลา','สาย','ขาด','รวม'].includes(this.texts[index]))return cell;return cell.replace(/^<c\b[^>]*>/,tag=>{const id=Number(tag.match(/\bs="(\d+)"/)?.[1]||0),style=fitStyle(id);return /\bs="/.test(tag)?tag.replace(/\bs="\d+"/,'s="'+style+'"'):tag.replace('>',' s="'+style+'">')})});
     const footer='&amp;C&amp;10† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';
     if(/<headerFooter\b/.test(sheet))sheet=sheet.replace(/<headerFooter\b[^>]*\/>/,'<headerFooter><oddFooter>'+footer+'</oddFooter><evenFooter>'+footer+'</evenFooter><firstFooter>'+footer+'</firstFooter></headerFooter>').replace(/<headerFooter\b[^>]*>[\s\S]*?<\/headerFooter>/,block=>{for(const name of ['oddFooter','evenFooter','firstFooter']){const re=new RegExp('<'+name+'(?:\\s[^>]*)?>[\\s\\S]*?<\\/'+name+'>');block=re.test(block)?block.replace(re,'<'+name+'>'+footer+'</'+name+'>'):block.replace('</headerFooter>','<'+name+'>'+footer+'</'+name+'></headerFooter>')}return block});
     else sheet=sheet.replace(/(<pageSetup\b[^>]*\/>)/,'$1<headerFooter><oddFooter>'+footer+'</oddFooter></headerFooter>');
     zip.file(path,sheet);
    }
+   // Keep indicator prose inside its printed cells, including added conditions.
+   const dPath=this.sheets.D.path;let dSheet=await zip.file(dPath).async('string');const wrapStyles=new Map();
+   const wrapStyle=id=>{if(wrapStyles.has(id))return wrapStyles.get(id);const xf=xfs.children[id].cloneNode(true);let a=nodes(xf,'alignment')[0];if(!a){a=stylesDoc.createElementNS(NS,'alignment');xf.append(a)}a.setAttribute('wrapText','1');a.setAttribute('shrinkToFit','0');a.setAttribute('vertical','center');xf.setAttribute('applyAlignment','1');const next=xfs.children.length;xfs.append(xf);wrapStyles.set(id,next);return next};
+   const textRows=[...Array.from({length:15},(_,i)=>i+8),28,29,30];
+   dSheet=dSheet.replace(/<c\b[^>]*>/g,tag=>{const ref=tag.match(/\br="([A-Z]+\d+)"/)?.[1];if(ref!=='B26'&&!textRows.some(r=>ref==='C'+r))return tag;const id=Number(tag.match(/\bs="(\d+)"/)?.[1]||0),style=wrapStyle(id);return /\bs="/.test(tag)?tag.replace(/\bs="\d+"/,'s="'+style+'"'):tag.replace(/(\/?>)$/,' s="'+style+'"$1')});
+   dSheet=dSheet.replace(/<row\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="(\d+)"/)?.[1]);if(row!==26&&!textRows.includes(row))return tag;const value=String(this.value('D','C'+row,patches)||''),height=row===26?38:Math.max(Number(tag.match(/\bht="([^"]+)"/)?.[1]||15),value.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0)*17+5);return tag.replace(/\s+(ht|customHeight)="[^"]*"/g,'').replace(/(\/?>)$/,' ht="'+height+'" customHeight="1"$1')});
+   dSheet=dSheet.replace(/<mergeCells\b[^>]*>([\s\S]*?)<\/mergeCells>/,(_,body)=>{for(const ref of ['B26:T26','C28:T28','C29:T29','C30:T30'])if(!body.includes('ref="'+ref+'"'))body+='<mergeCell ref="'+ref+'"/>';return '<mergeCells count="'+(body.match(/<mergeCell\b/g)||[]).length+'">'+body+'</mergeCells>'});zip.file(dPath,dSheet);
+   for(const b of nodes(stylesDoc,'border'))for(const edge of [...b.children])if(edge.getAttribute('style')){edge.setAttribute('style','thin');let color=nodes(edge,'color')[0];if(!color){color=stylesDoc.createElementNS(NS,'color');edge.append(color)}for(const a of [...color.attributes])color.removeAttribute(a.name);color.setAttribute('rgb','FF222222')}
    xfs.setAttribute('count',String(xfs.children.length));zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
    // Request Excel/native converter to refresh all dependent formulas on open.
    let raw=await zip.file('xl/workbook.xml').async('string');

@@ -17,16 +17,28 @@
   for(const [index,sourcePage] of selectedPages.entries()){
    const page={...sourcePage,heights:[...sourcePage.heights]},start={B:11,C:9,E:9}[page.sheet],firstRow=Number(page.area.split(':')[0].match(/\d+/)[0]);
    if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
+   if(page.sheet==='D'){
+    for(const row of [...Array.from({length:15},(_,i)=>i+8),28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
+    page.heights[26-firstRow]=38;
+   }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
    const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[originalLeft,mr,mt,mb]=page.margins,ml=Math.max(originalLeft,25*72/25.4);
    // Reserve at least 25 mm on the binding edge; fit proportionally inside the remaining paper.
    const scale=Math.min(page.fit?1:(page.scale||1),(pw-ml-mr)/w,(ph-mt-mb)/h);
    const left=ml+(page.centerX?Math.max(0,pw-ml-mr-w*scale)/2:0),top=mt+(page.centerY?Math.max(0,ph-mt-mb-h*scale)/2:0);
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
-   const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m]));
+   const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set();
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);span.textContent=display(v,s)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
+    const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
+    for(let side=0;side<4;side++)if(s.borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
+    // Fit bordered cells, including narrow attendance summary headings.
+    if(s.borders.some(Boolean)&&!s.rotation){cell.dataset.shrink='true';cell.style.overflow='hidden';span.style.minWidth='0';}
+    if(page.sheet==='D'&&(ref==='B26'||/^C(?:[89]|1\d|2[01289]|30)$/.test(ref))){
+     cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.style.whiteSpace='pre-wrap';span.style.overflowWrap='anywhere';span.style.flexShrink='1';
+     if(ref==='B26'||['C28','C29','C30'].includes(ref)){cell.style.width=(xs[xs.length-1]-xs[x])+'pt';cell.style.background='#fff';cell.style.zIndex='2'}
+    }
     if(start&&/^D\d+$/.test(ref)&&Number(ref.slice(1))>=start){cell.style.whiteSpace='nowrap';cell.dataset.shrink='true';}
     // Central classroom names can be longer than the abbreviations in Excel.
     if(page.sheet==='A'&&ref==='I12')span.textContent=String(v??'').replace(/มัธยมศึกษาปีที่\s*/g,'ม.').replace(/ประถมศึกษาปีที่\s*/g,'ป.').replace(/อนุบาล(?:ปีที่)?\s*/g,'อ.');
@@ -60,12 +72,13 @@
     for(const text of ['อนุมัติ','ไม่อนุมัติ']){const choice=document.createElement('span');choice.className='approval-choice';const box=document.createElement('span');box.className='approval-box';box.setAttribute('aria-hidden','true');choice.append(box,document.createTextNode(text));choices.append(choice)}
     sheet.append(choices);
    }
+   const grid=document.createElementNS('http://www.w3.org/2000/svg','svg');grid.setAttribute('viewBox','0 0 '+w+' '+h);Object.assign(grid.style,{position:'absolute',left:'0',top:'0',width:w+'pt',height:h+'pt',overflow:'visible',pointerEvents:'none',zIndex:'3'});const path=document.createElementNS(grid.namespaceURI,'path');path.setAttribute('d',[...edges].map(e=>{const [x1,y1,x2,y2]=e.split(',');return 'M'+x1+' '+y1+'L'+x2+' '+y2}).join(''));path.setAttribute('fill','none');path.setAttribute('stroke','#222');path.setAttribute('stroke-width','0.6');grid.append(path);sheet.append(grid);
    paper.append(sheet);
    if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';paper.append(legend)}
    pages.append(paper);
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
-  for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;if(span.scrollWidth>cell.clientWidth&&span.scrollWidth>0)span.style.fontSize=(parseFloat(cell.style.fontSize)*cell.clientWidth/span.scrollWidth)+'pt'}
+  for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   if(errors.length)throw Error('พบสูตรที่คำนวณไม่ได้ '+errors.slice(0,4).join(' • ')+' กรุณาส่งออก Excel เพื่อตรวจสอบ');
   document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+selectedPages.length+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
  }
