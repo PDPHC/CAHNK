@@ -1,6 +1,6 @@
 /* Friendly entry controls keep the workbook cell mappings used by export. */
 (()=>{'use strict';
- const legend='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';
+ const legend='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนห้องพิเศษ';
  const compactName=s=>(s?.name??s?.full_name??'')+({transferred:' †',not_present:' ‡',special:' ★'}[s?.record_status]||'');
  let cells;
  async function load(){const r=await fetch('../assets/pp5-print-template.json?v=2');if(!r.ok)throw Error('โหลดสูตร ปพ.5 ไม่สำเร็จ');const packed=await r.json(),zip=await JSZip.loadAsync(packed.base64,{base64:true});cells=JSON.parse(await zip.file('print.json').async('string')).cells;}

@@ -3,7 +3,7 @@
  const job=new URLSearchParams(location.search).get('job');let received=false;
  const fail=e=>{status.textContent='เปิดหน้าพิมพ์ไม่สำเร็จ: '+(e.message||e);status.className='error';button.disabled=true;document.body.classList.remove('ready')};
  const sum=a=>a.reduce((s,v)=>s+v,0),offsets=a=>{let n=0;return [0,...a.map(v=>n+=v)]};
- function display(v,s){if(v==null)return '';if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v!=='number')return String(v);
+ function display(v,s){if(v==null)return '';if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v!=='number')return String(v).replaceAll('อาจารย์ประจำชั้น','ครูประจำชั้น').replaceAll('ครูที่ปรึกษา','ครูประจำชั้น');
   if([14,15,16,17,22,164,165,166,167].includes(s.format)){if(!v)return '';const date=new Date((v-25569)*86400000),day=date.getUTCDate(),month=date.toLocaleString('th-TH',{month:'short',timeZone:'UTC'});return s.format===164?String(day):s.format===165?month:s.format===166?day+'/'+month:day+'/'+month+'/'+(date.getUTCFullYear()+543)}
   if(s.format===9)return Math.round(v*100)+'%';if(s.format===10)return (v*100).toFixed(2)+'%';if(s.format===2)return v.toFixed(2);return String(Math.round(v*1e10)/1e10);
  }
@@ -16,16 +16,18 @@
   const selectedPages=template.pages.filter(p=>!data.report||p.sheet===data.report);if(!selectedPages.length)throw Error('ไม่พบรายงานที่เลือก');
   let lastStudent=0;for(let r=4;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))lastStudent=r-3;
   for(const [index,sourcePage] of selectedPages.entries()){
+   if(sourcePage.sheet==='G'){const response=await fetch('../assets/pp5-criteria-page.json?v=1');if(!response.ok)throw Error('โหลดหน้าเกณฑ์การประเมินผลไม่สำเร็จ');const reference=await response.json();const paper=document.createElement('section');paper.className='paper a4';paper.setAttribute('aria-label','กำหนดเกณฑ์การประเมินผล');const image=document.createElement('img');image.src=reference.image;image.alt='กำหนดเกณฑ์การประเมินผล ตามเอกสารของโรงเรียน';image.style.cssText='display:block;width:100%;height:100%;object-fit:contain';paper.append(image);pages.append(paper);continue;}
    const page={...sourcePage,heights:[...sourcePage.heights]},start={B:11,C:9,E:9}[page.sheet],firstRow=Number(page.area.split(':')[0].match(/\d+/)[0]);
    if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
    if(page.sheet==='D'){
     for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
+    for(const r of data.patches.__pp5_deleted_indicators||[])page.heights[r-firstRow]=0;
     // Use the unused bottom of the original sheet for wrapped indicator rows.
     for(let r=43;r<=52;r++)page.heights[r-firstRow]=0;
     const widths=offsets(page.widths),pw=210*72/25.4,ph=297*72/25.4,[left,right,top,bottom]=page.margins;
     const widthScale=Math.min(page.fit?1:(page.scale||1),(pw-Math.max(left,25*72/25.4)-right)/sum(page.widths));
-    const rowIds=Array.from({length:15},(_,i)=>i+8),other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
+    const rowIds=Array.from({length:15},(_,i)=>i+8).filter(r=>!(data.patches.__pp5_deleted_indicators||[]).includes(r)),other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
     const source=page.cells.find(c=>c[2]==='C8'),merge=page.merges.find(m=>m[0]===source[0]&&m[1]===source[1]),style=template.styles[source[3]];
     const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"'+style.font+'", "TH Sarabun New", Tahoma, sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
     let size=12,heights;do{measure.style.fontSize=size+'pt';heights=rowIds.map(r=>{measure.textContent=String(calc.get('D','C'+r)||' ');return Math.max(sourcePage.heights[r-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=4)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;rowIds.forEach((r,i)=>page.heights[r-firstRow]=heights[i]);
@@ -78,7 +80,7 @@
      Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
      span.textContent='หมาย\nเหตุ';
     }
-    if(page.sheet==='A'&&['E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
+    if(page.sheet==='A'&&['E38','E40','E42','E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
     cell.append(span);sheet.append(cell);
    }
    if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
@@ -99,7 +101,7 @@
    }
    const grid=document.createElementNS('http://www.w3.org/2000/svg','svg');grid.setAttribute('viewBox','0 0 '+w+' '+h);Object.assign(grid.style,{position:'absolute',left:'0',top:'0',width:w+'pt',height:h+'pt',overflow:'visible',pointerEvents:'none',zIndex:'3'});const path=document.createElementNS(grid.namespaceURI,'path');path.setAttribute('d',[...edges].map(e=>{const [x1,y1,x2,y2]=e.split(',');return 'M'+x1+' '+y1+'L'+x2+' '+y2}).join(''));path.setAttribute('fill','none');path.setAttribute('stroke','#222');path.setAttribute('stroke-width','0.6');grid.append(path);sheet.append(grid);
    paper.append(sheet);
-   if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';paper.append(legend)}
+   if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนห้องพิเศษ';paper.append(legend)}
    pages.append(paper);
   }
   const extraCount=Number(data.patches.__pp5_indicator_count||0);let appendixPages=0,appendixAnchor=[...pages.children].find(p=>p.getAttribute('aria-label')?.endsWith('ชีต D'));
@@ -114,7 +116,7 @@
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
   if(attendanceHeads.length){const size=Math.min(...attendanceHeads.map(cell=>parseFloat(cell.firstChild.style.fontSize||cell.style.fontSize)));attendanceHeads.forEach(cell=>cell.firstChild.style.fontSize=size+'pt')}
   if(errors.length)throw Error('พบสูตรที่คำนวณไม่ได้ '+errors.slice(0,4).join(' • ')+' กรุณาส่งออก Excel เพื่อตรวจสอบ');
-  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+(selectedPages.length+appendixPages)+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
+  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+(selectedPages.length+appendixPages)+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.sheet!=='G'&&p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
  }
  button.addEventListener('click',()=>window.print());
  window.addEventListener('message',event=>{if(received||event.origin!==location.origin||event.source!==window.opener||event.data?.type!=='pp5-print-data'||event.data.job!==job)return;received=true;clearInterval(ping);render(event.data).catch(fail)});
