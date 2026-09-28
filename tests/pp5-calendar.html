@@ -1,0 +1,5 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><link rel="stylesheet" href="../assets/pp5-entry.css"><pre id="result"></pre><div id="pp5Panel"></div><script src="../assets/pp5-tables.js"></script><script>
+const state={'IN!C4':'001','IN!D4':'นักเรียนย้ายออก †','IN!C5':'002','IN!D5':'นักเรียนไม่มีตัวตน ‡','IN!C6':'003','IN!D6':'นักเรียนปกติ','W1!F5':46143,'W1!G5':46146};
+window.PP5Workbook={col:n=>{let s='';for(;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s}};
+function render(){PP5Tables.attendance(document.getElementById('pp5Panel'),{value:(s,r)=>state[s+'!'+r]??'',put:(s,r,v)=>state[s+'!'+r]=v,editable:()=>true,blockedCell:(s,r)=>/7$|8$/.test(r),render,serialToDate:n=>new Date((n-25569)*86400000).toISOString().slice(0,10),room:{holidays:[{date:'2026-05-04',name:'วันฉัตรมงคล'}],use_thai_holidays:true}});document.getElementById('result').textContent='ข้อมูลจำลอง: '+JSON.stringify(Object.fromEntries(Object.entries(state).filter(([k])=>k.startsWith('CH!'))))}render();
+</script></html>

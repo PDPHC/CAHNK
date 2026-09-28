@@ -86,13 +86,19 @@
    if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';paper.append(legend)}
    pages.append(paper);
   }
+  const extraCount=Number(data.patches.__pp5_indicator_count||0);let appendixPages=0,appendixAnchor=[...pages.children].find(p=>p.getAttribute('aria-label')?.endsWith('ชีต D'));
+  if(extraCount&&(!data.report||data.report==='D'))for(let start=0;start<extraCount;start+=15){
+   const paper=document.createElement('section');paper.className='paper a4 indicator-appendix';const title=document.createElement('h2');title.textContent='ตัวชี้วัด / ผลการเรียนรู้ (เพิ่มเติม)';paper.append(title);const course=document.createElement('p');course.textContent=[calc.get('IN','Q7'),calc.get('IN','Q8'),calc.get('IN','Q23')].filter(Boolean).join(' • ');paper.append(course);
+   const table=document.createElement('table');table.innerHTML='<colgroup><col style="width:5%"><col style="width:59%">'+Array(6).fill('<col style="width:6%">').join('')+'</colgroup><thead><tr><th rowspan="2">ข้อที่</th><th rowspan="2">ตัวชี้วัด/ผลการเรียนรู้</th><th colspan="6">คะแนนการประเมินผล</th></tr><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>รวม</th><th>ชม.</th></tr></thead>';const body=document.createElement('tbody');
+   for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
+  }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
   if(attendanceHeads.length){const size=Math.min(...attendanceHeads.map(cell=>parseFloat(cell.firstChild.style.fontSize||cell.style.fontSize)));attendanceHeads.forEach(cell=>cell.firstChild.style.fontSize=size+'pt')}
   if(errors.length)throw Error('พบสูตรที่คำนวณไม่ได้ '+errors.slice(0,4).join(' • ')+' กรุณาส่งออก Excel เพื่อตรวจสอบ');
-  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+selectedPages.length+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
+  document.title=data.title||'ปพ.5';document.body.classList.add('ready');status.textContent='พร้อมพิมพ์ '+(selectedPages.length+appendixPages)+' หน้า • ข้อมูล ณ เวลาที่เปิดหน้านี้ หากแก้ไขเล่มให้เปิดหน้าพิมพ์ใหม่'+(selectedPages.some(p=>p.paper==='legal')?' • หน้ากำหนดเกณฑ์ใช้กระดาษ Legal ตามต้นฉบับ':' • กระดาษ A4');button.disabled=false;
  }
  button.addEventListener('click',()=>window.print());
  window.addEventListener('message',event=>{if(received||event.origin!==location.origin||event.source!==window.opener||event.data?.type!=='pp5-print-data'||event.data.job!==job)return;received=true;clearInterval(ping);render(event.data).catch(fail)});

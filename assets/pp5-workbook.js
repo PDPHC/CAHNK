@@ -11,7 +11,7 @@
  const allowed=(sheet,ref)=>{
   const m=ref.match(/^([A-Z]+)(\d+)$/);if(!m)return false;const c=number(m[1]),r=+m[2];
   return sheet==='D'&&ref==='N24'||sheet==='A'&&ref==='C41'||sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
-   ||sheet==='D'&&r>=8&&r<=47&&[3,15,16,17,18,19,20].includes(c)
+   ||sheet==='D'&&((r>=8&&r<=47)||(r>=54&&r<=153))&&[3,15,16,17,18,19,20].includes(c)
    ||sheet==='W1'&&r===5&&c>=6&&c<=10
    ||sheet==='F'&&r>=7&&r<=66&&['H','I','J','K','L','M','N','O','P','Q','Z','AB','AD','AF','AH','AJ','AL','AN','AP','AR','BB','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BW','BX','CD','CE','CF','CG','CH','CI','CJ','CK','CL','CM','CV','CW','CX','CY','DC','DD','DE','DF','DG','DH','DI','DJ'].includes(m[1])
    ||sheet==='CH'&&r>=7&&r<=66&&c>=7&&c<=106;
@@ -47,13 +47,20 @@
    if(!Object.keys(patches).length)return new Uint8Array(this.bytes);
    const zip=await JSZip.loadAsync(this.bytes),groups={};
    for(const [key,value] of Object.entries(patches)){
+    if(key==='__pp5_indicator_count'){if(!Number.isInteger(value)||value<0||value>100)throw Error('จำนวนตัวชี้วัดเพิ่มเติมไม่ถูกต้อง');continue}
     if(/^__pp5_head_[0-7]$/.test(key)){if(typeof value!=='string'||value.length>160)throw Error('ชื่อหัวหน้ากลุ่มสาระไม่ถูกต้อง');continue}
     const [sheet,ref]=key.split('!');if(!allowed(sheet,ref)||!['string','number'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))throw Error('ตำแหน่งหรือข้อมูลที่แก้ไขไม่ถูกต้อง: '+key);
     if(sheet!=='F'&&this.cells[sheet]?.[ref]?.formula!==null&&this.cells[sheet]?.[ref]?.formula!==undefined)throw Error('ไม่อนุญาตให้ทับสูตร: '+key);
     (groups[sheet]??=[]).push([ref,value]);
    }
+   if(patches.__pp5_indicator_count)groups.D??=[];
    for(const [sheet,entries] of Object.entries(groups)){
     let raw=this.sheets[sheet].raw;
+    if(sheet==='D'&&patches.__pp5_indicator_count){
+     const count=patches.__pp5_indicator_count;let rows='';for(let i=0;i<count;i++){const row=54+i;rows+='<row r="'+row+'" ht="36" customHeight="1">'+['B','C','O','P','Q','R','S','T'].map(c=>{const source=raw.match(new RegExp('<c\\b[^>]*\\br="'+c+'8"[^>]*>'))?.[0],style=source?.match(/\bs="(\d+)"/)?.[1]||0;return '<c r="'+c+row+'" s="'+style+'">'+(c==='B'?'<v>'+(i+16)+'</v>':c==='S'?'<f>SUM(O'+row+':R'+row+')</f>':'')+'</c>'}).join('')+'</row>'}raw=raw.replace('</sheetData>',rows+'</sheetData>');
+     raw=raw.replace(/<mergeCells\b[^>]*>([\s\S]*?)<\/mergeCells>/,(_,body)=>{for(let i=0;i<count;i++)body+='<mergeCell ref="C'+(54+i)+':N'+(54+i)+'"/>';return '<mergeCells count="'+(body.match(/<mergeCell\b/g)||[]).length+'">'+body+'</mergeCells>'});
+     for(const c of ['O','P','Q','R','T'])raw=raw.replace(new RegExp('(<c\\b[^>]*\\br="'+c+'25"[^>]*>[\\s\\S]*?<f[^>]*>)([\\s\\S]*?)(</f>)'),(_,a,f,b)=>a+f+'+SUM('+c+'54:'+c+(53+count)+')'+b);
+    }
     if(sheet==='F'){
      // Expand shared formulas before removing any master for a manual score.
      const response=await fetch('../assets/pp5-print-template.json?v=2');if(!response.ok)throw Error('โหลดสูตรคะแนนย่อยไม่สำเร็จ');const packed=await response.json(),formZip=await JSZip.loadAsync(packed.base64,{base64:true}),data=JSON.parse(await formZip.file('print.json').async('string'));
@@ -90,7 +97,7 @@
    // Keep indicator prose inside its printed cells, including added conditions.
    const dPath=this.sheets.D.path;let dSheet=await zip.file(dPath).async('string');const wrapStyles=new Map();
    const wrapStyle=id=>{if(wrapStyles.has(id))return wrapStyles.get(id);const xf=xfs.children[id].cloneNode(true);let a=nodes(xf,'alignment')[0];if(!a){a=stylesDoc.createElementNS(NS,'alignment');xf.append(a)}a.setAttribute('wrapText','1');a.setAttribute('shrinkToFit','0');a.setAttribute('vertical','center');xf.setAttribute('applyAlignment','1');const next=xfs.children.length;xfs.append(xf);wrapStyles.set(id,next);return next};
-   const textRows=[...Array.from({length:15},(_,i)=>i+8),28,29,30];
+   const textRows=[...Array.from({length:15},(_,i)=>i+8),28,29,30,...Array.from({length:patches.__pp5_indicator_count||0},(_,i)=>i+54)];
    dSheet=dSheet.replace(/<c\b[^>]*>/g,tag=>{const ref=tag.match(/\br="([A-Z]+\d+)"/)?.[1];if(ref!=='B26'&&!textRows.some(r=>ref==='C'+r))return tag;const id=Number(tag.match(/\bs="(\d+)"/)?.[1]||0),style=wrapStyle(id);return /\bs="/.test(tag)?tag.replace(/\bs="\d+"/,'s="'+style+'"'):tag.replace(/(\/?>)$/,' s="'+style+'"$1')});
    dSheet=dSheet.replace(/<row\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="(\d+)"/)?.[1]);if(row!==26&&!textRows.includes(row))return tag;const value=String(this.value('D','C'+row,patches)||''),height=row===26?38:Math.max(Number(tag.match(/\bht="([^"]+)"/)?.[1]||15),value.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0)*17+5);return tag.replace(/\s+(ht|customHeight)="[^"]*"/g,'').replace(/(\/?>)$/,' ht="'+height+'" customHeight="1"$1')});
    dSheet=dSheet.replace(/<mergeCells\b[^>]*>([\s\S]*?)<\/mergeCells>/,(_,body)=>{for(const ref of ['B26:T26','C28:T28','C29:T29','C30:T30'])if(!body.includes('ref="'+ref+'"'))body+='<mergeCell ref="'+ref+'"/>';return '<mergeCells count="'+(body.match(/<mergeCell\b/g)||[]).length+'">'+body+'</mergeCells>'});zip.file(dPath,dSheet);
@@ -98,6 +105,7 @@
    xfs.setAttribute('count',String(xfs.children.length));zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
    // Request Excel/native converter to refresh all dependent formulas on open.
    let raw=await zip.file('xl/workbook.xml').async('string');
+   if(patches.__pp5_indicator_count)raw=raw.replace(/((?:'D'|D)!\$B\$3:\$T\$)52/g,(_,prefix)=>prefix+(53+patches.__pp5_indicator_count));
    if(/<calcPr\b/.test(raw))raw=raw.replace(/<calcPr\b[^>]*\/?>(?:<\/calcPr>)?/,m=>m.replace(/\s+(fullCalcOnLoad|forceFullCalc|calcMode)="[^"]*"/g,'').replace(/\/?>(?:<\/calcPr>)?$/,' calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/>'));
    else raw=raw.replace('</workbook>','<calcPr calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>');
    zip.file('xl/workbook.xml',raw);

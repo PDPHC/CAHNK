@@ -31,7 +31,7 @@ const compare=(a,b)=>{if(a==null)a=typeof b==='string'?'':0;if(b==null)b=typeof 
 class Calculator{
  constructor(cells,patches={}){this.cells=cells;this.patches=patches;this.cache=new Map();this.active=new Set();this.ast=new Map()}
  get(sheet,ref){ref=ref.replace(/\$/g,'').toUpperCase();const key=sheet+'!'+ref;if(Object.hasOwn(this.patches,key))return this.patches[key];if(this.cache.has(key))return this.cache.get(key);if(this.active.has(key))throw Error('สูตรวนซ้ำ '+key);const c=this.cells[sheet]?.[ref];if(!c)return null;
-  this.active.add(key);try{let v=c.v??null;if(c.f){let ast=this.ast.get(c.f);if(!ast){ast=parse(c.f);this.ast.set(c.f,ast)}v=this.run(ast,sheet)}this.cache.set(key,v);return v}finally{this.active.delete(key)}
+  this.active.add(key);try{let v=c.v??null;if(c.f){let ast=this.ast.get(c.f);if(!ast){ast=parse(c.f);this.ast.set(c.f,ast)}v=this.run(ast,sheet)}if(sheet==='D'&&/^[OPQRT]25$/.test(ref)){for(let i=0;i<Number(this.patches.__pp5_indicator_count||0);i++)v=num(v)+num(this.patches['D!'+ref[0]+(54+i)]||0)}this.cache.set(key,v);return v}finally{this.active.delete(key)}
  }
  run(n,sheet){const kind=n[0];if(kind==='v')return n[1];if(kind==='err')throw Error(n[1]);if(kind==='un')return (n[1]==='-'?-1:1)*num(this.run(n[2],sheet));
   if(kind==='ref'){let ref=n[1];if(ref.includes('!')){const parts=ref.split('!');sheet=parts[0].replace(/^'|'$/g,'');ref=parts[1]}if(ref.includes(':')){const [a,b]=ref.split(':').map(pos),v=[];for(let y=a[1];y<=b[1];y++)for(let x=a[0];x<=b[0];x++)v.push(this.get(sheet,col(x)+y));return v}return this.get(sheet,ref)}
