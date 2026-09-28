@@ -59,5 +59,6 @@ class Calculator{
   }
  }
 }
-globalThis.PP5Calc={Calculator,parse};if(typeof module!=='undefined')module.exports=globalThis.PP5Calc;
+function scoreRatio(get){const during=['E3','F3','H3','I3'].reduce((n,r)=>n+Number(get('IN',r)||0),0),final=Number(get('IN','J3')||0),total=during+final;if(!Number.isFinite(total)||total<=0||during<0||final<0)return null;const first=Math.round(during/total*10000)/100;return [first,Math.round((100-first)*100)/100]}
+globalThis.PP5Calc={Calculator,parse,scoreRatio};if(typeof module!=='undefined')module.exports=globalThis.PP5Calc;
 })();
