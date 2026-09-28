@@ -18,7 +18,7 @@
    const page={...sourcePage,heights:[...sourcePage.heights]},start={B:11,C:9,E:9}[page.sheet],firstRow=Number(page.area.split(':')[0].match(/\d+/)[0]);
    if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
    if(page.sheet==='D'){
-    for(const row of [...Array.from({length:15},(_,i)=>i+8),28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
+    for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
    }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
@@ -69,6 +69,7 @@
      Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
      span.textContent='หมาย\nเหตุ';
     }
+    if(page.sheet==='A'&&['E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
     cell.append(span);sheet.append(cell);
    }
    if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
@@ -83,7 +84,7 @@
      line.append(label,rule,title);sheet.append(line);
     }
     const choices=document.createElement('div');choices.className='approval-choices';
-    Object.assign(choices.style,{left:xs[3]+'pt',top:ys[43]+'pt',width:(xs[xs.length-1]-xs[3]-4)+'pt',height:page.heights[43]+'pt'});
+    Object.assign(choices.style,{left:'0pt',top:ys[43]+'pt',width:w+'pt',height:page.heights[43]+'pt'});
     for(const text of ['อนุมัติ','ไม่อนุมัติ']){const choice=document.createElement('span');choice.className='approval-choice';const box=document.createElement('span');box.className='approval-box';box.setAttribute('aria-hidden','true');choice.append(box,document.createTextNode(text));choices.append(choice)}
     sheet.append(choices);
    }
@@ -99,6 +100,17 @@
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
+  // Keep the original indicator geometry. Overflow text is continued at readable size.
+  const overflowIndicators=[];
+  for(let row=8;row<=22;row++){const cell=pages.querySelector('[data-ref="D!C'+row+'"]');if(!cell)continue;const span=cell.firstChild;if(span.scrollHeight>cell.clientHeight-2||span.scrollWidth>cell.clientWidth-3){overflowIndicators.push({number:row-7,text:span.textContent});span.textContent='ข้อ '+(row-7)+' — ดูข้อความเต็มในหน้าต่อ';}}
+  if(overflowIndicators.length){
+   let paper,space,anchor=appendixAnchor;const newPage=()=>{paper=document.createElement('section');paper.className='paper a4 indicator-text-continuation';const title=document.createElement('h2');title.textContent='ตัวชี้วัด / ผลการเรียนรู้ — ข้อความต่อ';paper.append(title);space=document.createElement('div');space.className='indicator-text-space';paper.append(space);if(anchor)anchor.after(paper);else pages.append(paper);anchor=paper;appendixPages++;};newPage();
+   for(const item of overflowIndicators){let rest=Array.from(new Intl.Segmenter('th',{granularity:'grapheme'}).segment(item.text),x=>x.segment),continued=false;
+    while(rest.length){const block=document.createElement('p');space.append(block);const prefix='ข้อ '+item.number+(continued?' (ต่อ)':'')+'  ';let lo=0,hi=rest.length;while(lo<hi){const mid=Math.ceil((lo+hi)/2);block.textContent=prefix+rest.slice(0,mid).join('');if(space.scrollHeight<=space.clientHeight)lo=mid;else hi=mid-1;}
+     if(!lo){block.remove();newPage();continue;}block.textContent=prefix+rest.slice(0,lo).join('');rest=rest.slice(lo);continued=true;if(rest.length)newPage();
+    }
+   }
+  }
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
