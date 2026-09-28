@@ -144,7 +144,7 @@
   async function loadClassroom(cid){
     const [cr,sr,mr]=await Promise.all([
       sb.from("classrooms").select("*").eq("id",cid).single(),
-      sb.from("students").select("id,client_uid,student_code,full_name,sort_order,active")
+      sb.from("students").select("id,client_uid,student_code,full_name,sort_order,active,record_status,status_note")
         .eq("classroom_id",cid).eq("active",true).order("sort_order"),
       sb.from("module_data").select("module_name,data").eq("classroom_id",cid)
     ]);
@@ -155,7 +155,7 @@
     hset("settings",classroomSettings(cr.data));
     hset("holidays",Array.isArray(cr.data.holidays)?cr.data.holidays:[]);
     hset("students",(sr.data||[]).map((s,i)=>({
-      uid:s.client_uid||s.id,id:s.student_code||"",name:s.full_name||"",_dbId:s.id,_sort:s.sort_order??i
+      uid:s.client_uid||s.id,id:s.student_code||"",name:s.full_name||"",record_status:s.record_status,status_note:s.status_note,_dbId:s.id,_sort:s.sort_order??i
     })));
     MODULES.forEach(k=>hset("module_"+k,{}));
     hset("homeroom_time_settings",{});

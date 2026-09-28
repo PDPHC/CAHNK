@@ -158,7 +158,9 @@ function fillMonth(id){const el=$(id);if(el&&!el.value){const ms=monthsInTerm(),
 async function openPrint(module,ymSelector,all=false){let extra=all?"&all=1":"";if(ymSelector&&!all){const v=$(ymSelector).value;extra+=`&month=${encodeURIComponent(v)}`}const target=`../print/form.html?module=${encodeURIComponent(module)}${extra}`,win=window.open("about:blank","_blank");try{if(window.cloudRefreshApprovalSignature)await window.cloudRefreshApprovalSignature()}catch(e){console.error(e)}if(win)win.location.href=target;else window.open(target,"_blank")}
 function moduleStore(k){return get("module_"+k,{})}
 function saveModule(k,v){set("module_"+k,v);window.cloudQueueModuleSave?.(k,v)}
-function rosterRows(){return students().map((s,i)=>({...s,no:i+1}))}
+function rosterRows(){return students().map((s,i)=>({...s,name:StudentStatus.name(s),no:i+1}))}
+function studentBlocked(id){return StudentStatus.blocked(students().find(s=>s.uid===id))}
+function assertStudentEntry(id){if(studentBlocked(id))throw Error("นักเรียนย้ายออกหรือไม่มีตัวตน ไม่สามารถกรอกข้อมูลได้")}
 
 function normalizeAttendanceStatus(v){
  return v==="ม"?"/":(v||"");
@@ -199,17 +201,17 @@ function renderAttendanceMatrix(){
    }
    if(z.x.off)return `<td class="${cl}" title="${esc(z.x.reason)}">—</td>`;
    const nv=normalizeAttendanceStatus(val);
-   return `<td class="${cl}"><select data-u="${r.uid}" data-d="${z.day}" onchange="attendanceMatrixChange(this)"><option value=""></option><option value="/" ${nv==="/"?"selected":""}>/</option><option value="ข" ${nv==="ข"?"selected":""}>ข</option><option value="ล" ${nv==="ล"?"selected":""}>ล</option><option value="น" ${nv==="น"?"selected":""}>น</option><option value="ส" ${nv==="ส"?"selected":""}>ส</option></select></td>`;
+   return `<td class="${cl}"><select ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-d="${z.day}" onchange="attendanceMatrixChange(this)"><option value=""></option><option value="/" ${nv==="/"?"selected":""}>/</option><option value="ข" ${nv==="ข"?"selected":""}>ข</option><option value="ล" ${nv==="ล"?"selected":""}>ล</option><option value="น" ${nv==="น"?"selected":""}>น</option><option value="ส" ${nv==="ส"?"selected":""}>ส</option></select></td>`;
   }).join("");
   const total=Object.entries(d).filter(([day,v])=>isAttendancePresent(v) && isInstructionDay(`${ym}-${String(day).padStart(2,"0")}`)).length;
   return `<tr><td>${r.no}</td><td>${esc(r.id)}</td><td class="name">${esc(r.name)}</td>${cells}<td>${total||""}</td></tr>`
  }).join("")||`<tr><td colspan="${inf.days+4}" style="padding:20px">กรุณาเพิ่มรายชื่อนักเรียนใน “ข้อมูลห้องเรียน” ก่อน</td></tr>`;
 }
-function attendanceMatrixChange(el){
+function attendanceMatrixChange(el){if(studentBlocked(el.dataset.u))return;
  const ym=$("#month").value,st=moduleStore("attendance");st[ym]=st[ym]||{};st[ym][el.dataset.u]=st[ym][el.dataset.u]||{};
  st[ym][el.dataset.u][el.dataset.d]=el.value;saveModule("attendance",st);renderDailyAttendance();
 }
-function setAttendance(studentUid,date,status){
+function setAttendance(studentUid,date,status){if(studentBlocked(studentUid))return;
  const x=dayInfo(date);if(x.off)return;
  const ym=date.slice(0,7),day=String(Number(date.slice(8,10))),st=moduleStore("attendance");
  st[ym]=st[ym]||{};st[ym][studentUid]=st[ym][studentUid]||{};st[ym][studentUid][day]=status;saveModule("attendance",st);
@@ -218,17 +220,17 @@ function setAttendance(studentUid,date,status){
 function markAllPresent(){
  const date=$("#attendanceDate").value,x=dayInfo(date);if(x.off)return alert(`วันนี้ปิดการเช็กชื่อ: ${x.reason}`);
  const ym=date.slice(0,7),day=String(Number(date.slice(8,10))),st=moduleStore("attendance");st[ym]=st[ym]||{};
- students().forEach(s=>{st[ym][s.uid]=st[ym][s.uid]||{};st[ym][s.uid][day]="/"});saveModule("attendance",st);renderDailyAttendance();if($("#month").value===ym)renderAttendanceMatrix();
+ students().filter(s=>!StudentStatus.blocked(s)).forEach(s=>{st[ym][s.uid]=st[ym][s.uid]||{};st[ym][s.uid][day]="/"});saveModule("attendance",st);renderDailyAttendance();if($("#month").value===ym)renderAttendanceMatrix();
 }
 function clearAttendanceDay(){
  const date=$("#attendanceDate").value;if(!confirm("ล้างสถานะการมาเรียนของวันที่เลือกทั้งหมด?"))return;
- const ym=date.slice(0,7),day=String(Number(date.slice(8,10))),st=moduleStore("attendance");if(st[ym])Object.values(st[ym]).forEach(x=>{if(x)delete x[day]});saveModule("attendance",st);renderDailyAttendance();if($("#month").value===ym)renderAttendanceMatrix();
+ const ym=date.slice(0,7),day=String(Number(date.slice(8,10))),st=moduleStore("attendance");if(st[ym])Object.entries(st[ym]).forEach(([id,x])=>{if(x&&!studentBlocked(id))delete x[day]});saveModule("attendance",st);renderDailyAttendance();if($("#month").value===ym)renderAttendanceMatrix();
 }
 function renderDailyAttendance(){
  const date=$("#attendanceDate").value,body=$("#dailyAttendanceBody");if(!date||!body)return;
  const x=dayInfo(date),ym=date.slice(0,7),day=String(Number(date.slice(8,10))),d=moduleStore("attendance")[ym]||{},rows=rosterRows();
  $("#dailyDateInfo").innerHTML=x.off?`<span class="badge">${esc(x.reason)} — ปิดการเช็กชื่อ</span>`:`วันเรียนปกติ`;
- body.innerHTML=rows.map(r=>{const v=normalizeAttendanceStatus((d[r.uid]||{})[day]||"");const statuses=["/","ข","ล","น","ส"],labels=["มา","ขาด","ลา","หนี","สาย"];return `<tr class="${x.off?"day-off":""}"><td>${r.no}</td><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td><div class="daily-status">${statuses.map((z,i)=>`<button class="status-btn ${v===z?"active":""} ${x.off?"off":""}" onclick="setAttendance('${r.uid}','${date}','${z}')">${labels[i]}</button>`).join("")}</div></td></tr>`}).join("");
+ body.innerHTML=rows.map(r=>{const v=normalizeAttendanceStatus((d[r.uid]||{})[day]||"");const statuses=["/","ข","ล","น","ส"],labels=["มา","ขาด","ลา","หนี","สาย"];return `<tr class="${x.off?"day-off":""}"><td>${r.no}</td><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td><div class="daily-status">${statuses.map((z,i)=>`<button class="status-btn ${v===z?"active":""} ${x.off?"off":""}" ${StudentStatus.blocked(r)?"disabled":""} onclick="setAttendance('${r.uid}','${date}','${z}')">${labels[i]}</button>`).join("")}</div></td></tr>`}).join("");
  const vals=rows.map(r=>normalizeAttendanceStatus((d[r.uid]||{})[day]||""));const c=z=>vals.filter(v=>v===z).length;
  const presentCount=c("/")+c("ส");
  $("#dailySummary").innerHTML=`<div><strong>${rows.length}</strong>ทั้งหมด</div><div><strong>${presentCount}</strong>มาเรียน<br><small>(รวมสาย)</small></div><div><strong>${c("ข")}</strong>ขาด</div><div><strong>${c("ล")}</strong>ลา</div><div><strong>${c("น")}</strong>หนี</div><div><strong>${c("ส")}</strong>สาย</div>`;
@@ -265,13 +267,13 @@ function renderMonthlyMatrix(kind,type){
        return `<td class="holiday-merged-cell" rowspan="${span}"><div class="holiday-merged-label">${esc(z.x.holidayName||z.x.reason||"วันหยุด")}</div></td>`;
      }
      if(z.x.off)return `<td class="day-off">—</td>`;
-     return `<td><input type="number" min="0" step="1" value="${esc(val)}" data-u="${r.uid}" data-d="${z.day}" onchange="matrixChange('${kind}',this)"></td>`;
+     return `<td><input type="number" min="0" step="1" value="${esc(val)}" ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-d="${z.day}" onchange="matrixChange('${kind}',this)"></td>`;
    }).join("");
    const total=Object.entries(d).reduce((a,[day,b])=>a+(isInstructionDay(`${ym}-${String(day).padStart(2,"0")}`)?(Number(b)||0):0),0);
    return `<tr><td>${r.no}</td><td>${esc(r.id)}</td><td class="name">${esc(r.name)}</td>${cells}<td>${total||""}</td></tr>`
  }).join("")||`<tr><td colspan="${inf.days+4}" style="padding:20px">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function matrixChange(kind,el){const ym=$("#month").value,st=moduleStore(kind);st[ym]=st[ym]||{};st[ym][el.dataset.u]=st[ym][el.dataset.u]||{};st[ym][el.dataset.u][el.dataset.d]=el.value;saveModule(kind,st);renderMonthlyMatrix(kind,"number")}
+function matrixChange(kind,el){if(studentBlocked(el.dataset.u))return;const ym=$("#month").value,st=moduleStore(kind);st[ym]=st[ym]||{};st[ym][el.dataset.u]=st[ym][el.dataset.u]||{};st[ym][el.dataset.u][el.dataset.d]=el.value;saveModule(kind,st);renderMonthlyMatrix(kind,"number")}
 
 /* ---------- Behavior custom table ---------- */
 function behaviorRatingValue(v){
@@ -295,12 +297,12 @@ function renderBehavior(){
      <td class="b-no">${r.no}</td>
      <td class="b-id">${esc(r.id)}</td>
      <td class="b-name">${esc(r.name)}</td>
-     ${ratings.map(z=>`<td class="b-rating-cell"><input type="radio" name="behavior-${r.uid}" ${rating===z?"checked":""} onclick="setBehaviorRating('${r.uid}','${z}')"></td>`).join("")}
-     <td class="b-advice-cell"><input value="${esc(advice)}" oninput="setBehaviorAdvice('${r.uid}',this.value)"></td>
+     ${ratings.map(z=>`<td class="b-rating-cell"><input type="radio" name="behavior-${r.uid}" ${rating===z?"checked":""} ${StudentStatus.blocked(r)?"disabled":""} onclick="setBehaviorRating('${r.uid}','${z}')"></td>`).join("")}
+     <td class="b-advice-cell"><input value="${esc(advice)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setBehaviorAdvice('${r.uid}',this.value)"></td>
    </tr>`;
  }).join("")||`<tr><td colspan="8" class="empty">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function setBehaviorRating(studentUid,rating){
+function setBehaviorRating(studentUid,rating){if(studentBlocked(studentUid))return;
  const ym=$("#month").value,st=moduleStore("behavior");
  st[ym]=st[ym]||{};st[ym][studentUid]=st[ym][studentUid]||{};
  const current=st[ym][studentUid].rating||"";
@@ -308,7 +310,7 @@ function setBehaviorRating(studentUid,rating){
  saveModule("behavior",st);
  renderBehavior();
 }
-function setBehaviorAdvice(studentUid,value){
+function setBehaviorAdvice(studentUid,value){if(studentBlocked(studentUid))return;
  const ym=$("#month").value,st=moduleStore("behavior");
  st[ym]=st[ym]||{};st[ym][studentUid]=st[ym][studentUid]||{};
  st[ym][studentUid].advice=value;
@@ -327,12 +329,12 @@ function renderRosterTable(kind){
  $("#rosterHead").innerHTML=`<tr><th>เลขที่</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr>`;
  $("#rosterEditBody").innerHTML=roster.map(r=>`<tr><td>${r.no}</td><td>${esc(r.id)}</td><td>${esc(r.name)}</td>${cols.map(c=>{
    const val=(data[r.uid]||{})[c[0]]??"";
-   if(c[2]==="select")return `<td><select data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"><option></option>${["ดีมาก","ดี","พอใช้","ปรับปรุง"].map(x=>`<option ${val===x?"selected":""}>${x}</option>`).join("")}</select></td>`;
-   if(c[2]==="check")return `<td style="text-align:center"><input class="checkbox-big" type="checkbox" ${val===true||val==="true"?"checked":""} data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"></td>`;
-   return `<td><input value="${esc(val)}" data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"></td>`;
+   if(c[2]==="select")return `<td><select ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"><option></option>${["ดีมาก","ดี","พอใช้","ปรับปรุง"].map(x=>`<option ${val===x?"selected":""}>${x}</option>`).join("")}</select></td>`;
+   if(c[2]==="check")return `<td style="text-align:center"><input class="checkbox-big" type="checkbox" ${val===true||val==="true"?"checked":""} ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"></td>`;
+   return `<td><input value="${esc(val)}" ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-f="${c[0]}" onchange="rosterCell('${kind}',this)"></td>`;
  }).join("")}</tr>`).join("")||`<tr><td colspan="${cols.length+3}" style="padding:20px">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function rosterCell(kind,el){const ym=$("#month").value,st=moduleStore(kind);st[ym]=st[ym]||{};st[ym][el.dataset.u]=st[ym][el.dataset.u]||{};st[ym][el.dataset.u][el.dataset.f]=el.type==="checkbox"?el.checked:el.value;saveModule(kind,st)}
+function rosterCell(kind,el){if(studentBlocked(el.dataset.u))return;const ym=$("#month").value,st=moduleStore(kind);st[ym]=st[ym]||{};st[ym][el.dataset.u]=st[ym][el.dataset.u]||{};st[ym][el.dataset.u][el.dataset.f]=el.type==="checkbox"?el.checked:el.value;saveModule(kind,st)}
 
 
 
@@ -369,12 +371,12 @@ function renderLiteracy(){
      <td class="center">${r.no}</td>
      <td class="center">${esc(r.id)}</td>
      <td class="left literacy-name-cell">${esc(r.name)}</td>
-     ${LITERACY_FIELDS.map(([key])=>`<td class="literacy-check-cell"><input class="checkbox-big" type="checkbox" ${x[key]?"checked":""} onchange="setLiteracyCheck('${r.uid}','${key}',this.checked)"></td>`).join("")}
-     <td class="literacy-note-cell"><input class="literacy-note-input" value="${esc(x.note)}" oninput="setLiteracyNote('${r.uid}',this.value)"></td>
+     ${LITERACY_FIELDS.map(([key])=>`<td class="literacy-check-cell"><input class="checkbox-big" type="checkbox" ${x[key]?"checked":""} ${StudentStatus.blocked(r)?"disabled":""} onchange="setLiteracyCheck('${r.uid}','${key}',this.checked)"></td>`).join("")}
+     <td class="literacy-note-cell"><input class="literacy-note-input" value="${esc(x.note)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setLiteracyNote('${r.uid}',this.value)"></td>
    </tr>`;
  }).join("") || `<tr><td colspan="8" class="empty">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function setLiteracyCheck(studentUid,field,checked){
+function setLiteracyCheck(studentUid,field,checked){if(studentBlocked(studentUid))return;
  const ym=$("#month").value,st=moduleStore("literacy");
  st[ym]=st[ym]||{};st[ym][studentUid]=st[ym][studentUid]||{};
  st[ym][studentUid][field]=checked;
@@ -384,7 +386,7 @@ function setLiteracyCheck(studentUid,field,checked){
 function literacyCheckAll(field){
  const ym=$("#month").value,st=moduleStore("literacy");
  st[ym]=st[ym]||{};
- students().forEach(s=>{
+ students().filter(s=>!StudentStatus.blocked(s)).forEach(s=>{
    st[ym][s.uid]=st[ym][s.uid]||{};
    st[ym][s.uid][field]=true;
  });
@@ -392,7 +394,7 @@ function literacyCheckAll(field){
  renderLiteracy();
 }
 
-function setLiteracyNote(studentUid,value){
+function setLiteracyNote(studentUid,value){if(studentBlocked(studentUid))return;
  const ym=$("#month").value,st=moduleStore("literacy");
  st[ym]=st[ym]||{};st[ym][studentUid]=st[ym][studentUid]||{};
  st[ym][studentUid].note=value;
@@ -437,15 +439,15 @@ function renderHealth(){
      <td class="center">${r.no}</td>
      <td class="center">${esc(r.id)}</td>
      <td class="left">${esc(r.name)}</td>
-     <td><input class="health-text" value="${esc(x.age)}" oninput="setHealthCell('${r.uid}','age',this.value)"></td>
-     <td><input class="health-text" value="${esc(x.weight)}" oninput="setHealthCell('${r.uid}','weight',this.value)"></td>
-     <td><input class="health-text" value="${esc(x.height)}" oninput="setHealthCell('${r.uid}','height',this.value)"></td>
-     ${HEALTH_RATE_FIELDS.map(([key])=>`<td><select class="health-rate-select" onchange="setHealthCell('${r.uid}','${key}',this.value)">${HEALTH_RATE_OPTIONS.map(v=>`<option value="${v}" ${x[key]===v?"selected":""}>${v}</option>`).join("")}</select></td>`).join("")}
-     <td><input class="health-note-input" value="${esc(x.note)}" oninput="setHealthCell('${r.uid}','note',this.value)"></td>
+     <td><input class="health-text" value="${esc(x.age)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setHealthCell('${r.uid}','age',this.value)"></td>
+     <td><input class="health-text" value="${esc(x.weight)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setHealthCell('${r.uid}','weight',this.value)"></td>
+     <td><input class="health-text" value="${esc(x.height)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setHealthCell('${r.uid}','height',this.value)"></td>
+     ${HEALTH_RATE_FIELDS.map(([key])=>`<td><select class="health-rate-select" ${StudentStatus.blocked(r)?"disabled":""} onchange="setHealthCell('${r.uid}','${key}',this.value)">${HEALTH_RATE_OPTIONS.map(v=>`<option value="${v}" ${x[key]===v?"selected":""}>${v}</option>`).join("")}</select></td>`).join("")}
+     <td><input class="health-note-input" value="${esc(x.note)}" ${StudentStatus.blocked(r)?"disabled":""} oninput="setHealthCell('${r.uid}','note',this.value)"></td>
    </tr>`;
  }).join("") || `<tr><td colspan="11" class="empty">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function setHealthCell(studentUid,field,value){
+function setHealthCell(studentUid,field,value){if(studentBlocked(studentUid))return;
  const ym=$("#month").value,st=moduleStore("health");
  st[ym]=st[ym]||{};
  st[ym][studentUid]=st[ym][studentUid]||{};
@@ -492,7 +494,7 @@ function scholarshipRows(){
  return rows;
 }
 function scholarshipStudentOptions(selected=""){
- return `<option value="">-- เลือกนักเรียน --</option>`+students().map(s=>`<option value="${esc(s.uid)}" ${selected===s.uid?"selected":""}>${esc(s.id||"")} ${esc(s.name)}</option>`).join("");
+ return `<option value="">-- เลือกนักเรียน --</option>`+students().map(s=>`<option ${StudentStatus.blocked(s)?"disabled":""} value="${esc(s.uid)}" ${selected===s.uid?"selected":""}>${esc(s.id||"")} ${esc(StudentStatus.name(s))}</option>`).join("");
 }
 function scholarshipSetEditMode(editing){
  $("#schSubmitBtn").textContent=editing?"บันทึกการแก้ไข":"บันทึก";
@@ -514,7 +516,7 @@ function initScholarship(){
    e.preventDefault();
    const form=e.target, studentUid=form.elements.studentUid.value;
    const student=students().find(s=>s.uid===studentUid);
-   if(!student)return alert("กรุณาเลือกนักเรียน");
+   if(!student)return alert("กรุณาเลือกนักเรียน");if(StudentStatus.blocked(student))return alert("นักเรียนย้ายออกหรือไม่มีตัวตน ไม่สามารถกรอกข้อมูลได้");
    if(!form.elements.date.value)return alert("กรุณาเลือกวันที่ได้รับทุน");
 
    const editId=$("#schEditingId").value;
@@ -556,7 +558,7 @@ function renderScholarship(){
  $("#schBody").innerHTML=roster.map(r=>{
    const records=allRows.filter(x=>scholarshipResolveStudent(x).uid===r.uid);
    const join=(fn)=>records.map(fn).filter(Boolean).join("<br>");
-   const actions=records.length?records.map(x=>`<div class="actions sch-row-actions"><button class="btn gray" type="button" onclick="editScholarship('${x.uid}')">แก้ไข</button><button class="btn danger" type="button" onclick="delSch('${x.uid}')">ลบ</button></div>`).join(""):"";
+   const actions=!StudentStatus.blocked(r)&&records.length?records.map(x=>`<div class="actions sch-row-actions"><button class="btn gray" type="button" onclick="editScholarship('${x.uid}')">แก้ไข</button><button class="btn danger" type="button" onclick="delSch('${x.uid}')">ลบ</button></div>`).join(""):"";
    return `<tr>
      <td>${r.no}</td>
      <td>${esc(r.id)}</td>
@@ -571,7 +573,7 @@ function renderScholarship(){
  }).join("")||`<tr><td colspan="9" style="padding:20px;text-align:center">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
 function editScholarship(id){
- const r=scholarshipRows().find(x=>x.uid===id);
+ const r=scholarshipRows().find(x=>x.uid===id);if(r&&studentBlocked(scholarshipResolveStudent(r).uid))return;
  if(!r)return;
  const s=scholarshipResolveStudent(r),form=$("#schForm");
  $("#schEditingId").value=r.uid;
@@ -655,7 +657,7 @@ function renderVolunteer(){
       const raw=(data[r.uid]||{})[i]||"",v=normalizeVolunteerStatus(raw);
       const legacy=v && !VOLUNTEER_STATUSES.includes(v);
       return `<td class="vol-status-cell">
-        <select data-u="${r.uid}" data-i="${i}" onchange="volCell(this)">
+        <select ${StudentStatus.blocked(r)?"disabled":""} data-u="${r.uid}" data-i="${i}" onchange="volCell(this)">
           <option value=""></option>
           <option value="/" ${v==="/"?"selected":""}>/</option>
           <option value="ข" ${v==="ข"?"selected":""}>ข</option>
@@ -667,7 +669,7 @@ function renderVolunteer(){
    }).join("")}
  </tr>`).join("") || `<tr><td colspan="${3+headers.length}" style="padding:20px;text-align:center">กรุณาเพิ่มรายชื่อนักเรียนก่อน</td></tr>`;
 }
-function volCell(el){
+function volCell(el){if(studentBlocked(el.dataset.u))return;
  const ym=$("#month").value,st=volunteerMonthStore(ym),m=st.months[ym];
  m.data=m.data||{};
  m.data[el.dataset.u]=m.data[el.dataset.u]||{};
@@ -677,7 +679,7 @@ function volCell(el){
 function volMarkAll(activityIndex){
  const ym=$("#month").value,st=volunteerMonthStore(ym),m=st.months[ym];
  m.data=m.data||{};
- students().forEach(s=>{
+ students().filter(s=>!StudentStatus.blocked(s)).forEach(s=>{
    m.data[s.uid]=m.data[s.uid]||{};
    m.data[s.uid][activityIndex]="/";
  });
