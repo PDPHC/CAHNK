@@ -298,6 +298,7 @@
       if(!active||!rooms.some(r=>r.id===active)){go("classrooms.html");return}
       await loadClassroom(active);renderUserBar();showBody();
       if(typeof initFn==="function")await initFn();
+      if(location.pathname.endsWith('/settings.html')){for(const key of ['school','office','academicHead','deputy']){const input=document.querySelector('[name="'+key+'"]');if(input)input.readOnly=true}const note=document.createElement('p');note.className='notice';note.textContent='ข้อมูลโรงเรียนและผู้ลงนามแก้ไขที่ศูนย์กลางข้อมูลในหน้า Admin';document.getElementById('settingsForm')?.prepend(note)}
       const preferredMonth=sessionStorage.getItem("hnk_report_month");
       if(preferredMonth)state.reportMonth=preferredMonth;
       await renderCurrentSubmission().catch(console.error);
