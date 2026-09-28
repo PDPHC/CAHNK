@@ -12,6 +12,7 @@
   const calc=new PP5Calc.Calculator(template.cells,data.patches),errors=[];pages.replaceChildren();
   // Never silently omit pupils beyond the original 44-row printed score form.
   for(let r=48;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน ห้องนี้มีรายชื่อเกินช่วงพิมพ์ กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบก่อน');
+  await document.fonts.ready;
   const selectedPages=template.pages.filter(p=>!data.report||p.sheet===data.report);if(!selectedPages.length)throw Error('ไม่พบรายงานที่เลือก');
   let lastStudent=0;for(let r=4;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))lastStudent=r-3;
   for(const [index,sourcePage] of selectedPages.entries()){
@@ -20,6 +21,14 @@
    if(page.sheet==='D'){
     for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
+    // Use the unused bottom of the original sheet for wrapped indicator rows.
+    for(let r=43;r<=52;r++)page.heights[r-firstRow]=0;
+    const widths=offsets(page.widths),pw=210*72/25.4,ph=297*72/25.4,[left,right,top,bottom]=page.margins;
+    const widthScale=Math.min(page.fit?1:(page.scale||1),(pw-Math.max(left,25*72/25.4)-right)/sum(page.widths));
+    const rowIds=Array.from({length:15},(_,i)=>i+8),other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
+    const source=page.cells.find(c=>c[2]==='C8'),merge=page.merges.find(m=>m[0]===source[0]&&m[1]===source[1]),style=template.styles[source[3]];
+    const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"'+style.font+'", "TH Sarabun New", Tahoma, sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
+    let size=12,heights;do{measure.style.fontSize=size+'pt';heights=rowIds.map(r=>{measure.textContent=String(calc.get('D','C'+r)||' ');return Math.max(sourcePage.heights[r-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=4)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;rowIds.forEach((r,i)=>page.heights[r-firstRow]=heights[i]);
    }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
    const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[originalLeft,mr,mt,mb]=page.margins,ml=Math.max(originalLeft,25*72/25.4);
@@ -59,7 +68,7 @@
     const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
-    if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize='12pt';cell.style.lineHeight='1.25';delete cell.dataset.shrink;}
+    if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
 
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
@@ -100,17 +109,6 @@
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
-  // Keep the original indicator geometry. Overflow text is continued at readable size.
-  const overflowIndicators=[];
-  for(let row=8;row<=22;row++){const cell=pages.querySelector('[data-ref="D!C'+row+'"]');if(!cell)continue;const span=cell.firstChild;if(span.scrollHeight>cell.clientHeight-2||span.scrollWidth>cell.clientWidth-3){overflowIndicators.push({number:row-7,text:span.textContent});span.textContent='ข้อ '+(row-7)+' — ดูข้อความเต็มในหน้าต่อ';}}
-  if(overflowIndicators.length){
-   let paper,space,anchor=appendixAnchor;const newPage=()=>{paper=document.createElement('section');paper.className='paper a4 indicator-text-continuation';const title=document.createElement('h2');title.textContent='ตัวชี้วัด / ผลการเรียนรู้ — ข้อความต่อ';paper.append(title);space=document.createElement('div');space.className='indicator-text-space';paper.append(space);if(anchor)anchor.after(paper);else pages.append(paper);anchor=paper;appendixPages++;};newPage();
-   for(const item of overflowIndicators){let rest=Array.from(new Intl.Segmenter('th',{granularity:'grapheme'}).segment(item.text),x=>x.segment),continued=false;
-    while(rest.length){const block=document.createElement('p');space.append(block);const prefix='ข้อ '+item.number+(continued?' (ต่อ)':'')+'  ';let lo=0,hi=rest.length;while(lo<hi){const mid=Math.ceil((lo+hi)/2);block.textContent=prefix+rest.slice(0,mid).join('');if(space.scrollHeight<=space.clientHeight)lo=mid;else hi=mid-1;}
-     if(!lo){block.remove();newPage();continue;}block.textContent=prefix+rest.slice(0,lo).join('');rest=rest.slice(lo);continued=true;if(rest.length)newPage();
-    }
-   }
-  }
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
