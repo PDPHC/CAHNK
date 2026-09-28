@@ -55,6 +55,12 @@
      cell.classList.add('criteria-notes');cell.style.alignItems='flex-start';
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
+    // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):undefined;
+    if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
+    if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
+    if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize='12pt';cell.style.lineHeight='1.25';delete cell.dataset.shrink;}
+
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
      // Render its two words explicitly instead of inheriting rotated nowrap CSS.
