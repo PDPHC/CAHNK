@@ -72,6 +72,21 @@
     }
     zip.file(this.sheets[sheet].path,raw);
    }
+   // Hide only unused trailing roster rows; retain formulas and original row IDs.
+   let last=0;for(let r=4;r<=63;r++)if(this.value('IN','C'+r,patches)||this.value('IN','D'+r,patches))last=r-3;
+   const rosterRanges={B:[11,55],C:[9,52],E:[9,52],F:[7,66],CH:[7,66]};
+   const stylesRaw=await zip.file('xl/styles.xml').async('string'),stylesDoc=parse(stylesRaw),xfs=nodes(stylesDoc,'cellXfs')[0],variants=new Map();
+   const fitStyle=id=>{if(variants.has(id))return variants.get(id);const xf=xfs.children[id].cloneNode(true);let a=nodes(xf,'alignment')[0];if(!a){a=stylesDoc.createElementNS(NS,'alignment');xf.append(a)}a.setAttribute('wrapText','0');a.setAttribute('shrinkToFit','1');xf.setAttribute('applyAlignment','1');const next=xfs.children.length;xfs.append(xf);variants.set(id,next);return next};
+   for(const [name,[start,end]] of Object.entries(rosterRanges)){
+    const path=this.sheets[name].path;let sheet=await zip.file(path).async('string');
+    sheet=sheet.replace(/<row\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="(\d+)"/)?.[1]);if(row<start||row>end)return tag;tag=tag.replace(/\s+hidden="[^"]*"/g,'');return row>=start+last?tag.replace(/(\/?>)$/,' hidden="1"$1'):tag});
+    sheet=sheet.replace(/<c\b[^>]*>/g,tag=>{const row=Number(tag.match(/\br="D(\d+)"/)?.[1]);if(!(row>=start&&row<=end))return tag;const id=Number(tag.match(/\bs="(\d+)"/)?.[1]||0),style=fitStyle(id);return /\bs="/.test(tag)?tag.replace(/\bs="\d+"/,'s="'+style+'"'):tag.replace(/(\/?>)$/,' s="'+style+'"$1')});
+    const footer='&amp;C&amp;10† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';
+    if(/<headerFooter\b/.test(sheet))sheet=sheet.replace(/<headerFooter\b[^>]*\/>/,'<headerFooter><oddFooter>'+footer+'</oddFooter><evenFooter>'+footer+'</evenFooter><firstFooter>'+footer+'</firstFooter></headerFooter>').replace(/<headerFooter\b[^>]*>[\s\S]*?<\/headerFooter>/,block=>{for(const name of ['oddFooter','evenFooter','firstFooter']){const re=new RegExp('<'+name+'(?:\\s[^>]*)?>[\\s\\S]*?<\\/'+name+'>');block=re.test(block)?block.replace(re,'<'+name+'>'+footer+'</'+name+'>'):block.replace('</headerFooter>','<'+name+'>'+footer+'</'+name+'></headerFooter>')}return block});
+    else sheet=sheet.replace(/(<pageSetup\b[^>]*\/>)/,'$1<headerFooter><oddFooter>'+footer+'</oddFooter></headerFooter>');
+    zip.file(path,sheet);
+   }
+   xfs.setAttribute('count',String(xfs.children.length));zip.file('xl/styles.xml',new XMLSerializer().serializeToString(stylesDoc));
    // Request Excel/native converter to refresh all dependent formulas on open.
    let raw=await zip.file('xl/workbook.xml').async('string');
    if(/<calcPr\b/.test(raw))raw=raw.replace(/<calcPr\b[^>]*\/?>(?:<\/calcPr>)?/,m=>m.replace(/\s+(fullCalcOnLoad|forceFullCalc|calcMode)="[^"]*"/g,'').replace(/\/?>(?:<\/calcPr>)?$/,' calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/>'));
@@ -82,4 +97,3 @@
  }
  window.PP5Workbook={Book,col,allowed};
 })();
-

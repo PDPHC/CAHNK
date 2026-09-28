@@ -13,7 +13,10 @@
   // Never silently omit pupils beyond the original 44-row printed score form.
   for(let r=48;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน ห้องนี้มีรายชื่อเกินช่วงพิมพ์ กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบก่อน');
   const selectedPages=template.pages.filter(p=>!data.report||p.sheet===data.report);if(!selectedPages.length)throw Error('ไม่พบรายงานที่เลือก');
-  for(const [index,page] of selectedPages.entries()){
+  let lastStudent=0;for(let r=4;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))lastStudent=r-3;
+  for(const [index,sourcePage] of selectedPages.entries()){
+   const page={...sourcePage,heights:[...sourcePage.heights]},start={B:11,C:9,E:9}[page.sheet],firstRow=Number(page.area.split(':')[0].match(/\d+/)[0]);
+   if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
    const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[originalLeft,mr,mt,mb]=page.margins,ml=Math.max(originalLeft,25*72/25.4);
    // Reserve at least 25 mm on the binding edge; fit proportionally inside the remaining paper.
@@ -24,6 +27,7 @@
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);span.textContent=display(v,s)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
+    if(start&&/^D\d+$/.test(ref)&&Number(ref.slice(1))>=start){cell.style.whiteSpace='nowrap';cell.dataset.shrink='true';}
     // Central classroom names can be longer than the abbreviations in Excel.
     if(page.sheet==='A'&&ref==='I12')span.textContent=String(v??'').replace(/มัธยมศึกษาปีที่\s*/g,'ม.').replace(/ประถมศึกษาปีที่\s*/g,'ป.').replace(/อนุบาล(?:ปีที่)?\s*/g,'อ.');
     if(page.sheet==='A'&&['I12','G17','G18'].includes(ref)){cell.style.whiteSpace='nowrap';cell.dataset.shrink='true'}
@@ -56,7 +60,9 @@
     for(const text of ['อนุมัติ','ไม่อนุมัติ']){const choice=document.createElement('span');choice.className='approval-choice';const box=document.createElement('span');box.className='approval-box';box.setAttribute('aria-hidden','true');choice.append(box,document.createTextNode(text));choices.append(choice)}
     sheet.append(choices);
    }
-   paper.append(sheet);pages.append(paper);
+   paper.append(sheet);
+   if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนพิเศษ';paper.append(legend)}
+   pages.append(paper);
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;if(span.scrollWidth>cell.clientWidth&&span.scrollWidth>0)span.style.fontSize=(parseFloat(cell.style.fontSize)*cell.clientWidth/span.scrollWidth)+'pt'}
