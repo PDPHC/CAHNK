@@ -39,7 +39,7 @@
    }
    if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
    if(page.sheet==='A'){
-    const roles={37:'ครูผู้สอน/ครูประจำรายวิชา',39:'หัวหน้ากลุ่มสาระการเรียนรู้',41:'วัดผลช่วงชั้นมัธยมศึกษาตอนต้น',};
+    const roles={37:'ครูผู้สอน/ครูประจำรายวิชา',39:'หัวหน้ากลุ่มสาระการเรียนรู้',41:PP5Assessment.resolve(calc.get('IN','Q23'))?.[1]||'หัวหน้างานวัดผล',};
     for(const [row,role] of Object.entries(roles)){
      const line=document.createElement('div');line.className='signature-row';line.dataset.signatureRow=row;
      Object.assign(line.style,{left:xs[3]+'pt',top:ys[Number(row)-3]+'pt',width:(xs[xs.length-1]-xs[3]-4)+'pt',height:page.heights[Number(row)-3]+'pt'});

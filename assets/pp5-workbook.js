@@ -10,7 +10,7 @@
  const index=ref=>{const [,c,r]=ref.match(/^([A-Z]+)(\d+)$/);return Number(r)*16384+number(c)};
  const allowed=(sheet,ref)=>{
   const m=ref.match(/^([A-Z]+)(\d+)$/);if(!m)return false;const c=number(m[1]),r=+m[2];
-  return sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
+  return sheet==='A'&&ref==='C41'||sheet==='IN'&&((r>=4&&r<=63&&c>=3&&c<=11)||(r===3&&c>=5&&c<=10)||(c===17&&r>=4&&r<=23))
    ||sheet==='D'&&r>=8&&r<=47&&[3,15,16,17,18,19,20].includes(c)
    ||sheet==='W1'&&r===5&&c>=6&&c<=10
    ||sheet==='F'&&r>=7&&r<=66&&['H','I','J','K','L','M','N','O','P','Q','Z','AB','AD','AF','AH','AJ','AL','AN','AP','AR','BB','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BW','BX','CD','CE','CF','CG','CH','CI','CJ','CK','CL','CM','CV','CW','CX','CY','DC','DD','DE','DF','DG','DH','DI','DJ'].includes(m[1])
