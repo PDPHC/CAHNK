@@ -99,6 +99,23 @@
     for(const text of ['อนุมัติ','ไม่อนุมัติ']){const choice=document.createElement('span');choice.className='approval-choice';const box=document.createElement('span');box.className='approval-box';box.setAttribute('aria-hidden','true');choice.append(box,document.createTextNode(text));choices.append(choice)}
     sheet.append(choices);
    }
+   if(page.sheet==='A'&&Object.keys(data.signatures||{}).length){
+    // Render the signed approval area inside the original cover frame.
+    sheet.querySelectorAll('[data-ref]').forEach(cell=>{if(Number(cell.dataset.ref.match(/\d+$/)?.[0])>=36)cell.style.visibility='hidden'});
+    sheet.querySelectorAll('.signature-row,.approval-choices').forEach(el=>el.remove());
+    const region=document.createElement('section');region.className='signed-approval';Object.assign(region.style,{position:'absolute',left:(xs[1]+3)+'pt',top:ys[33]+'pt',width:(w-xs[1]-6)+'pt',height:(h-ys[33]-3)+'pt',display:'flex',flexDirection:'column',fontSize:'12pt',background:'#fff'});
+    const heading=document.createElement('div');heading.textContent='การอนุมัติผลการพัฒนาคุณภาพผู้เรียน';heading.style.height='16pt';region.append(heading);
+    const roles=[['teacher','ครูผู้สอน/ครูประจำรายวิชา','Q16'],['department','หัวหน้ากลุ่มสาระการเรียนรู้','Q18'],['assessment',PP5Assessment.resolve(calc.get('IN','Q23'))?.[1]||'หัวหน้างานวัดผล','Q19'],['deputy','รองผู้อำนวยการฝ่ายบริหารงานวิชาการ','Q11'],['director','ผู้อำนวยการโรงเรียน','Q10']];
+    for(const [key,title,ref] of roles){
+     if(key==='director'){const choices=document.createElement('div');choices.style.cssText='text-align:center;height:20pt;flex-shrink:0';choices.textContent=(data.signatures.director?'☑':'□')+' อนุมัติ       □ ไม่อนุมัติ';region.append(choices)}
+     const row=document.createElement('div');row.dataset.signedStage=key;row.style.cssText='position:relative;flex:1;min-height:0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center';
+     const sig=data.signatures[key],image=document.createElement('div');image.style.cssText='height:23pt;width:105pt;flex-shrink:0;border-bottom:0.5pt dotted #444';
+     if(sig&&/^data:image\/(png|jpeg|webp);base64,/.test(sig.image)){const img=document.createElement('img');img.alt='ลายเซ็น'+title;img.src=sig.image;img.style.cssText='width:100%;height:100%;object-fit:contain';image.append(img)}
+     const name=document.createElement('span');name.textContent='( '+(sig?.name||calc.get('IN',ref)||'')+' )';name.style.cssText='font-size:12pt;line-height:15pt;max-width:100%';
+     const label=document.createElement('span');label.textContent=title;label.style.cssText='position:absolute;right:4pt;top:3pt;width:140pt;text-align:right;font-size:11pt;line-height:1.1';row.append(image,name,label);region.append(row);
+    }
+    const dated=document.createElement('div');dated.style.cssText='text-align:center;font-size:11pt;height:15pt';dated.textContent=data.signatures.director?'อนุมัติวันที่ '+new Date(data.signatures.director.at).toLocaleDateString('th-TH'):'วันที่ .......... / .......... / ..........';region.append(dated);sheet.append(region);
+   }
    const grid=document.createElementNS('http://www.w3.org/2000/svg','svg');grid.setAttribute('viewBox','0 0 '+w+' '+h);Object.assign(grid.style,{position:'absolute',left:'0',top:'0',width:w+'pt',height:h+'pt',overflow:'visible',pointerEvents:'none',zIndex:'3'});const path=document.createElementNS(grid.namespaceURI,'path');path.setAttribute('d',[...edges].map(e=>{const [x1,y1,x2,y2]=e.split(',');return 'M'+x1+' '+y1+'L'+x2+' '+y2}).join(''));path.setAttribute('fill','none');path.setAttribute('stroke','#222');path.setAttribute('stroke-width','0.6');grid.append(path);sheet.append(grid);
    paper.append(sheet);
    if(start){const legend=document.createElement('p');legend.className='student-status-legend';legend.textContent='† ย้ายออก   ‡ ไม่มีตัวตน   ★ นักเรียนห้องพิเศษ';paper.append(legend)}

@@ -256,7 +256,8 @@
       <div class="cloud-user-actions">
       ${isManagementRole(p?.role)?`<a class="btn gray" href="${rootPath()}admin.html">จัดการผู้ใช้/สิทธิ์</a>`:""}
       ${roleDashboardPath(p?.role)?`<a class="btn gray" href="${rootPath()}${roleDashboardPath(p?.role)}">แดชบอร์ดภาพรวม</a>`:""}
-      ${["director","deputy_director","admin","academic"].includes(p?.role)?`<a class="btn gray" href="${rootPath()}signature.html">ลายเซ็นของฉัน</a>`:""}
+      ${["director","deputy_director","admin","academic","teacher"].includes(p?.role)?`<a class="btn gray" href="${rootPath()}signature.html">ลายเซ็นของฉัน</a>`:""}
+      <a class="btn gray" href="${rootPath()}pp5-review.html">ส่งตรวจ / คลัง ปพ.5</a>
       <a class="btn gray" href="${rootPath()}${location.pathname.endsWith('/modules/pp5.html')?'pp5-home.html':'classrooms.html?rooms=1'}">เปลี่ยนห้อง</a>
       <button class="btn danger cloud-allow" type="button" onclick="cloudLogout()">ออกจากระบบ</button></div>`;
     content.insertBefore(bar,content.firstChild);
@@ -886,7 +887,7 @@
   };
 
   function signatureAllowedRole(role){
-    return ["director","deputy_director","admin","academic"].includes(role);
+    return ["director","deputy_director","admin","academic","teacher"].includes(role);
   }
 
   window.startSignaturePage=async()=>{
@@ -963,4 +964,3 @@
   };
 
 })();
-
