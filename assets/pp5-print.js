@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 6346)
+Total output lines: 159
+
 (()=>{'use strict';
  const status=document.getElementById('printStatus'),button=document.getElementById('printButton'),pages=document.getElementById('pages');
  const job=new URLSearchParams(location.search).get('job');let received=false;
@@ -9,7 +12,23 @@
  }
  async function render(data){
   const response=await fetch('../assets/pp5-print-template.json?v=2');if(!response.ok)throw Error('โหลดแบบฟอร์มไม่สำเร็จ');const packed=await response.json();const zip=await JSZip.loadAsync(packed.base64,{base64:true});const template=JSON.parse(await zip.file('print.json').async('string'));
-  const calc=new PP5Calc.Calculator(template.cells,data.patches),errors=[];pages.replaceChildren();
+  const printPatches={...(data.patches||{})},sourceCalc=new PP5Calc.Calculator(template.cells,printPatches),finalColumns=['CD','CE','CF','CG','CH','CI','CJ','CK','CL','CM'];
+  // The summary score in IN!J is a single total. When no objective-level final scores were entered,
+  // distribute that total across the configured final objectives by their full-mark weights.
+  for(let studentRow=4;studentRow<=47;studentRow++){
+   const rawTotal=sourceCalc.get('IN','J'+studentRow);
+   if(rawTotal==null||rawTotal==='')continue;
+   const detailRow=studentRow+3,active=finalColumns.map(column=>({column,max:Number(sourceCalc.get('F',column+'6')),label:String(sourceCalc.get('F',column+'5')??'').trim()})).filter(item=>item.label&&Number.isFinite(item.max)&&item.max>0);
+   if(!active.length||active.some(item=>Object.hasOwn(printPatches,'F!'+item.column+detailRow)))continue;
+   const maxTotal=active.reduce((sum,item)=>sum+item.max,0),total=Math.min(maxTotal,Math.max(0,Math.round(Number(rawTotal)*100)/100));
+   let assigned=0;active.forEach((item,index)=>{const score=index===active.length-1?Math.round((total-assigned)*10000)/10000:Math.round((total*item.max/maxTotal)*10000)/10000;printPatches['F!'+item.column+detailRow]=score;assigned+=score});
+  }
+  const scoreCalc=new PP5Calc.Calculator(template.cells,printPatches),printColumns=['BG','BH','BI','BJ','BK','BL','BM','BN','BO','BP'];
+  for(let studentRow=4;studentRow<=47;studentRow++){
+   if(!scoreCalc.get('IN','C'+studentRow)&&!scoreCalc.get('IN','D'+studentRow))continue;
+   for(let i=0;i<finalColumns.length;i++){const score=scoreCalc.get('F',finalColumns[i]+(studentRow+3));if(score!=null&&score!=='')printPatches['C!'+printColumns[i]+(studentRow+5)]=score}
+  }
+  const calc=new PP5Calc.Calculator(template.cells,printPatches),errors=[];pages.replaceChildren();
   // Never silently omit pupils beyond the original 44-row printed score form.
   for(let r=48;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน ห้องนี้มีรายชื่อเกินช่วงพิมพ์ กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบก่อน');
   await document.fonts.ready;
@@ -40,50 +59,7 @@
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
    const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set();
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
-    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
-    let v;try{v=calc.get(page.sheet,ref);span.textContent=display(v,s)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
-    const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
-    for(let side=0;side<4;side++)if(s.borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
-    // Fit bordered cells, including narrow attendance summary headings.
-    if(s.borders.some(Boolean)&&!s.rotation){cell.dataset.shrink='true';cell.style.overflow='hidden';span.style.minWidth='0';}
-    if(page.sheet==='D'&&(ref==='B26'||/^C(?:[89]|1\d|2[01289]|30)$/.test(ref))){
-     cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.style.whiteSpace='pre-wrap';span.style.overflowWrap='anywhere';span.style.flexShrink='1';
-     if(ref==='B26'||['C28','C29','C30'].includes(ref)){cell.style.width=(xs[xs.length-1]-xs[x])+'pt';cell.style.background='#fff';cell.style.zIndex='2'}
-    }
-    if(start&&/^D\d+$/.test(ref)&&Number(ref.slice(1))>=start){cell.style.whiteSpace='nowrap';cell.dataset.shrink='true';}
-    // Central classroom names can be longer than the abbreviations in Excel.
-    if(page.sheet==='A'&&ref==='I12')span.textContent=String(v??'').replace(/มัธยมศึกษาปีที่\s*/g,'ม.').replace(/ประถมศึกษาปีที่\s*/g,'ป.').replace(/อนุบาล(?:ปีที่)?\s*/g,'อ.');
-    if(page.sheet==='A'&&['I12','G17','G18'].includes(ref)){cell.style.whiteSpace='nowrap';cell.dataset.shrink='true'}
-    // These Excel labels overflow narrow, unmerged cells. Render a complete
-    // signature row below instead of clipping wrapped text to column C.
-    if(page.sheet==='A'&&['C37','C39','C41','C44','C46','C47','L47'].includes(ref))span.textContent='';
-    if(page.sheet==='A'&&['L43','L47'].includes(ref)){const school=String(calc.get('IN','Q20')||'');span.textContent=(ref==='L43'?'รองผู้อำนวยการ':'ผู้อำนวยการ')+(school.startsWith('โรงเรียน')?school:'โรงเรียน'+school);cell.style.overflow='visible';cell.style.whiteSpace='nowrap';cell.dataset.shrink='true'}
-    if(page.sheet==='G'&&['C31','D31','E31','F31','G31'].includes(ref))span.textContent='';
-    if(page.sheet==='G'&&['A32','A33'].includes(ref)){
-     // Template indentation was made from spaces and manual line breaks.
-     // Keep every word while letting the browser wrap each instruction normally.
-     span.textContent=String(v??'').replace(/\s+/g,' ').trim().replace(/ +(?=\*\*|-(?:ช่วงคะแนน|ความหมาย|ระดับผล))/g,'\n');
-     cell.classList.add('criteria-notes');cell.style.alignItems='flex-start';
-    }
-    if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
-    // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):undefined;
-    if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
-    if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
-    if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
-
-    if(page.sheet==='B'&&ref==='DO6'){
-     // The template stores a rotated, non-wrapped heading with a manual break.
-     // Render its two words explicitly instead of inheriting rotated nowrap CSS.
-     cell.classList.remove('rotated');cell.dataset.shrink='true';
-     Object.assign(cell.style,{whiteSpace:'pre-line',overflow:'hidden',justifyContent:'center',textAlign:'center',padding:'2pt',lineHeight:'1.2'});
-     Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
-     span.textContent='หมาย\nเหตุ';
-    }
-    if(page.sheet==='A'&&['E38','E40','E42','E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
-    cell.append(span);sheet.append(cell);
-   }
-   if(page.sheet==='A'){const logo=document.createElement('img');logo.className='school-logo';logo.alt='ตราโรงเรียน';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
+    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-…1346 tokens truncated…';logo.src='data:image/png;base64,'+template.logo;Object.assign(logo.style,{left:(xs[6]+424816/12700)+'pt',top:(ys[1]+13849/12700)+'pt',width:(859155/12700)+'pt',height:(859155/12700)+'pt'});sheet.append(logo)}
    if(page.sheet==='A'){
     const roles={37:'ครูผู้สอน/ครูประจำรายวิชา',39:'หัวหน้ากลุ่มสาระการเรียนรู้',41:PP5Assessment.resolve(calc.get('IN','Q23'))?.[1]||'หัวหน้างานวัดผล',};
     for(const [row,role] of Object.entries(roles)){
@@ -140,3 +116,4 @@
  const ping=setInterval(()=>{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'pp5-print-ready',job},location.origin)},300);
  setTimeout(()=>{if(!received){clearInterval(ping);fail(Error('กลับไปที่เล่ม ปพ.5 แล้วกด “พิมพ์ / PDF” เพื่อเปิดหน้านี้ใหม่'))}},30000);
 })();
+
