@@ -9,8 +9,9 @@
  function indicatorScore(value,patches={}){
   const deleted=patches.__pp5_deleted_indicators||[],extra=Number(patches.__pp5_indicator_count||0),rows=[...Array.from({length:15},(_,i)=>i+8),...Array.from({length:extra},(_,i)=>i+54)].filter(r=>!deleted.includes(r));
   const refs=rows.flatMap(r=>['O','P','Q','R'].map(c=>c+r)).concat(['O24','P24','Q24','R24']);
-  const total=Number(refs.reduce((sum,ref)=>sum+Number(value('D',ref)||0),0).toFixed(10));
-  return {total,error:total>100?'คะแนนรวมตัวชี้วัดและภาคปฏิบัติ / ชิ้นงาน '+total+' เกิน 100 คะแนน กรุณาปรับคะแนนรวม':''};
+  const scores=refs.map(ref=>Number(value('D',ref)||0)),total=Number(scores.reduce((sum,score)=>sum+score,0).toFixed(10));
+  const error=scores.some(score=>!Number.isFinite(score)||score<0)?'คะแนนตัวชี้วัดต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป':total>100?'คะแนนรวมตัวชี้วัดและภาคปฏิบัติ / ชิ้นงาน '+total+' เกิน 100 คะแนน กรุณาปรับคะแนนรวม':'';
+  return {total,error};
  }
  function indicators(panel,{input,value,put,editable,patches,mark,render}){
   const deleted=patches.__pp5_deleted_indicators||[],extra=Number(patches.__pp5_indicator_count||0),rows=[...Array.from({length:15},(_,i)=>i+8),...Array.from({length:extra},(_,i)=>i+54)].filter(r=>!deleted.includes(r));
