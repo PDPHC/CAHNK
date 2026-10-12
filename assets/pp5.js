@@ -66,7 +66,7 @@
   record=data;book=next;workflow=nextState;submission=nextSubmission;assignment=nextAssignment;patches=structuredClone(submission?.snapshot?.patches||data.patches||{});dirty=false;centralDirty=false;show();options();
  }
 
- function validate(){const errors=[];let count=0;const codes=new Set();
+ function validate(){const errors=[];const practice=PP5Tables.practiceScore(value);if(practice.error)errors.push(practice.error);let count=0;const codes=new Set();
   for(let r=4;r<=63;r++){const code=String(value('IN','C'+r)).trim(),name=String(value('IN','D'+r)).trim();if(!code&&!name)continue;count++;
    if(!code||!name)errors.push('เลขที่ '+(r-3)+': กรอกเลขประจำตัวและชื่อให้ครบ');
    if(code&&codes.has(code))errors.push('เลขประจำตัวซ้ำ: '+code);codes.add(code);
@@ -131,7 +131,7 @@
  panel.querySelectorAll('[data-head],#centralDirector').forEach(el=>el.addEventListener('input',()=>{centralDirty=true;$('centralState').textContent=' มีชื่อที่ยังไม่บันทึก'}));
  panel.querySelectorAll('[data-ref]').forEach(el=>{if(blockedCell(el.dataset.sheet,el.dataset.ref)){el.disabled=true;el.title='ย้ายออก / ไม่มีตัวตน — ปิดการกรอกข้อมูล';}
   if(el.dataset.sheet==='W1'){const serial=el.value;el.type='date';el.value=serialToDate(serial)}
-  el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{if(blockedCell(el.dataset.sheet,el.dataset.ref))return;const v=el.type==='date'?(el.value?Math.round(Date.parse(el.value+'T00:00:00Z')/86400000)+25569:''):el.type==='number'&&el.value!==''?Number(el.value):el.value;if(el.dataset.sheet==='F'&&v===''){delete patches['F!'+el.dataset.ref];mark()}else put(el.dataset.sheet,el.dataset.ref,v);if(el.dataset.sheet==='D'){if(el.dataset.ref==='N24')put('IN','I3',v);const row=el.dataset.ref.match(/\d+/)[0],out=panel.querySelector('[data-ind-total="'+row+'"]');if(out)out.textContent=['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+row)||0),0)}if(el.dataset.sheet==='W1')panel.querySelectorAll('[data-week-date="'+el.dataset.ref[0]+'"]').forEach(cell=>cell.textContent=v===''?'—':serialToDate(Number(v)+Number(cell.dataset.weekOffset)*7))});
+  el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{if(blockedCell(el.dataset.sheet,el.dataset.ref))return;const v=el.type==='date'?(el.value?Math.round(Date.parse(el.value+'T00:00:00Z')/86400000)+25569:''):el.type==='number'&&el.value!==''?Number(el.value):el.value;if(el.dataset.sheet==='D'&&/^[NOPQR]24$/.test(el.dataset.ref)){const check=PP5Tables.practiceScore((sheet,ref)=>sheet==='D'&&ref===el.dataset.ref?v:value(sheet,ref));if(el.validity.badInput||check.error){el.value=value('D',el.dataset.ref);message('คะแนนชิ้นงานไม่ถูกต้อง',check.error||'กรุณากรอกคะแนนเป็นตัวเลข');return;}}if(el.dataset.sheet==='F'&&v===''){delete patches['F!'+el.dataset.ref];mark()}else put(el.dataset.sheet,el.dataset.ref,v);if(el.dataset.sheet==='D'){if(el.dataset.ref==='N24')put('IN','I3',v);const row=el.dataset.ref.match(/\d+/)[0],out=panel.querySelector('[data-ind-total="'+row+'"]');if(out)out.textContent=['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+row)||0),0)}if(el.dataset.sheet==='W1')panel.querySelectorAll('[data-week-date="'+el.dataset.ref[0]+'"]').forEach(cell=>cell.textContent=v===''?'—':serialToDate(Number(v)+Number(cell.dataset.weekOffset)*7))});
  });
  }
  window.initPP5=async()=>{await PP5Entry.load();
