@@ -93,11 +93,18 @@
   for(let r=48;r<=63;r++)if(value('IN','C'+r)||value('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบทุกคน');
   const printPatches={};for(const [sheet,cells] of Object.entries(book.cells))for(const [ref,c] of Object.entries(cells))if(c.formula==null)printPatches[sheet+'!'+ref]=c.value??'';
   Object.assign(printPatches,patches);
-  const job=crypto.randomUUID(),child=window.open('../print/pp5.html?job='+encodeURIComponent(job),'_blank');
-  if(!child)throw Error('เบราว์เซอร์ปิดกั้นหน้าพิมพ์ กรุณาอนุญาตป๊อปอัปสำหรับเว็บไซต์นี้ แล้วกดอีกครั้ง');
-  const listener=e=>{if(e.origin!==location.origin||e.source!==child||e.data?.type!=='pp5-print-ready'||e.data.job!==job)return;child.postMessage({type:'pp5-print-data',job,patches:printPatches,signatures:submission?.signatures||{},holidays:submission?.snapshot?.holidays||(cloudState.classroom.use_thai_holidays===false?[]:cloudState.classroom.holidays||[]),report,title:'ปพ5_'+String(value('IN','Q7')||'รายวิชา')},location.origin);window.removeEventListener('message',listener);clearTimeout(timeout)};
-  window.addEventListener('message',listener);const timeout=setTimeout(()=>window.removeEventListener('message',listener),60000);
-  status('เปิดหน้าพิมพ์แล้ว — กดพิมพ์และเลือก Save as PDF');
+  const job=crypto.randomUUID();let child=null,acknowledged=false,timeout=null;
+  const payload={type:'pp5-print-data',job,patches:printPatches,signatures:submission?.signatures||{},holidays:submission?.snapshot?.holidays||(cloudState.classroom.use_thai_holidays===false?[]:cloudState.classroom.holidays||[]),report,title:'ปพ5_'+String(value('IN','Q7')||'รายวิชา')};
+  const listener=e=>{
+   if(e.origin!==location.origin||e.source!==child||e.data?.job!==job)return;
+   if(e.data.type==='pp5-print-ready'&&!acknowledged){try{child.postMessage(payload,location.origin)}catch(error){status('ส่งข้อมูลไปหน้าพิมพ์ไม่สำเร็จ — กรุณาปิดหน้าพิมพ์แล้วลองใหม่')}}
+   if(e.data.type==='pp5-print-received'){acknowledged=true;window.removeEventListener('message',listener);clearTimeout(timeout);status('ส่งข้อมูลไปหน้าพิมพ์แล้ว — ตรวจตัวอย่างและกดพิมพ์ / Save as PDF')}
+  };
+  window.addEventListener('message',listener);
+  child=window.open('../print/pp5.html?job='+encodeURIComponent(job),'_blank');
+  if(!child){window.removeEventListener('message',listener);throw Error('เบราว์เซอร์ปิดกั้นหน้าพิมพ์ กรุณาอนุญาตป๊อปอัปสำหรับเว็บไซต์นี้ แล้วกดอีกครั้ง')}
+  timeout=setTimeout(()=>{if(!acknowledged){window.removeEventListener('message',listener);status('ยังเชื่อมต่อหน้าพิมพ์ไม่ได้ — ปิดหน้าพิมพ์แล้วลองอีกครั้ง หากยังค้างให้อนุญาตป๊อปอัปและรีเฟรชหน้า')}},30000);
+  status('กำลังส่งข้อมูลไปหน้าพิมพ์…');
  }
  async function excel(){await freshNames();const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));download(await book.export(patches),'ปพ5_'+String(value('IN','Q7')||'รายวิชา').replace(/[\\/:*?"<>|]/g,'_')+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('ดาวน์โหลด Excel แล้ว — เปิดไฟล์เพื่อคำนวณสูตรล่าสุดก่อนพิมพ์')}
  function render(){renderWorkflow();applyNames();syncIndicatorLimits();const panel=$('pp5Panel');panel.classList.add('pp5-form-panel');panel.dataset.formPage=tab;$('editCourse').hidden=!['scores','info'].includes(tab);if(tab==='info'){
