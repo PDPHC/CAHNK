@@ -88,9 +88,14 @@
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
 
+    if(page.sheet==='C'&&['E3','Q3','U3','AC3'].includes(ref)){
+     // Keep the score-ratio labels readable instead of shrinking them to the source cell width.
+     delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'18pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'2',paddingLeft:'0'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
+    }
+    if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
     if(page.sheet==='C'&&ref==='CG4'){
      // Keep the group title for desirable characteristics legible on the score summary.
-     delete cell.dataset.shrink;cell.style.fontSize='14pt';cell.style.whiteSpace='normal';cell.style.justifyContent='center';cell.style.textAlign='center';span.style.whiteSpace='normal';span.style.flexShrink='1';span.style.overflowWrap='anywhere';
+     delete cell.dataset.shrink;cell.style.fontSize='18pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
