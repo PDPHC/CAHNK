@@ -3,9 +3,9 @@
  const job=new URLSearchParams(location.search).get('job');let received=false;
  const fail=e=>{status.textContent='เปิดหน้าพิมพ์ไม่สำเร็จ: '+(e.message||e);status.className='error';button.disabled=true;document.body.classList.remove('ready')};
  const sum=a=>a.reduce((s,v)=>s+v,0),offsets=a=>{let n=0;return [0,...a.map(v=>n+=v)]};
- function display(v,s){if(v==null)return '';if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v!=='number')return String(v).replaceAll('อาจารย์ประจำชั้น','ครูประจำชั้น').replaceAll('ครูที่ปรึกษา','ครูประจำชั้น');
+ function display(v,s,wholeScore=false){if(v==null)return '';if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v!=='number')return String(v).replaceAll('อาจารย์ประจำชั้น','ครูประจำชั้น').replaceAll('ครูที่ปรึกษา','ครูประจำชั้น');
   if([14,15,16,17,22,164,165,166,167].includes(s.format)){if(!v)return '';const date=new Date((v-25569)*86400000),day=date.getUTCDate(),month=date.toLocaleString('th-TH',{month:'short',timeZone:'UTC'});return s.format===164?String(day):s.format===165?month:s.format===166?day+'/'+month:day+'/'+month+'/'+(date.getUTCFullYear()+543)}
-  if(s.format===9)return Math.round(v*100)+'%';if(s.format===10)return (v*100).toFixed(2)+'%';if(s.format===2)return v.toFixed(2);return String(Math.round(v*1e10)/1e10);
+  if(s.format===9)return Math.round(v*100)+'%';if(s.format===10)return (v*100).toFixed(2)+'%';if(s.format===2)return wholeScore?String(Math.round(v)):v.toFixed(2);return String(Math.round(v*1e10)/1e10);
  }
  async function render(data){
   const response=await fetch('../assets/pp5-print-template.json?v=2');if(!response.ok)throw Error('โหลดแบบฟอร์มไม่สำเร็จ');const packed=await response.json();const zip=await JSZip.loadAsync(packed.base64,{base64:true});const template=JSON.parse(await zip.file('print.json').async('string'));
@@ -57,7 +57,7 @@
    const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
-    let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
+    let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref))}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
     for(let side=0;side<4;side++)if(s.borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
     // Fit bordered cells, including narrow attendance summary headings.
@@ -83,19 +83,23 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):undefined;
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='BZ4'?10:ref==='CG4'?20:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
 
-    if(page.sheet==='C'&&['E3','Q3','U3','AC3'].includes(ref)){
+    if(page.sheet==='C'&&['E3','U3'].includes(ref)){
      // Keep the score-ratio labels readable instead of shrinking them to the source cell width.
      delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'18pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'2',paddingLeft:'0',width:(xs[(ref==='E3'?15:27)]-xs[x])+'pt'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
     }
+    if(page.sheet==='C'&&['Q3','AC3'].includes(ref)){
+     // Give the computed ratio its own centered space between the two labels.
+     delete cell.dataset.shrink;Object.assign(cell.style,{width:(xs[x+2]-xs[x])+'pt',fontSize:'16pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'3',padding:'0',justifyContent:'center',textAlign:'center'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
+    }
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
-    if(page.sheet==='C'&&ref==='CG4'){
-     // Keep the group title for desirable characteristics legible on the score summary.
-     delete cell.dataset.shrink;cell.style.fontSize='18pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
+    if(page.sheet==='C'&&['BZ4','CG4'].includes(ref)){
+     // Let both section titles span the empty template cells, as in the source form.
+     delete cell.dataset.shrink;cell.style.fontSize='12pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
