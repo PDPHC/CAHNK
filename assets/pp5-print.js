@@ -68,11 +68,11 @@
    const left=ml+(page.centerX?Math.max(0,pw-ml-mr-w*scale)/2:0),top=mt+(page.centerY?Math.max(0,ph-mt-mb-h*scale)/2:0);
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
     const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
-   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
-    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
+   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
+    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:borders[0],borderRight:borders[1],borderTop:borders[2],borderBottom:borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref));if(page.sheet==='B'&&calendarCell(ref,s)&&s.format===165)span.textContent=calendarMonth(v)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
-    for(let side=0;side<4;side++)if(s.borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
+    for(let side=0;side<4;side++)if(borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
     // Fit bordered cells, including narrow attendance summary headings.
     if(s.borders.some(Boolean)&&!s.rotation){cell.dataset.shrink='true';cell.style.overflow='hidden';span.style.minWidth='0';}
     if(page.sheet==='D'&&(ref==='B26'||/^C(?:[89]|1\d|2[01289]|30)$/.test(ref))){
@@ -96,11 +96,11 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation){const angle=s.rotation>90?180-s.rotation:-s.rotation;cell.dataset.shrink=angle?'rotated':'true';Object.assign(span.style,{left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)',transformOrigin:'center center'})}if(s.shrink&&!s.rotation)cell.dataset.shrink='true';
     if(page.sheet==='B'&&calendarCell(ref,s)){const row=Number(ref.match(/\d+$/)[0]);Object.assign(cell.style,{fontSize:'10pt',fontWeight:'normal',padding:'0',overflow:'visible',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});Object.assign(span.style,{position:'absolute',left:'50%',top:'50%',whiteSpace:'nowrap',maxWidth:'none',flexShrink:'0',lineHeight:'1.1',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center center'});delete cell.dataset.shrink}
-    if(page.sheet==='B'&&[7,8,9,10].includes(Number(ref.match(/\d+$/)[0]))&&['สัปดาห์','วันที่','เดือน','ชั่วโมง'].includes(String(v??'').trim())){
-     // Keep attendance row labels horizontal on every horizontally split print page.
+    if(attendanceLabel){
+     // Restore the full four-sided grid and use identical typography on every attendance page.
      cell.classList.remove('rotated');delete cell.dataset.shrink;
-     Object.assign(cell.style,{fontSize:'14pt',fontWeight:'bold',padding:'0 2pt',overflow:'hidden',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});
-     Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'nowrap',maxWidth:'100%',flexShrink:'1'});
+     Object.assign(cell.style,{fontSize:'14pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',padding:'0 2pt',overflow:'hidden',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});
+     Object.assign(span.style,{position:'static',transform:'none',fontSize:'14pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',whiteSpace:'nowrap',maxWidth:'100%',flexShrink:'1'});
     }
     if(page.sheet==='B'&&ref==='BW5')span.textContent='';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
