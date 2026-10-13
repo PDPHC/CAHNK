@@ -6,3 +6,4 @@
 .indicator-appendix{padding:18mm 8mm 15mm 25mm;font:12pt Tahoma,sans-serif}.indicator-appendix h2{font-size:14pt}.indicator-appendix table{width:100%;table-layout:fixed;border-collapse:collapse}.indicator-appendix td,.indicator-appendix th{border:.6pt solid #222;padding:4pt;overflow-wrap:anywhere;font-weight:normal}.indicator-appendix td:nth-child(2){text-align:left}.indicator-appendix td{text-align:center}
 
 .indicator-text-continuation{padding:15mm 8mm 15mm 25mm;font:12pt Tahoma,sans-serif}.indicator-text-continuation h2{font-size:14pt;margin:0 0 6mm}.indicator-text-space{height:245mm;overflow:hidden}.indicator-text-space p{margin:0 0 5mm;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.print-page-number{position:absolute;z-index:10;top:5mm;right:8mm;font:11pt "TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif;line-height:1;color:#000;white-space:nowrap}

@@ -4,6 +4,38 @@ const P=pp5Isolated?"hnk_pp5_"+new URLSearchParams(location.search).get("classro
 const OLD_P="hnk_admin_v2_";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
+function parsePastedGrid(text){
+ const rows=[];let row=[],value='',quoted=false;
+ for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++}else quoted=!quoted;continue}if(!quoted&&(ch==='\t'||ch==='\r'||ch==='\n')){row.push(value);value='';if(ch==='\r'&&text[i+1]==='\n')i++;if(ch!=='\t'){rows.push(row);row=[]}continue}value+=ch}
+ row.push(value);if(row.length>1||row[0]!==''||!rows.length)rows.push(row);while(rows.length&&rows[rows.length-1].every(v=>v===''))rows.pop();return rows;
+}
+function tablePasteGrid(table){
+ const grid=[];for(const [ri,row] of [...table.rows].entries()){grid[ri]??=[];let ci=0;for(const cell of row.cells){while(grid[ri][ci])ci++;const rowspan=Math.max(1,cell.rowSpan||1),colspan=Math.max(1,cell.colSpan||1);for(let y=ri;y<ri+rowspan;y++){grid[y]??=[];for(let x=ci;x<ci+colspan;x++)grid[y][x]=cell}ci+=colspan}}return grid;
+}
+function tablePasteHeaders(table,grid){
+ const headerRows=[...table.rows].filter(row=>row.querySelector('th'));if(!headerRows.length)return [];
+ const labels=[];for(const row of headerRows)for(const cell of row.cells){if(cell.tagName!=='TH')continue;const label=cell.innerText.trim();if(!label)continue;const ri=[...table.rows].indexOf(row),ci=(grid[ri]||[]).findIndex(item=>item===cell),span=Math.max(1,cell.colSpan||1);for(let x=ci;x<ci+span;x++)labels[x]=label}return labels;
+}
+function pasteTableRange(event){
+ const target=event.target;if(!(target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement||target instanceof HTMLSelectElement||target instanceof HTMLElement&&target.isContentEditable))return;
+ const text=event.clipboardData?.getData('text/plain')||'';if(!/[\t\r\n]/.test(text))return;
+ const table=target.closest('table');if(!table)return;const values=parsePastedGrid(text);if(!values.length)return;
+ const rows=[...table.rows],grid=tablePasteGrid(table),cell=target.closest('td,th'),startRow=rows.findIndex(row=>row.contains(cell));if(startRow<0)return;
+ const startCol=(grid[startRow]||[]).findIndex(item=>item===cell);if(startCol<0)return;
+ const editSelector='input,textarea,select,[contenteditable="true"]',editable=el=>!el.disabled&&!el.readOnly&&el.type!=='hidden'&&!el.closest('[data-paste-ignore]');
+ let startInput=[...cell.querySelectorAll(editSelector)].filter(editable).indexOf(target);if(startInput<0)startInput=0;
+ const normalize=s=>String(s||'').normalize('NFC').toLowerCase().replace(/[\s:：().,，/_-]/g,'');let columnMap=null,skipHeader=false;
+ if(values.length>1){const headers=tablePasteHeaders(table,grid),seen=new Set(),candidate=values[0].map(label=>{const key=normalize(label),index=headers.findIndex((header,x)=>!seen.has(x)&&normalize(header)===key);if(index>=0)seen.add(index);return index});const matches=candidate.filter(index=>index>=0).length;if(matches>=2){columnMap=candidate;skipHeader=true}}
+ event.preventDefault();let changed=0;
+ values.slice(skipHeader?1:0).forEach((line,dy)=>line.forEach((raw,dx)=>{
+  const column=columnMap?columnMap[dx]:startCol+dx;if(column==null||column<0)return;const destination=grid[startRow+dy]?.[column];if(!destination)return;
+  const controls=[...destination.querySelectorAll(editSelector)].filter(editable);let input=controls[column===startCol?startInput:0];if(!input)return;
+  const value=String(raw);if(input instanceof HTMLSelectElement){const option=[...input.options].find(o=>o.value===value||o.textContent.trim()===value.trim());if(!option)return;input.value=option.value}else if(input instanceof HTMLInputElement&&input.type==='checkbox'){input.checked=/^(?:1|true|yes|y|ใช่|✓|✔|x|\/)$/.test(value.trim().toLowerCase())}else if(input.isContentEditable)input.textContent=value;else input.value=value;
+  input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));changed++;
+ }));
+ if(changed){const notice=document.getElementById('pasteNotice');if(notice){notice.textContent=`วางข้อมูลแล้ว ${changed} ช่อง`;notice.hidden=false;clearTimeout(notice._timer);notice._timer=setTimeout(()=>notice.hidden=true,2200)}}
+}
+document.addEventListener('paste',pasteTableRange);
 const get=(k,d=null)=>{
   try{
     let v=roomStorage.getItem(P+k);
@@ -1044,4 +1076,3 @@ function dashboard(){
  if(el)el.textContent=`${countInstructionDays(s.openDate,s.closeDate)} วันเรียน`;
  renderDashboardProgress();
 }
-

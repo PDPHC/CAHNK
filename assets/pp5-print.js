@@ -46,20 +46,35 @@
   let lastStudent=0;for(let r=4;r<=63;r++)if(calc.get('IN','C'+r)||calc.get('IN','D'+r))lastStudent=r-3;
   for(const [index,sourcePage] of selectedPages.entries()){
    if(sourcePage.sheet==='G'){const response=await fetch('../assets/pp5-criteria-page.json?v=1');if(!response.ok)throw Error('โหลดหน้าเกณฑ์การประเมินผลไม่สำเร็จ');const reference=await response.json();const paper=document.createElement('section');paper.className='paper a4';paper.setAttribute('aria-label','กำหนดเกณฑ์การประเมินผล');const image=document.createElement('img');image.src=reference.image;image.alt='กำหนดเกณฑ์การประเมินผล ตามเอกสารของโรงเรียน';image.style.cssText='display:block;width:100%;height:100%;object-fit:contain';paper.append(image);const ratio=PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref));[92.42,114.26].forEach((top,i)=>{const number=document.createElement('span');number.dataset.criteriaRatio=String(i);number.textContent=ratio?String(ratio[i]):'—';number.setAttribute('aria-label',(i?'คะแนนปลายภาค ':'คะแนนระหว่างเรียน ')+number.textContent);Object.assign(number.style,{position:'absolute',left:(322.01/reference.width*100)+'%',top:(top/reference.height*100)+'%',width:(63.26/reference.width*100)+'%',height:(21.24/reference.height*100)+'%',display:'flex',alignItems:'center',justifyContent:'center',font:'14pt Tahoma,sans-serif',color:'#000'});paper.append(number)});pages.append(paper);continue;}
-   const page={...sourcePage,heights:[...sourcePage.heights]},start={B:11,C:9,E:9}[page.sheet],firstRow=Number(page.area.split(':')[0].match(/\d+/)[0]),pageStartColumn=[...page.area.split(':')[0].match(/^[A-Z]+/)[0]].reduce((n,x)=>n*26+x.charCodeAt(0)-64,0),pageColumnName=x=>columnName(pageStartColumn+x);
+   const page={...sourcePage,heights:[...sourcePage.heights],cells:[...sourcePage.cells],merges:[...sourcePage.merges]},start={B:11,C:9,E:9}[sourcePage.sheet],firstRow=Number(sourcePage.area.split(':')[0].match(/\d+/)[0]),pageStartColumn=[...sourcePage.area.split(':')[0].match(/^[A-Z]+/)[0]].reduce((n,x)=>n*26+x.charCodeAt(0)-64,0),pageColumnName=x=>columnName(pageStartColumn+x);
    if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
    if(page.sheet==='D'){
     for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
     for(const r of data.patches.__pp5_deleted_indicators||[])page.heights[r-firstRow]=0;
-    // Use the unused bottom of the original sheet for wrapped indicator rows.
+    // Fit up to ten added indicators into unused rows at the bottom of this page.
+    const extraCount=Math.max(0,Number(data.patches.__pp5_indicator_count||0)),inlineCount=Math.min(10,extraCount);
     for(let r=43;r<=52;r++)page.heights[r-firstRow]=0;
+    const sourceCells=page.cells.filter(c=>c[1]===8-firstRow),sourceMerges=page.merges.filter(m=>m[1]===8-firstRow);
+    for(let i=0;i<inlineCount;i++){
+     const row=43+i,sourceRow=54+i,y=row-firstRow,sourceY=8-firstRow;
+     page.cells=page.cells.filter(c=>c[1]!==y);page.merges=page.merges.filter(m=>m[1]!==y);
+     page.cells.push(...sourceCells.map(([x,,ref,style])=>[x,y,ref.replace(/\d+$/,String(row)),style]));
+     page.merges.push(...sourceMerges.map(([x,,x2])=>[x,y,x2,y]));page.heights[y]=sourcePage.heights[sourceY];
+     const scores=['O','P','Q','R'].map(c=>data.patches['D!'+c+sourceRow]??''),values={B:String(16+i),C:data.patches['D!C'+sourceRow]||'',O:scores[0],P:scores[1],Q:scores[2],R:scores[3],S:String(scores.reduce((n,v)=>n+(v===''?0:Number(v)||0),0)),T:data.patches['D!T'+sourceRow]||''};
+     for(const [column,value] of Object.entries(values))printPatches['D!'+column+row]=value;
+    }
     const widths=offsets(page.widths),pw=210*72/25.4,ph=297*72/25.4,[left,right,top,bottom]=page.margins;
     const widthScale=Math.min(page.fit?1:(page.scale||1),(pw-Math.max(left,25*72/25.4)-right)/sum(page.widths));
-    const rowIds=Array.from({length:15},(_,i)=>i+8).filter(r=>!(data.patches.__pp5_deleted_indicators||[]).includes(r)),other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
+    const rowIds=[...Array.from({length:15},(_,i)=>i+8).filter(r=>!(data.patches.__pp5_deleted_indicators||[]).includes(r)),...Array.from({length:inlineCount},(_,i)=>43+i)],other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
     const source=page.cells.find(c=>c[2]==='C8'),merge=page.merges.find(m=>m[0]===source[0]&&m[1]===source[1]),style=template.styles[source[3]];
     const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
     let size=12,heights;do{measure.style.fontSize=size+'pt';heights=rowIds.map(r=>{measure.textContent=String(calc.get('D','C'+r)||' ');return Math.max(sourcePage.heights[r-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=4)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;rowIds.forEach((r,i)=>page.heights[r-firstRow]=heights[i]);
+   }
+   if(start&&lastStudent>0){
+    const [leftMargin,rightMargin,topMargin,bottomMargin]=page.margins,paperWidth=page.paper==='legal'?612:210*72/25.4,paperHeight=page.paper==='legal'?1008:297*72/25.4,usableWidth=paperWidth-Math.max(leftMargin,25*72/25.4)-rightMargin,maxScale=page.fit?1:(page.scale||1),baseScale=Math.min(maxScale,usableWidth/sum(page.widths)),targetHeight=(paperHeight-topMargin-bottomMargin)/baseScale;
+    let free=Math.max(0,targetHeight-sum(page.heights));const firstStudentRow=start,endStudentRow=Math.min(({B:55,C:52,E:52}[page.sheet]),start+lastStudent-1),indices=Array.from({length:Math.max(0,endStudentRow-firstRow+1)},(_,i)=>i).filter(i=>i>=0&&page.heights[i]>0),caps=indices.map(i=>Math.min(120,page.heights[i]*7));
+    for(let round=0;round<indices.length&&free>.1;round++){const eligible=indices.map((i,n)=>({i,n,room:caps[n]})).filter(item=>item.room>.1);if(!eligible.length)break;const share=free/eligible.length;let added=0;for(const item of eligible){const amount=Math.min(share,item.room);page.heights[item.i]+=amount;caps[item.n]-=amount;added+=amount}free-=added;if(!added)break}
    }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
    const sheet=document.createElement('div');sheet.className='sheet';const xs=offsets(page.widths),ys=offsets(page.heights),w=sum(page.widths),h=sum(page.heights),pw=page.paper==='legal'?612:210*72/25.4,ph=page.paper==='legal'?1008:297*72/25.4,[originalLeft,mr,mt,mb]=page.margins,ml=Math.max(originalLeft,25*72/25.4);
@@ -70,7 +85,7 @@
     const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],attendanceName=page.sheet==='B'&&/^(?:D|AF|CH)(?:1[1-9]|[2-4]\d|5[0-4])$/.test(ref),attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:borders[0],borderRight:borders[1],borderTop:borders[2],borderBottom:borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
-    let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref));if(page.sheet==='B'&&calendarCell(ref,s)&&s.format===165)span.textContent=calendarMonth(v)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
+    let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref));if(page.sheet==='B'&&calendarCell(ref,s)&&s.format===165)span.textContent=calendarMonth(v);if(/^หน้า\s*[:：]?\s*\d+\s*$/.test(span.textContent.trim()))span.textContent=''}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
     for(let side=0;side<4;side++)if(borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
     // Fit bordered cells, including narrow attendance summary headings.
@@ -107,7 +122,7 @@
     const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='CG4'?21:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
-    if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
+   if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012]|4[3-9]|5[0-2])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
 
     if(page.sheet==='C'&&['E3','U3'].includes(ref)){
      // Keep the score-ratio labels readable instead of shrinking them to the source cell width.
@@ -174,11 +189,12 @@
    pages.append(paper);
   }
   const extraCount=Number(data.patches.__pp5_indicator_count||0);let appendixPages=0,appendixAnchor=[...pages.children].find(p=>p.getAttribute('aria-label')?.endsWith('ชีต D'));
-  if(extraCount&&(!data.report||data.report==='D'))for(let start=0;start<extraCount;start+=15){
+  if(extraCount>10&&(!data.report||data.report==='D'))for(let start=10;start<extraCount;start+=15){
    const paper=document.createElement('section');paper.className='paper a4 indicator-appendix';const title=document.createElement('h2');title.textContent='ตัวชี้วัด / ผลการเรียนรู้ (เพิ่มเติม)';paper.append(title);const course=document.createElement('p');course.textContent=[calc.get('IN','Q7'),calc.get('IN','Q8'),calc.get('IN','Q23')].filter(Boolean).join(' • ');paper.append(course);
    const table=document.createElement('table');table.innerHTML='<colgroup><col style="width:5%"><col style="width:59%">'+Array(6).fill('<col style="width:6%">').join('')+'</colgroup><thead><tr><th rowspan="2">ข้อที่</th><th rowspan="2">ตัวชี้วัด/ผลการเรียนรู้</th><th colspan="6">คะแนนการประเมินผล</th></tr><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>รวม</th><th>ชม.</th></tr></thead>';const body=document.createElement('tbody');
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
+  [...pages.children].forEach((paper,index)=>{const number=document.createElement('span');number.className='print-page-number';number.textContent='หน้า : '+(index+1);number.setAttribute('aria-label','หน้า '+(index+1));paper.append(number)});
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   const attendanceNames=[...pages.querySelectorAll('[data-attendance-roster]')];
   if(attendanceNames.length){
