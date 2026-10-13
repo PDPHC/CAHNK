@@ -68,7 +68,7 @@
    const left=ml+(page.centerX?Math.max(0,pw-ml-mr-w*scale)/2:0),top=mt+(page.centerY?Math.max(0,ph-mt-mb-h*scale)/2:0);
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
     const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
-   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
+   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],attendanceName=page.sheet==='B'&&/^(?:D|AF|CH)(?:1[1-9]|[2-4]\d|5[0-4])$/.test(ref),attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:borders[0],borderRight:borders[1],borderTop:borders[2],borderBottom:borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref));if(page.sheet==='B'&&calendarCell(ref,s)&&s.format===165)span.textContent=calendarMonth(v)}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
@@ -131,6 +131,7 @@
      Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
      span.textContent='หมาย\nเหตุ';
     }
+    if(attendanceName){cell.dataset.attendanceRoster='true';cell.dataset.attendanceScale=String(scale);cell.style.overflow='hidden';delete cell.dataset.shrink;}
     if(page.sheet==='A'&&['E38','E40','E42','E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
     cell.append(span);sheet.append(cell);
    }
@@ -179,6 +180,12 @@
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
+  const attendanceNames=[...pages.querySelectorAll('[data-attendance-roster]')];
+  if(attendanceNames.length){
+   // Keep the names the same physical height on each horizontally split attendance page.
+   const size=Math.min(...attendanceNames.map(cell=>parseFloat(cell.style.fontSize)*Number(cell.dataset.attendanceScale||1)));
+   for(const cell of attendanceNames){const span=cell.firstChild,scale=Number(cell.dataset.attendanceScale||1),cssSize=size/scale;cell.style.fontSize=cssSize+'pt';span.style.fontSize=cssSize+'pt';delete cell.dataset.shrink;const ratio=Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth));span.style.transform=ratio<1?'scaleX('+ratio+')':'none';span.style.transformOrigin=cell.style.textAlign==='center'?'center center':cell.style.textAlign==='right'?'right center':'left center';}
+  }
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild,rotated=cell.dataset.shrink==='rotated';const ratio=rotated?Math.min(1,(cell.clientHeight-6)/Math.max(1,span.scrollWidth),(cell.clientWidth-4)/Math.max(1,span.scrollHeight)):Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth),(cell.clientHeight-4)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
