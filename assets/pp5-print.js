@@ -20,6 +20,19 @@
    const maxTotal=active.reduce((sum,item)=>sum+item.max,0),total=Math.min(maxTotal,Math.max(0,Math.round(Number(rawTotal)*100)/100));
    let assigned=0;active.forEach((item,index)=>{const score=index===active.length-1?Math.round((total-assigned)*10000)/10000:Math.round((total*item.max/maxTotal)*10000)/10000;printPatches['F!'+item.column+detailRow]=score;assigned+=score});
   }
+  const holidayDates=new Set((data.holidays||[]).map(holiday=>holiday.date)),columnName=n=>{let name='';for(;n;n=Math.floor((n-1)/26))name=String.fromCharCode(65+(n-1)%26)+name;return name};
+  for(let studentRow=4;studentRow<=47;studentRow++){
+   if(!sourceCalc.get('IN','C'+studentRow)&&!sourceCalc.get('IN','D'+studentRow))continue;
+   const attendanceRow=studentRow+3,name=String(sourceCalc.get('IN','D'+studentRow)||'');
+   if(/[†‡]/.test(name)){printPatches['CH!DJ'+attendanceRow]='—';continue}
+   const statuses=[];
+   for(let i=0;i<100;i++){
+    const day=Number(sourceCalc.get('W1',columnName(6+i%5)+'5')||0);if(!Number.isFinite(day)||day<=0)continue;
+    const date=new Date((day+Math.floor(i/5)*7-25569)*86400000).toISOString().slice(0,10);if(holidayDates.has(date))continue;
+    statuses.push(String(sourceCalc.get('CH',columnName(7+i)+attendanceRow)??''));
+   }
+   printPatches['CH!DJ'+attendanceRow]=PP5Calc.attendanceSummary(statuses).result;
+  }
   const scoreCalc=new PP5Calc.Calculator(template.cells,printPatches),printColumns=['BG','BH','BI','BJ','BK','BL','BM','BN','BO','BP'];
   for(let studentRow=4;studentRow<=47;studentRow++){
    if(!scoreCalc.get('IN','C'+studentRow)&&!scoreCalc.get('IN','D'+studentRow))continue;
