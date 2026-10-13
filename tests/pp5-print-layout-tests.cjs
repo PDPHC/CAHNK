@@ -28,12 +28,17 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
   assert.match(positions.text,/QA-CURRENT-COURSE/);assert.match(positions.text,/ข้อมูลปัจจุบันจากหน้ากรอก/);
   const printNo=page.locator('.print-page-number');assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).top))>0);assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).right))>0);
   await page.screenshot({path:path.join(__dirname,'pp5-print-layout-qa.png'),fullPage:true});
-  await page.evaluate(data=>window.__renderPP5Print(data),{report:'E',title:'Sparse QA',patches:{'IN!C4':'TEST1','IN!D4':'นักเรียนทดสอบ','IN!L4':70},holidays:[],signatures:{}});
-  assert.equal(await page.locator('.paper').count(),1);assert.ok(parseFloat(await page.locator('[data-ref="E!C9"]').evaluate(el=>el.style.height))>14.4,'sparse roster row should expand');
+  const summaryPatches={};for(let i=0;i<22;i++)Object.assign(summaryPatches,{['IN!C'+(i+4)]:'TEST'+(i+1),['IN!D'+(i+4)]:'นักเรียนทดสอบ '+(i+1),['IN!L'+(i+4)]:11,['F!CS'+(i+7)]:[50,57,60][i]??70});
+  await page.evaluate(data=>window.__renderPP5Print(data),{report:'E',title:'Grade summary QA',patches:summaryPatches,holidays:[],signatures:{}});
+  assert.equal(await page.locator('.paper').count(),1);
+  assert.deepEqual(await page.locator('[data-ref="E!F9"],[data-ref="E!F10"],[data-ref="E!F11"]').evaluateAll(cells=>cells.map(cell=>cell.innerText)),['1','1.5','2'],'printed grades must match the score shown in the table');
+  const summaryCell=page.locator('[data-ref="E!C9"]');assert.ok(parseFloat(await summaryCell.evaluate(el=>el.style.height))>14.4,'sparse roster row should have modest extra room');assert.ok(parseFloat(await summaryCell.evaluate(el=>el.style.height))<=21.6,'sparse roster rows must not stretch excessively');
+  assert.equal(await summaryCell.evaluate(el=>el.style.fontSize),'13pt');assert.equal(await summaryCell.evaluate(el=>el.style.lineHeight),'1.15');
+  const verticalGap=await summaryCell.evaluate(el=>{const cell=el.getBoundingClientRect(),text=el.firstChild.getBoundingClientRect();return Math.min(text.top-cell.top,cell.bottom-text.bottom)});assert.ok(verticalGap>=2,'Thai text should have space above and below inside the table row');
   await page.screenshot({path:path.join(os.tmpdir(),'pp5-sparse-layout-qa.png'),fullPage:true});
   await page.evaluate(data=>window.__renderPP5Print(data),{report:'B',title:'Attendance QA',patches:{'IN!C4':'TEST1','IN!D4':'นักเรียนทดสอบ'},holidays:[],signatures:{}});
   assert.equal(await page.locator('.paper').count(),3);assert.deepEqual(await page.locator('.print-page-number').allInnerTexts(),['หน้า : 1','หน้า : 2','หน้า : 3']);
   const pdf=await page.pdf({path:path.join(os.tmpdir(),'pp5-print-layout-qa.pdf'),format:'A4',printBackground:true,preferCSSPageSize:true});assert.ok(pdf.byteLength>10000,'PDF should be generated');
-  console.log(JSON.stringify({passed:31,indicators:23,indicatorPages:1,indicatorOrder:'16–23 immediately after 15',indicatorFontPt:positions.effectiveFont,currentDataLinked:true,attendancePages:3,pageNumbers:'consistent top-right',sparseRoster:'expanded',pdfBytes:pdf.byteLength}));
+  console.log(JSON.stringify({passed:'all',indicators:23,indicatorPages:1,indicatorOrder:'16–23 immediately after 15',indicatorFontPt:positions.effectiveFont,currentDataLinked:true,attendancePages:3,pageNumbers:'consistent top-right',printedGrades:'50→1, 57→1.5, 60→2',summaryFontPt:13,summaryRowGrowth:'capped at 1.5x',pdfBytes:pdf.byteLength}));
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

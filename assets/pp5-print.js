@@ -37,6 +37,8 @@
   for(let studentRow=4;studentRow<=47;studentRow++){
    if(!scoreCalc.get('IN','C'+studentRow)&&!scoreCalc.get('IN','D'+studentRow))continue;
    for(let i=0;i<finalColumns.length;i++){const score=scoreCalc.get('F',finalColumns[i]+(studentRow+3));if(score!=null&&score!=='')printPatches['C!'+printColumns[i]+(studentRow+5)]=score}
+   const printedScore=scoreCalc.get('F','CS'+(studentRow+3)),special=String(scoreCalc.get('IN','K'+studentRow)??'').trim(),grade=['ร','มส','มส.','-'].includes(special)?special:PP5Calc.gradeFromScore(printedScore);
+   if(grade!=null)printPatches['E!F'+(studentRow+5)]=grade;
   }
   const calc=new PP5Calc.Calculator(template.cells,printPatches),errors=[];pages.replaceChildren();
   // Never silently omit pupils beyond the original 44-row printed score form.
@@ -77,7 +79,7 @@
    }
    if(start&&lastStudent>0){
     const [leftMargin,rightMargin,topMargin,bottomMargin]=page.margins,paperWidth=page.paper==='legal'?612:210*72/25.4,paperHeight=page.paper==='legal'?1008:297*72/25.4,usableWidth=paperWidth-Math.max(leftMargin,25*72/25.4)-rightMargin,maxScale=page.fit?1:(page.scale||1),baseScale=Math.min(maxScale,usableWidth/sum(page.widths)),targetHeight=(paperHeight-topMargin-bottomMargin)/baseScale;
-    let free=Math.max(0,targetHeight-sum(page.heights));const firstStudentRow=start,endStudentRow=Math.min(({B:55,C:52,E:52}[page.sheet]),start+lastStudent-1),indices=Array.from({length:Math.max(0,endStudentRow-firstRow+1)},(_,i)=>i).filter(i=>i>=0&&page.heights[i]>0),caps=indices.map(i=>Math.min(120,page.heights[i]*7));
+   let free=Math.max(0,targetHeight-sum(page.heights));const firstStudentRow=start,endStudentRow=Math.min(({B:55,C:52,E:52}[page.sheet]),start+lastStudent-1),indices=Array.from({length:Math.max(0,endStudentRow-firstRow+1)},(_,i)=>i).filter(i=>i>=0&&page.heights[i]>0),caps=indices.map(i=>Math.min(120,page.heights[i]*(page.sheet==='E'?.5:7)));
     for(let round=0;round<indices.length&&free>.1;round++){const eligible=indices.map((i,n)=>({i,n,room:caps[n]})).filter(item=>item.room>.1);if(!eligible.length)break;const share=free/eligible.length;let added=0;for(const item of eligible){const amount=Math.min(share,item.room);page.heights[item.i]+=amount;caps[item.n]-=amount;added+=amount}free-=added;if(!added)break}
    }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
@@ -141,6 +143,11 @@
     if(page.sheet==='C'&&['E4','BZ4','CG4'].includes(ref)){
      // Keep section headings vertically centered, equally weighted, and clear of the borders.
      delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'12pt',fontWeight:'bold',whiteSpace:'nowrap',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'3pt 4pt',display:'block',boxSizing:'border-box'});Object.assign(span.style,{position:'absolute',left:'0',right:'0',top:'50%',display:'block',width:'100%',textAlign:'center',whiteSpace:'nowrap',flexShrink:'0',maxWidth:'none',transform:'translateY(-50%)',lineHeight:'1.1'});
+    }
+    if(page.sheet==='E'&&sheetRow>=9&&sheetRow<=52){
+     // Keep the grade summary compact while giving Thai glyphs breathing room inside each row.
+     Object.assign(cell.style,{fontSize:'13pt',lineHeight:'1.15',padding:'1pt 2pt',alignItems:'center',overflow:'hidden'});
+     if(/^D\d+$/.test(ref)){cell.style.justifyContent='flex-start';cell.style.textAlign='left'}
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
