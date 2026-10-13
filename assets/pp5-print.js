@@ -45,7 +45,7 @@
     const widthScale=Math.min(page.fit?1:(page.scale||1),(pw-Math.max(left,25*72/25.4)-right)/sum(page.widths));
     const rowIds=Array.from({length:15},(_,i)=>i+8).filter(r=>!(data.patches.__pp5_deleted_indicators||[]).includes(r)),other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
     const source=page.cells.find(c=>c[2]==='C8'),merge=page.merges.find(m=>m[0]===source[0]&&m[1]===source[1]),style=template.styles[source[3]];
-    const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"'+style.font+'", "TH Sarabun New", Tahoma, sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
+    const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
     let size=12,heights;do{measure.style.fontSize=size+'pt';heights=rowIds.map(r=>{measure.textContent=String(calc.get('D','C'+r)||' ');return Math.max(sourcePage.heights[r-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=4)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;rowIds.forEach((r,i)=>page.heights[r-firstRow]=heights[i]);
    }
    const paper=document.createElement('section');paper.className='paper '+page.paper;paper.setAttribute('aria-label','หน้าที่ '+(index+1)+' ชีต '+page.sheet);
@@ -56,7 +56,7 @@
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
    const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
    for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
-    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"'+s.font+'", "TH Sarabun New", Tahoma, sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
+    Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:s.borders[0],borderRight:s.borders[1],borderTop:s.borders[2],borderBottom:s.borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref))}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
     for(let side=0;side<4;side++)if(s.borders[side])edges.add(lines[side].map(n=>n.toFixed(3)).join(','));cell.style.border='0';
@@ -83,7 +83,7 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='BZ4'?10:ref==='CG4'?20:undefined):undefined;
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?31:ref==='BZ4'?10:ref==='CG4'?20:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
@@ -97,9 +97,9 @@
      delete cell.dataset.shrink;Object.assign(cell.style,{width:(xs[x+2]-xs[x])+'pt',fontSize:'16pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'3',padding:'0',justifyContent:'center',textAlign:'center'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
     }
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
-    if(page.sheet==='C'&&['BZ4','CG4'].includes(ref)){
+    if(page.sheet==='C'&&['E4','BZ4','CG4'].includes(ref)){
      // Let both section titles span the empty template cells, as in the source form.
-     delete cell.dataset.shrink;cell.style.fontSize='12pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
+     delete cell.dataset.shrink;cell.style.fontSize='16pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
