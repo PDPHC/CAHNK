@@ -27,6 +27,23 @@
 .theme-dark #pp5Panel .pp5-table input:disabled,.theme-dark #pp5Panel .pp5-table select:disabled{background:#34303a!important;color:#c5bbce!important}
 .theme-dark .theme-toggle{background:#302a37;color:#f1e8fa;border-color:#5c4e69}
 .theme-dark .theme-toggle:hover{background:#3b3245}
+.theme-dark :is(.sidebar,.suite-mobile-bar,.card,.role-room-card,.role-summary-card,.archive-card,.role-month-banner,.role-action-box,.summary-box,.empty-room-state,.review-card,.review-panel,.review-steps li,.central-summary,.central-table,.login-card,.missing-room-chip,.role-latest-comment,.role-signature-notice,.review-note,.central-note){background:#211e28!important;color:#eee8f5!important;border-color:#403847!important}
+.theme-dark.modern-system .sidebar{background:#211e28!important;color:#eee8f5!important;border-color:#403847!important}
+.theme-dark.modern-system .sidebar .brand,.theme-dark.modern-system .sidebar .nav a{color:#d8cde3!important}
+.theme-dark.modern-system .sidebar .nav a:hover,.theme-dark.modern-system .sidebar .nav a.active{background:#342b40!important;color:#e5cef9!important}
+.theme-dark.modern-system .sidebar .brand>.suite-icon{background:#342b40!important;color:#e2c9f7!important}
+.theme-dark.modern-system .suite-nav-label{color:#ad9cba!important}
+.theme-dark.modern-system .role-dashboard-head h1,.theme-dark.modern-system .top h1,.theme-dark.modern-system .role-summary-card strong{color:#eadbf8!important}
+.theme-dark.modern-system .workflow-tab,.theme-dark .review-tabs button:not([aria-pressed=true]),.theme-dark :is(.secondary,.btn.gray){background:#302a37!important;color:#e4d7ef!important;border-color:#52475c!important}
+.theme-dark .review-tabs [aria-pressed=true],.theme-dark .workflow-tab[aria-pressed=true]{background:#754abd!important;color:white!important}
+.theme-dark :is(.review-tag,.archive-badge,.cloud-role,.badge,.room-icon){background:#392d49!important;color:#e4cafa!important}
+.theme-dark :is(.review-tag.archived,.status-approved,.all-sent){background:#1f3b31!important;color:#b6e2cb!important}
+.theme-dark :is(.review-tag.returned,.status-returned_by_academic,.status-returned_by_deputy,.status-forwarded_to_deputy){background:#49372a!important;color:#f2cfaa!important}
+.theme-dark .central-table th{background:#312b39!important;color:#f0eaf6!important}
+.theme-dark .central-table td{background:#211e28!important;color:#eee8f5!important;border-color:#49404f!important}
+.theme-dark .suite-mobile-bar{border-color:#403847!important}
+.theme-dark .signature-preview-wrap{background:repeating-conic-gradient(#292530 0% 25%,#211e28 0% 50%) 0 0/20px 20px!important;border-color:#51465c!important}
+.theme-dark :is(.login-divider,.review-events time,.review-steps small,.role-room-meta,.role-room-teacher){color:#bdb1c8!important}
 .pp5-send-button{font-weight:700!important;min-height:44px;padding-inline:20px!important;box-shadow:0 3px 10px #61329130}
 .pp5-send-button:before{content:'➤';font-size:15px;margin-right:3px}
 @media(max-width:1000px){
