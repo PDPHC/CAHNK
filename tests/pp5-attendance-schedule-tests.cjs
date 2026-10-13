@@ -44,5 +44,71 @@ assert.equal(openSlots.includes(2), false);
 assert.deepEqual(Array.from(tables.attendanceSlots(dates, holidays, false, 1)), []);
 assert.deepEqual(Array.from(tables.attendanceSlots(dates, holidays, false, 0)), [0]);
 
-console.log('PASS: scheduled weekdays only, blank schedule slots blocked, holidays excluded from bulk marking');
+const values = { ...schedule, 'IN!C4': '001', 'IN!D4': 'ตัวอย่าง' };
+const renderValue = (sheet, ref) => values[sheet + '!' + ref] ?? '';
+const controls = {
+  '#attendanceDay': { value: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } },
+  '#markDay': { dataset: {}, disabled: false },
+  '#markTerm': { dataset: {}, disabled: false }
+};
+const panel = {
+  markup: '',
+  appended: [],
+  set innerHTML(value) { this.markup = value; },
+  get innerHTML() { return this.markup; },
+  querySelector(selector) { return controls[selector]; },
+  querySelectorAll(selector) {
+    if (selector !== '[data-mark-date]') return [];
+    return [...this.markup.matchAll(/data-mark-date="(\d+)"/g)].map(match => ({ dataset: { markDate: match[1] } }));
+  },
+  append(element) { this.appended.push(element); }
+};
+const dialogs = [];
+context.document = {
+  createElement(tag) {
+    if (tag === 'section') return { innerHTML: '' };
+    if (tag !== 'dialog') throw new Error('Unexpected element ' + tag);
+    const buttons = { '[data-confirm-attendance]': {}, '[data-cancel-attendance]': {} };
+    const dialog = {
+      className: '', innerHTML: '',
+      querySelector(selector) { return buttons[selector]; },
+      showModal() {}, close() {}, remove() {}
+    };
+    dialogs.push({ dialog, buttons });
+    return dialog;
+  }
+};
+const writes = [];
+tables.attendance(panel, {
+  value: renderValue,
+  put: (sheet, ref, status) => writes.push({ sheet, ref, status }),
+  editable: () => true,
+  blockedCell: () => false,
+  render: () => {},
+  serialToDate: fromSerial,
+  room: { holidays: [{ date: '2026-09-09', name: 'วันหยุด' }], use_thai_holidays: true }
+});
+assert.equal((panel.markup.match(/<td class="pp5-non-teaching"/g) || []).length, 40);
+assert.equal((panel.markup.match(/<select data-sheet="CH"/g) || []).length, 59);
+assert.equal(panel.querySelector('#attendanceDay').value, '0');
+assert.equal(panel.querySelector('#markDay').disabled, false);
+panel.querySelector('#attendanceDay').value = '1';
+panel.querySelector('#attendanceDay').listeners.change();
+assert.equal(panel.querySelector('#markDay').disabled, true);
+panel.querySelector('#markDay').onclick();
+assert.equal(dialogs.length, 0, 'bulk mark is blocked for an unscheduled weekday');
+panel.querySelector('#markTerm').onclick();
+dialogs.at(-1).buttons['[data-confirm-attendance]'].onclick();
+assert.equal(writes.length, 59);
+assert.ok(writes.every(({ sheet, ref, status }) => sheet === 'CH' && status === '/' && tables.attendanceSlotConfigured(ref, renderValue)));
+assert.ok(writes.every(({ ref }) => dates[tables.attendanceSlotIndex(ref)] !== '2026-09-09'));
+
+panel.querySelector('#attendanceDay').value = '0';
+panel.querySelector('#attendanceDay').listeners.change();
+writes.length = 0;
+panel.querySelector('#markDay').onclick();
+dialogs.at(-1).buttons['[data-confirm-attendance]'].onclick();
+assert.deepEqual(writes, [{ sheet: 'CH', ref: 'G7', status: '/' }]);
+
+console.log('PASS: scheduled weekdays only, unscheduled slots disabled, holiday bulk skips, daily and term bulk writes constrained');
 
