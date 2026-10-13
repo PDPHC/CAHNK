@@ -98,9 +98,9 @@
     if(page.sheet==='B'&&calendarCell(ref,s)){const row=Number(ref.match(/\d+$/)[0]);Object.assign(cell.style,{fontSize:'10pt',fontWeight:'normal',padding:'0',overflow:'visible',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});Object.assign(span.style,{position:'absolute',left:'50%',top:'50%',whiteSpace:'nowrap',maxWidth:'none',flexShrink:'0',lineHeight:'1.1',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center center'});delete cell.dataset.shrink}
     if(attendanceLabel){
      // Restore the full four-sided grid and use identical typography on every attendance page.
-     cell.classList.remove('rotated');delete cell.dataset.shrink;
-     Object.assign(cell.style,{fontSize:'14pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',padding:'0 2pt',overflow:'hidden',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});
-     Object.assign(span.style,{position:'static',transform:'none',fontSize:'14pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',whiteSpace:'nowrap',maxWidth:'100%',flexShrink:'1'});
+     const labelSize=14/scale;cell.classList.remove('rotated');delete cell.dataset.shrink;
+     Object.assign(cell.style,{fontSize:labelSize+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',padding:'0 2pt',overflow:'hidden',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});
+     Object.assign(span.style,{position:'static',transform:'none',fontSize:labelSize+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontWeight:'bold',lineHeight:'1.05',whiteSpace:'nowrap',maxWidth:'100%',flexShrink:'1'});
     }
     if(page.sheet==='B'&&ref==='BW5')span.textContent='';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
