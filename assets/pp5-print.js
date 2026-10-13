@@ -182,9 +182,9 @@
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   const attendanceNames=[...pages.querySelectorAll('[data-attendance-roster]')];
   if(attendanceNames.length){
-   // Keep the names the same physical height on each horizontally split attendance page.
-   const size=Math.min(...attendanceNames.map(cell=>parseFloat(cell.style.fontSize)*Number(cell.dataset.attendanceScale||1)));
-   for(const cell of attendanceNames){const span=cell.firstChild,scale=Number(cell.dataset.attendanceScale||1),cssSize=size/scale;cell.style.fontSize=cssSize+'pt';span.style.fontSize=cssSize+'pt';delete cell.dataset.shrink;const ratio=Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth));span.style.transform=ratio<1?'scaleX('+ratio+')':'none';span.style.transformOrigin=cell.style.textAlign==='center'?'center center':cell.style.textAlign==='right'?'right center':'left center';}
+   // Keep a common physical size, with vertical padding inside each narrow roster row.
+   const size=Math.min(10,...attendanceNames.map(cell=>parseFloat(cell.style.fontSize)*Number(cell.dataset.attendanceScale||1)));
+   for(const cell of attendanceNames){const span=cell.firstChild,scale=Number(cell.dataset.attendanceScale||1),cssSize=size/scale;cell.classList.remove('wrap');Object.assign(cell.style,{fontSize:cssSize+'pt',lineHeight:'1',padding:'1pt',whiteSpace:'nowrap',alignItems:'center',overflow:'hidden'});Object.assign(span.style,{fontSize:cssSize+'pt',lineHeight:'1',whiteSpace:'nowrap',maxWidth:'none',flexShrink:'0'});delete cell.dataset.shrink;const ratio=Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth));span.style.transform=ratio<1?'scaleX('+ratio+')':'none';span.style.transformOrigin=cell.style.textAlign==='center'?'center center':cell.style.textAlign==='right'?'right center':'left center';}
   }
   for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild,rotated=cell.dataset.shrink==='rotated';const ratio=rotated?Math.min(1,(cell.clientHeight-6)/Math.max(1,span.scrollWidth),(cell.clientWidth-4)/Math.max(1,span.scrollHeight)):Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth),(cell.clientHeight-4)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
