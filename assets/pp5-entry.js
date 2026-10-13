@@ -5,9 +5,16 @@
  let cells;
   function distributeFinalScore(total,items){const active=items.filter(x=>x.label&&Number.isFinite(Number(x.max))&&Number(x.max)>0),maxTotal=active.reduce((sum,x)=>sum+Number(x.max),0);if(!active.length||!maxTotal)return {};const amount=Math.min(maxTotal,Math.max(0,Number(total)||0));let assigned=0;return Object.fromEntries(active.map((item,index)=>{const score=index===active.length-1?Math.round((amount-assigned)*10000)/10000:Math.round((amount*Number(item.max)/maxTotal)*10000)/10000;assigned+=score;return [item.column,score]}))}
  async function load(){const r=await fetch('../assets/pp5-print-template.json?v=2');if(!r.ok)throw Error('โหลดสูตร ปพ.5 ไม่สำเร็จ');const packed=await r.json(),zip=await JSZip.loadAsync(packed.base64,{base64:true});cells=JSON.parse(await zip.file('print.json').async('string')).cells;}
+ function refreshAttendanceResults(panel){
+  const byRow=new Map();for(const input of panel.querySelectorAll('select[data-sheet="CH"]')){const row=Number(input.dataset.ref.match(/\d+$/)?.[0]);if(!byRow.has(row))byRow.set(row,[]);byRow.get(row).push(input.value)}
+  const summaries=new Map([...byRow].map(([row,statuses])=>[row,PP5Calc.attendanceSummary(statuses)]));
+  for(const el of panel.querySelectorAll('[data-attendance-percent]')){const row=Number(el.dataset.attendancePercent),summary=summaries.get(row),blocked=el.closest('tr')?.classList.contains('pp5-blocked-row');el.textContent=blocked||!summary||summary.percentage==null?'—':summary.percentage+'%';el.title=blocked?'ย้ายออก / ไม่มีตัวตน — ไม่นำมาคำนวณ':!summary||summary.total===0?'ไม่มีวันสอนที่ใช้คำนวณ':'มา + สาย '+summary.attended+' จาก '+summary.total+' วันสอน'}
+  for(const el of panel.querySelectorAll('[data-ch-result]'))if(/^DJ\d+$/.test(el.dataset.chResult)){const row=Number(el.dataset.chResult.match(/\d+$/)?.[0]),summary=summaries.get(row),blocked=el.closest('tr')?.classList.contains('pp5-blocked-row');el.textContent=blocked||!summary?'—':summary.result;el.title=blocked?'ย้ายออก / ไม่มีตัวตน — ไม่นำมาคำนวณ':!summary||summary.total===0?'ไม่มีวันสอนที่ใช้คำนวณ':'เกณฑ์ผ่านตั้งแต่ 80% • มา + สาย '+summary.attended+' จาก '+summary.total+' วันสอน'}
+ }
  function enhance(panel,{book,patches,tab,value}){
   if(!['scores','detail','attendance'].includes(tab))return;
   panel.oninput=null;
+  if(tab==='attendance'){let attendanceTimer;panel.addEventListener('change',()=>{clearTimeout(attendanceTimer);attendanceTimer=setTimeout(()=>refreshAttendanceResults(panel),10)});setTimeout(()=>refreshAttendanceResults(panel),0)}
   const note=document.createElement('p');note.className='pp5-status-legend';note.textContent=legend+' • ย้ายออกและไม่มีตัวตนไม่สามารถกรอกข้อมูลได้';panel.append(note);
   const literal={};for(const [sheet,rows] of Object.entries(book.cells))for(const [ref,c] of Object.entries(rows))if(c.formula==null)literal[sheet+'!'+ref]=c.value??'';
   if(tab==='scores'){
@@ -20,3 +27,4 @@
  }
  window.PP5Entry={load,enhance,compactName,legend,distributeFinalScore};
 })();
+
