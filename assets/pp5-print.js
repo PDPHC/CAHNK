@@ -52,24 +52,28 @@
     for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
     for(const r of data.patches.__pp5_deleted_indicators||[])page.heights[r-firstRow]=0;
-    // Fit up to ten added indicators into unused rows at the bottom of this page.
-    const extraCount=Math.max(0,Number(data.patches.__pp5_indicator_count||0)),inlineCount=Math.min(10,extraCount);
-    for(let r=43;r<=52;r++)page.heights[r-firstRow]=0;
-    const sourceCells=page.cells.filter(c=>c[1]===8-firstRow),sourceMerges=page.merges.filter(m=>m[1]===8-firstRow);
+    // Keep added indicators in the same numbered list, immediately after item 15.
+    // Move the totals and assessment sections down, then omit the unused template tail.
+    const extraCount=Math.max(0,Number(data.patches.__pp5_indicator_count||0)),inlineCount=Math.min(10,extraCount),insertBefore=23,retainedEnd=42,baseHeights=[...page.heights],sourceCells=page.cells.filter(c=>c[1]===8-firstRow),sourceMerges=page.merges.filter(m=>m[1]===8-firstRow);
+    page.cells=page.cells.flatMap(([x,y,ref,style])=>{const row=y+firstRow;if(row>retainedEnd)return[];return [[x,y+(row>=insertBefore?inlineCount:0),ref,style]]});
+    page.merges=page.merges.flatMap(([x,y,x2,y2])=>{const row=y+firstRow;if(row>retainedEnd)return[];return [[x,y+(row>=insertBefore?inlineCount:0),x2,y2+(y2+firstRow>=insertBefore?inlineCount:0)]]});
+    page.heights=Array.from({length:retainedEnd+inlineCount-firstRow+1},()=>0);
+    for(let row=firstRow;row<=retainedEnd;row++)page.heights[row-firstRow+(row>=insertBefore?inlineCount:0)]=baseHeights[row-firstRow]||0;
+    const indicatorRows=[...Array.from({length:15},(_,i)=>({display:8+i,source:8+i})).filter(item=>!(data.patches.__pp5_deleted_indicators||[]).includes(item.source)),...Array.from({length:inlineCount},(_,i)=>({display:insertBefore+i,source:54+i}))];
     for(let i=0;i<inlineCount;i++){
-     const row=43+i,sourceRow=54+i,y=row-firstRow,sourceY=8-firstRow;
-     page.cells=page.cells.filter(c=>c[1]!==y);page.merges=page.merges.filter(m=>m[1]!==y);
-     page.cells.push(...sourceCells.map(([x,,ref,style])=>[x,y,ref.replace(/\d+$/,String(row)),style]));
+     const displayRow=insertBefore+i,sourceRow=54+i,y=displayRow-firstRow,sourceY=8-firstRow;
+     page.cells.push(...sourceCells.map(([x,,ref,style])=>[x,y,ref.replace(/\d+$/,String(sourceRow)),style]));
      page.merges.push(...sourceMerges.map(([x,,x2])=>[x,y,x2,y]));page.heights[y]=sourcePage.heights[sourceY];
      const scores=['O','P','Q','R'].map(c=>data.patches['D!'+c+sourceRow]??''),values={B:String(16+i),C:data.patches['D!C'+sourceRow]||'',O:scores[0],P:scores[1],Q:scores[2],R:scores[3],S:String(scores.reduce((n,v)=>n+(v===''?0:Number(v)||0),0)),T:data.patches['D!T'+sourceRow]||''};
-     for(const [column,value] of Object.entries(values))printPatches['D!'+column+row]=value;
+     for(const [column,value] of Object.entries(values))printPatches['D!'+column+sourceRow]=value;
     }
+    page.area=page.area.split(':')[0]+':T'+(retainedEnd+inlineCount);
     const widths=offsets(page.widths),pw=210*72/25.4,ph=297*72/25.4,[left,right,top,bottom]=page.margins;
     const widthScale=Math.min(page.fit?1:(page.scale||1),(pw-Math.max(left,25*72/25.4)-right)/sum(page.widths));
-    const rowIds=[...Array.from({length:15},(_,i)=>i+8).filter(r=>!(data.patches.__pp5_deleted_indicators||[]).includes(r)),...Array.from({length:inlineCount},(_,i)=>43+i)],other=sum(page.heights)-sum(rowIds.map(r=>page.heights[r-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
+    const other=sum(page.heights)-sum(indicatorRows.map(item=>page.heights[item.display-firstRow])),budget=(ph-top-bottom)/widthScale-other-2;
     const source=page.cells.find(c=>c[2]==='C8'),merge=page.merges.find(m=>m[0]===source[0]&&m[1]===source[1]),style=template.styles[source[3]];
     const measure=document.createElement('div');Object.assign(measure.style,{position:'absolute',visibility:'hidden',width:(widths[merge[2]+1]-widths[source[0]]-4)+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:'1.2'});document.body.append(measure);
-    let size=12,heights;do{measure.style.fontSize=size+'pt';heights=rowIds.map(r=>{measure.textContent=String(calc.get('D','C'+r)||' ');return Math.max(sourcePage.heights[r-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=4)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;rowIds.forEach((r,i)=>page.heights[r-firstRow]=heights[i]);
+    let size=12,heights;do{measure.style.fontSize=size+'pt';heights=indicatorRows.map(item=>{measure.textContent=String(calc.get('D','C'+item.source)||' ');return Math.max(sourcePage.heights[8-firstRow],measure.getBoundingClientRect().height*72/96+4)});if(sum(heights)<=budget||size<=9)break;size-=.25;}while(true);measure.remove();page.indicatorFont=size;indicatorRows.forEach((item,i)=>page.heights[item.display-firstRow]=heights[i]);
    }
    if(start&&lastStudent>0){
     const [leftMargin,rightMargin,topMargin,bottomMargin]=page.margins,paperWidth=page.paper==='legal'?612:210*72/25.4,paperHeight=page.paper==='legal'?1008:297*72/25.4,usableWidth=paperWidth-Math.max(leftMargin,25*72/25.4)-rightMargin,maxScale=page.fit?1:(page.scale||1),baseScale=Math.min(maxScale,usableWidth/sum(page.widths)),targetHeight=(paperHeight-topMargin-bottomMargin)/baseScale;
@@ -83,7 +87,7 @@
    const left=ml+(page.centerX?Math.max(0,pw-ml-mr-w*scale)/2:0),top=mt+(page.centerY?Math.max(0,ph-mt-mb-h*scale)/2:0);
    Object.assign(sheet.style,{left:left+'pt',top:top+'pt',width:w+'pt',height:h+'pt',transform:'scale('+scale+')'});
     const merged=new Map(page.merges.map(m=>[m[0]+','+m[1],m])),edges=new Set(),ratio=page.sheet==='C'?PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref)):null;
-   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],attendanceName=page.sheet==='B'&&/^(?:D|AF|CH)(?:1[1-9]|[2-4]\d|5[0-4])$/.test(ref),attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
+   for(const [x,y,ref,style] of page.cells){const m=merged.get(x+','+y),cw=xs[(m?m[2]:x)+1]-xs[x],ch=ys[(m?m[3]:y)+1]-ys[y];if(!cw||!ch)continue;const s=template.styles[style],sheetRow=Number(ref.match(/\d+$/)?.[0]||0),dIndicatorRow=page.sheet==='D'&&(sheetRow>=8&&sheetRow<=22||sheetRow>=54&&sheetRow<=63),attendanceName=page.sheet==='B'&&/^(?:D|AF|CH)(?:1[1-9]|[2-4]\d|5[0-4])$/.test(ref),attendanceLabel=page.sheet==='B'&&/^(?:E|AG|CI)(?:7|8|9|10)$/.test(ref),borders=attendanceLabel?['.5pt solid #000000','.5pt solid #000000','.5pt solid #000000','.5pt solid #000000']:s.borders,cell=document.createElement('div'),span=document.createElement('span');cell.className='cell'+(s.wrap?' wrap':'')+(s.rotation?' rotated':'');cell.dataset.ref=page.sheet+'!'+ref;
     Object.assign(cell.style,{left:xs[x]+'pt',top:ys[y]+'pt',width:cw+'pt',height:ch+'pt',fontFamily:'"TH Sarabun New","TH SarabunPSK","Sarabun",Tahoma,sans-serif',fontSize:s.size+'pt',fontWeight:s.bold?'bold':'normal',fontStyle:s.italic?'italic':'normal',color:s.color,background:s.fill,borderLeft:borders[0],borderRight:borders[1],borderTop:borders[2],borderBottom:borders[3],alignItems:s.vertical==='top'?'flex-start':s.vertical==='center'?'center':'flex-end',justifyContent:s.align==='center'||s.align==='centerContinuous'?'center':s.align==='right'?'flex-end':'flex-start',textAlign:s.align==='center'?'center':s.align==='right'?'right':'left',paddingLeft:(1+s.indent*6)+'pt'});
     let v;try{v=calc.get(page.sheet,ref);if(page.sheet==='C'&&ratio&&ref==='Q3')v=ratio[0];if(page.sheet==='C'&&ratio&&ref==='AC3')v=ratio[1];span.textContent=display(v,s,page.sheet==='C'&&/^(?:CE|CP)\d+$/.test(ref)||page.sheet==='C'&&['Q3','AC3'].includes(ref));if(page.sheet==='B'&&calendarCell(ref,s)&&s.format===165)span.textContent=calendarMonth(v);if(/^หน้า\s*[:：]?\s*\d+\s*$/.test(span.textContent.trim()))span.textContent=''}catch(e){errors.push(page.sheet+'!'+ref+': '+e.message);span.textContent='ตรวจสูตร';cell.classList.add('error')}
     const lines=[[xs[x],ys[y],xs[x],ys[y]+ch],[xs[x]+cw,ys[y],xs[x]+cw,ys[y]+ch],[xs[x],ys[y],xs[x]+cw,ys[y]],[xs[x],ys[y]+ch,xs[x]+cw,ys[y]+ch]];
@@ -121,8 +125,8 @@
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
     const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='CG4'?21:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
-    if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
-   if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012]|4[3-9]|5[0-2])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
+    if(page.sheet==='D'&&(/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)||/^(?:B|O|P|Q|R|S|T)(?:5[4-9]|6[0-3])$/.test(ref))){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
+    if(page.sheet==='D'&&dIndicatorRow&&ref.startsWith('C')){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
 
     if(page.sheet==='C'&&['E3','U3'].includes(ref)){
      // Keep the score-ratio labels readable instead of shrinking them to the source cell width.

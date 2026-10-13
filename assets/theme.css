@@ -1,0 +1,70 @@
+:root{color-scheme:light}
+.theme-host{position:relative}
+.suite-breadcrumb.theme-host{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.theme-toggle{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:40px;padding:8px 13px;border:1px solid #d9cce6;border-radius:999px;background:#fff;color:#52346f;font:inherit;font-size:13px;font-weight:600;line-height:1.3;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px #2c17300d;touch-action:manipulation}
+.theme-toggle:hover{background:#f7f1fc;border-color:#a884c4}
+.theme-toggle:focus-visible{outline:3px solid #9564c0;outline-offset:3px}
+.theme-toggle-floating{position:fixed;z-index:10000;top:12px;right:12px}
+.theme-dark{color-scheme:dark;--suite-dark:#f1ecf7;--suite-muted:#bbb0c8;--suite-border:#40384a;--suite-ground:#17151c;background:#17151c!important;color:#f1ecf7!important}
+.theme-dark body{background:#17151c!important;color:#f1ecf7!important}
+.theme-dark :is(.topbar,.editor-header,.role-dashboard-head,.suite-breadcrumb,.room-panel,.subjects,.book-card,.panel,.pp5-menu,.pp5-empty,.pp5-form-panel,.content,.workspace,.classroom-card,.admin-card,.workflow-card,.role-overview-panel,.signature-card,.central-panel,.central-nav,.classroom-page-head,.admin-hint,.pp5-actions,#cloudUserBar,.pp5-selector,.pp5-score-group,dialog){background-color:#211e28!important;color:#eee8f5!important;border-color:#403847!important}
+.theme-dark :is(h1,h2,h3,h4,strong,label,.brand,.editor-brand,.section-title,.pp5-menu h2,.pp5-cover-title h2){color:#f2edf8!important}
+.theme-dark :is(p,.muted,.sub,.hint,.footnote,.pp5-footnote,.term-label,.flow,.empty-copy,.role-dashboard-sub){color:#c0b5cc!important}
+.theme-dark :is(a,.back,.editor-back){color:#d4b6f1}
+.theme-dark :is(button,select,input,textarea){color:#f3edf8}
+.theme-dark :is(input,select,textarea,.pp5-selector select,.pp5-table input,.pp5-table select){background:#292530!important;border-color:#51465c!important;color:#f4eff8!important}
+.theme-dark :is(input,select,textarea)::placeholder{color:#a79bb2!important}
+.theme-dark :is(.pp5-table,.data,.matrix){background:#211e28!important;color:#eee8f5!important}
+.theme-dark :is(.pp5-table th,.data th,.matrix th){background:#312b39!important;color:#f0eaf6!important}
+.theme-dark :is(.pp5-table td,.data td,.matrix td){background:#211e28!important;color:#eee8f5!important;border-color:#49404f!important}
+.theme-dark :is(.pp5-table th:first-child,.pp5-table td:first-child){background:#292430!important}
+.theme-dark :is(.pp5-form-panel:not([data-form-page=info]),.pp5-form-panel:not([data-form-page=info]) .pp5-table th){background:#211e28!important}
+.theme-dark .pp5-form-panel .pp5-table th{background:#312b39!important}
+.theme-dark .pp5-form-panel .pp5-table td{background:#211e28!important}
+.theme-dark #pp5Status,.theme-dark .pp5-note,.theme-dark .pp5-score-group summary,.theme-dark .flow,.theme-dark .room-card,.theme-dark .empty-icon{background:#2b2633!important;color:#e9dff2!important;border-color:#484052!important}
+.theme-dark .pp5-cover{background:#292530!important;color:#f1ecf7!important;border-color:#51465c!important}
+.theme-dark #pp5Panel .pp5-line-field input{background:#302b37!important;color:#f3edf8!important;border-color:#766489!important}
+.theme-dark #pp5Panel .pp5-table input:disabled,.theme-dark #pp5Panel .pp5-table select:disabled{background:#34303a!important;color:#c5bbce!important}
+.theme-dark .theme-toggle{background:#302a37;color:#f1e8fa;border-color:#5c4e69}
+.theme-dark .theme-toggle:hover{background:#3b3245}
+.pp5-send-button{font-weight:700!important;min-height:44px;padding-inline:20px!important;box-shadow:0 3px 10px #61329130}
+.pp5-send-button:before{content:'➤';font-size:15px;margin-right:3px}
+@media(max-width:1000px){
+ .pp5-workspace .content{min-width:0;width:100%;padding:20px!important}
+ .pp5-workspace .panel,.pp5-workspace .pp5-menu{min-width:0;max-width:100%}
+ .pp5-workspace .pp5-form-panel .table-wrap,.pp5-workspace .table-wrap{max-width:100%;overflow:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+ .pp5-workspace .pp5-table{min-width:720px}
+ .pp5-workspace .pp5-form-panel .pp5-table{min-width:760px}
+ .pp5-home .layout{grid-template-columns:1fr}
+ .pp5-home .room-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ .theme-toggle{min-height:38px;padding:7px 10px;font-size:12px}
+ .theme-toggle-floating{top:8px;right:8px}
+ .editor-header{gap:8px!important;padding-inline:12px!important}
+ .pp5-workspace .editor-back{font-size:0!important;min-width:30px;text-align:center}
+ .pp5-workspace .editor-back:before{content:'←';font-size:17px}
+ .pp5-workspace .content{padding:12px!important}
+ .pp5-workspace .top{align-items:flex-start;flex-wrap:wrap}
+ .pp5-workspace .top h1{font-size:22px!important}
+ .pp5-workspace .pp5-actions{align-items:flex-start;gap:10px;padding:13px!important}
+ .pp5-workspace .pp5-actions .actions{width:100%;display:flex;flex-wrap:wrap}
+ .pp5-workspace .pp5-actions .btn{flex:1 1 140px;min-height:42px}
+ .pp5-workspace .pp5-tabs{max-width:100%;scroll-snap-type:x proximity}
+ .pp5-workspace .pp5-tabs button{scroll-snap-align:start;min-height:44px}
+ .pp5-workspace .pp5-reports{grid-template-columns:1fr}
+ .pp5-home .topbar{gap:8px;padding-inline:12px}
+ .pp5-home .brand{min-width:0;font-size:12px}
+ .pp5-home .back{display:none}
+ .pp5-home .workspace{padding:22px 12px}
+ .pp5-home .welcome{display:flex;flex-direction:column;align-items:stretch}
+ .pp5-home .welcome h1{font-size:24px}
+ .pp5-home .flow{flex-wrap:wrap;justify-content:center}
+ .pp5-home .layout{grid-template-columns:minmax(0,1fr)}
+ .pp5-home .room-list,.pp5-home .book-grid{grid-template-columns:1fr}
+ .pp5-home .room-panel,.pp5-home .subjects{min-width:0;padding:15px}
+ .pp5-review-page .topbar{height:auto;min-height:76px;flex-wrap:wrap;padding-block:10px}
+ .pp5-review-page .topbar nav{order:3;flex:1 0 100%;display:flex;flex-wrap:wrap;gap:10px}
+ .theme-dark .pp5-workspace .pp5-form-panel{background:#211e28!important}
+}
+@media print{.theme-toggle,.theme-toggle-floating{display:none!important}}

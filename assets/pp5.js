@@ -50,7 +50,7 @@
  }
  function renderWorkflow(){
  const panel=$('pp5Workflow');if(!panel)return;const labels={draft:'ฉบับร่าง',returned:'ส่งคืนครูแก้ไข',department:'รอหัวหน้ากลุ่มสาระ',assessment:'รอวัดผลช่วงชั้น',deputy:'รอรองวิชาการ',director:'รอ ผอ. อนุมัติ',archived:'อนุมัติแล้ว · เก็บเข้าคลัง'};
- panel.innerHTML='<strong>สถานะ: '+esc(labels[workflow.status]||workflow.status)+'</strong><p>ครู → หัวหน้ากลุ่มสาระ → วัดผลช่วงชั้น → รองวิชาการ → ผอ. → คลัง</p>'+(workflow.return_reason?'<p class="notice">เหตุผลส่งคืน: '+esc(workflow.return_reason)+'</p>':'')+'<div class="actions">'+(!workflowLocked()&&assignment?.teacher_id===cloudState.user.id?'<button id="submitBook" class="btn primary" type="button">'+(workflow.status==='returned'?'ส่งตรวจใหม่พร้อมลายเซ็น':'ส่งตรวจพร้อมลายเซ็น')+'</button>':'')+'<a class="btn cloud-allow" href="../pp5-review.html'+(record?.id?'?book='+record.id:'')+'" target="_blank" rel="noopener">ติดตาม / ตรวจเล่ม / คลัง</a><a class="btn cloud-allow" href="../signature.html" target="_blank" rel="noopener">ลายเซ็นของฉัน</a></div>'+(workflowLocked()?'<p>เล่มนี้ล็อกการแก้ไขแล้ว ใช้หน้าตรวจเล่มเพื่อดูข้อมูลและลายเซ็นฉบับที่ส่ง</p>':'<p>บันทึกลายเซ็นก่อนส่ง ระบบจะบันทึกข้อมูลล่าสุดและล็อกเล่มระหว่างตรวจ</p>');
+ panel.innerHTML='<strong>สถานะ: '+esc(labels[workflow.status]||workflow.status)+'</strong><p>ครู → หัวหน้ากลุ่มสาระ → วัดผลช่วงชั้น → รองวิชาการ → ผอ. → คลัง</p>'+(workflow.return_reason?'<p class="notice">เหตุผลส่งคืน: '+esc(workflow.return_reason)+'</p>':'')+'<div class="actions">'+(!workflowLocked()&&editable()&&assignment?.teacher_id===cloudState.user.id?'<button id="submitBook" class="btn primary pp5-send-button" type="button" title="บันทึกข้อมูลล่าสุดและส่งเล่มให้ตรวจ">'+(workflow.status==='returned'?'ส่ง ปพ.5 ที่แก้แล้วให้ตรวจ':'ส่ง ปพ.5 ให้ตรวจ')+'</button>':'')+'<a class="btn cloud-allow" href="../pp5-review.html'+(record?.id?'?book='+record.id:'')+'" target="_blank" rel="noopener">ติดตาม / ตรวจเล่ม / คลัง</a><a class="btn cloud-allow" href="../signature.html" target="_blank" rel="noopener">ลายเซ็นของฉัน</a></div>'+(workflowLocked()?'<p>เล่มนี้ล็อกการแก้ไขแล้ว ใช้หน้าตรวจเล่มเพื่อดูข้อมูลและลายเซ็นฉบับที่ส่ง</p>':'<p>บันทึกลายเซ็นก่อนส่ง ระบบจะบันทึกข้อมูลล่าสุดและล็อกเล่มระหว่างตรวจ</p>');
  $('submitBook')?.addEventListener('click',()=>{$('submitDialog').showModal()});
  }
  async function submit(){await save();const result=await cloudClient.rpc('pp5_submit',{p_book:record.id,p_revision:record.revision});if(result.error)throw result.error;await open(record.id);status('ส่งให้หัวหน้ากลุ่มสาระแล้ว พร้อมลายเซ็นครูผู้สอน')}
@@ -100,7 +100,11 @@
   Object.assign(record,data);dirty=false;updateHeading();render();$('saveState').textContent='บันทึกบนคลาวด์แล้ว '+new Date(data.updated_at).toLocaleTimeString('th-TH');status('บันทึกสำเร็จ');await refreshList();
  }
  function download(bytes,name,type){const url=URL.createObjectURL(new Blob([bytes],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
- async function pdf(report=null){await freshNames();
+ async function pdf(report=null){
+  // Save pending edits, then reload the canonical cloud snapshot before assembling print patches.
+  // This prevents a stale open tab from generating a PDF from an older saved revision.
+  if(dirty||!record?.id)await save();
+  if(record?.id)await open(record.id);else await freshNames();
   const issues=validate();if(issues.length)throw Error(issues.slice(0,12).join('\n'));
   if(book.externalLinks)throw Error('เล่มนี้ใช้ไฟล์นำเข้ารุ่นเก่าที่มีลิงก์ภายนอก กรุณาดาวน์โหลด Excel เพื่อพิมพ์ หรือสร้างเล่มด้วยแม่แบบในระบบ');
   for(let r=48;r<=63;r++)if(value('IN','C'+r)||value('IN','D'+r))throw Error('แบบพิมพ์ต้นฉบับมีช่องคะแนน 44 คน กรุณาดาวน์โหลด Excel เพื่อขยายช่วงพิมพ์ให้ครบทุกคน');
