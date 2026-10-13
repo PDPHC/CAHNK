@@ -17,6 +17,11 @@ const JSZip=require('../assets/vendor/jszip-3.10.1.min.js'),{Calculator,parse}=r
  ok(calc.run(parse('IF(1=1,7,1/0)'),'IN'),7);
  ok(calc.run(parse('ROUND(-1.5,0)'),'IN'),-2);
  ok(calc.run(parse('"ครู "&"ก"'),'IN'),'ครู ก');
+ const rubricCells={F:{},C:{},IN:{L4:{v:1}}};
+ for(const column of ['CV','CW','CX','CY','DA','DC','DD','DE','DF','DG','DH','DI','DJ','DL'])rubricCells.F[column+'7']={f:'1.6'};
+ rubricCells.C.CE9={f:'1.6'};rubricCells.C.CP9={f:'1.6'};
+ const rubricCalc=new Calculator(rubricCells);for(const column of ['CV','CW','CX','CY','DA','DC','DD','DE','DF','DG','DH','DI','DJ','DL'])ok(rubricCalc.get('F',column+'7'),2);
+ ok(rubricCalc.get('C','CE9'),2);ok(rubricCalc.get('C','CP9'),2);
  assert.throws(()=>calc.run(parse('1/0'),'IN'));checks++;
  assert.throws(()=>calc.run(parse('globalThis.alert(1)'),'IN'));checks++;
  for(const p of data.pages){for(const [,,ref,style] of p.cells){assert.ok(data.styles[style],p.sheet+'!'+ref+' style');calc.get(p.sheet,ref)}checks++}
