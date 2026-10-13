@@ -99,7 +99,7 @@
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
     if(page.sheet==='C'&&['E4','BZ4','CG4'].includes(ref)){
      // Let both section titles span the empty template cells, as in the source form.
-     delete cell.dataset.shrink;cell.style.fontSize='16pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
+     delete cell.dataset.shrink;cell.style.fontSize='16pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';cell.style.display='block';span.style.display='block';span.style.width='100%';span.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
