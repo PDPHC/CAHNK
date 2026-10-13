@@ -83,7 +83,7 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?31:ref==='BZ4'?10:ref==='CG4'?20:undefined):undefined;
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='BZ4'?11:ref==='CG4'?21:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
@@ -99,7 +99,7 @@
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
     if(page.sheet==='C'&&['E4','BZ4','CG4'].includes(ref)){
      // Let both section titles span the empty template cells, as in the source form.
-     delete cell.dataset.shrink;cell.style.fontSize='16pt';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';cell.style.display='block';span.style.display='block';span.style.width='100%';span.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
+     delete cell.dataset.shrink;cell.style.fontSize='12pt';cell.style.fontWeight='bold';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';cell.style.display='block';span.style.display='block';span.style.width='100%';span.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
