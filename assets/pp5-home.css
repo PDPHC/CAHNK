@@ -4,3 +4,24 @@
 .pp5-hub-links a:last-child{font-weight:700;color:#65328e}
 .pp5-primary-home .brand-icon{background:#39734b}
 .pp5-primary-home .book-symbol{background:#edf6ef;color:#39734b}
+.primary-workbook-menu{margin:0 0 28px;padding:24px;background:#fff;border:1px solid #e6e1eb;border-radius:18px;box-shadow:0 8px 24px #34204a0a}
+.primary-menu-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.primary-menu-heading h2{font-size:22px;margin:0;color:#2f4935}
+.primary-menu-context{padding:8px 12px;background:#edf6ef;color:#39734b;border-radius:999px;font-size:12px;font-weight:700}
+.primary-menu-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.primary-menu-group{padding:16px;border:1px solid #e9e4ed;border-radius:14px;background:#fdfcff}
+.primary-menu-group h3{margin:0 0 11px;color:#624b72;font-size:15px}
+.primary-menu-items{display:grid;gap:8px}
+.primary-menu-items>a,.primary-menu-item{min-height:58px;padding:10px 12px;display:flex;align-items:center;gap:11px;border:1px solid #e9e3ed;background:#fff;border-radius:11px;color:#382b43;transition:border-color .15s,background .15s}
+.primary-menu-items>a:hover:not(.is-disabled){border-color:#96b89d;background:#f7fbf7}
+.primary-menu-items>a.is-disabled{cursor:not-allowed;opacity:.55}
+.primary-menu-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:9px;background:#edf6ef;color:#39734b;font-size:18px;font-weight:700}
+.primary-menu-items b{display:block;font-size:13px}
+.primary-menu-items small{display:block;color:#897f90;font-size:11px;margin-top:2px}
+.primary-menu-items i{margin-left:auto;color:#8aa68e;font-size:23px;font-style:normal}
+.primary-menu-items em{margin-left:auto;color:#8c7c91;font-size:10px;font-style:normal;white-space:nowrap}
+.primary-menu-item.unavailable{background:#f7f6f8;color:#6f6875}
+.primary-menu-item.unavailable .primary-menu-icon{background:#eeeaf1;color:#8f8794}
+.pp5-primary-home .flow:not(.pp5-hub-links){background:#e9f2eb}
+@media(max-width:850px){.primary-menu-groups{grid-template-columns:1fr}.primary-menu-heading{align-items:flex-start;flex-direction:column}}
+@media(max-width:600px){.primary-workbook-menu{padding:16px}.primary-menu-heading h2{font-size:20px}.primary-menu-context{font-size:11px}.primary-menu-group{padding:12px}}

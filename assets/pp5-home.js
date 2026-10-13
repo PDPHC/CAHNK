@@ -16,8 +16,35 @@
 
   const primaryMode = new URLSearchParams(location.search).get('level') === 'primary';
   const classLevel = window.PP5ClassLevel;
+  const primaryMenuItems = ['primaryMenuBasics', 'primaryMenuStudents', 'primaryMenuCalendar', 'primaryMenuHolidays', 'primaryMenuAttendance', 'primaryMenuStructure', 'primaryMenuSubjects', 'primaryMenuCourseBook', 'primaryMenuReading', 'primaryMenuTraits'];
   let request = 0;
   let selected = '';
+
+  function setPrimaryMenuRoom(room) {
+    if (!primaryMode) return;
+    const enabled = !!room;
+    for (const id of primaryMenuItems) {
+      const link = $(id);
+      if (!link) continue;
+      link.href = enabled ? link.dataset.route : '#primaryWorkbookMenu';
+      link.setAttribute('aria-disabled', String(!enabled));
+      link.classList[enabled ? 'remove' : 'add']('is-disabled');
+      link.onclick = event => {
+        if (!enabled) {
+          event.preventDefault();
+          $('hubStatus').textContent = 'เลือกห้องประถมศึกษาก่อน แล้วจึงเปิดเมนูนี้';
+        }
+      };
+    }
+    if ($('primaryMenuContext')) {
+      $('primaryMenuContext').textContent = enabled
+        ? room.class_level + '/' + room.room + ' • ปี ' + room.academic_year + ' • ภาคเรียน ' + room.term
+        : 'เลือกชั้นเรียนเพื่อเปิดเมนู';
+    }
+    if ($('primaryAttendanceTerm') && room) {
+      $('primaryAttendanceTerm').textContent = 'ภาคเรียนที่ ' + room.term + ' • บันทึกการมาเรียนของห้อง';
+    }
+  }
 
   if (primaryMode) {
     document.body.classList.add('pp5-primary-home');
@@ -35,6 +62,8 @@
       levelSwitch.href = 'pp5-home.html';
       levelSwitch.textContent = 'ปพ.5 ผลการเรียนทุกระดับ';
     }
+    $('primaryWorkbookMenu').hidden = false;
+    setPrimaryMenuRoom(null);
   } else {
     const levelSwitch = $('hubLevelSwitch');
     if (levelSwitch) {
@@ -68,6 +97,7 @@
     function renderRooms() {
       resetBooks();
       selected = '';
+      setPrimaryMenuRoom(null);
       $('selectedRoom').textContent = 'ยังไม่ได้เลือกชั้นเรียน';
       $('subjectStep').classList.remove('current');
       const filtered = eligibleRooms.filter(room => termKey(room) === $('hubTerm').value);
@@ -122,6 +152,10 @@
       if (primaryMode && !classLevel.isPrimaryClassLevel(room.class_level)) return;
       resetBooks();
       selected = room.id;
+      if (primaryMode) {
+        try { localStorage.setItem('hnk_cloud_active_classroom', room.id); } catch {}
+        setPrimaryMenuRoom(room);
+      }
       const sequence = request;
       for (const button of $('hubRooms').children) {
         button.setAttribute('aria-pressed', String(button.dataset.room === selected));

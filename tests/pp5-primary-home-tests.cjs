@@ -4,6 +4,18 @@ const vm = require('node:vm');
 require('../assets/pp5-class-level.js');
 
 const source = fs.readFileSync(require.resolve('../assets/pp5-home.js'), 'utf8');
+const homeHtml = fs.readFileSync(require.resolve('../pp5-home.html'), 'utf8');
+const settingsHtml = fs.readFileSync(require.resolve('../settings.html'), 'utf8');
+
+assert.match(homeHtml, /id="primaryWorkbookMenu"/);
+for (const label of [
+  'ข้อมูลพื้นฐาน', 'ข้อมูลนักเรียน', 'ปฏิทิน', 'กำหนดวันหยุด', 'เช็คเรียน',
+  'โครงสร้างรายวิชา', 'กรอกคะแนนรายวิชา', 'อ่าน คิดวิเคราะห์ และเขียน',
+  'คุณลักษณะอันพึงประสงค์', 'ปก ปพ.5 รายชั้น', 'กิจกรรม', 'รวมผลการเรียน', 'ปพ.6',
+]) assert.ok(homeHtml.includes(label), 'primary workbook menu should include ' + label);
+for (const id of ['classroom-basics', 'student-roster', 'term-calendar', 'school-holidays']) {
+  assert.ok(settingsHtml.includes('id="' + id + '"'), 'settings route should expose #' + id);
+}
 
 class Element {
   constructor(tagName = 'div') {
@@ -52,11 +64,28 @@ const rooms = [
 async function renderHub(search) {
   const elements = new Map();
   const queryElements = new Map();
+  const activeClassroom = { id: '' };
+  const menuRoutes = {
+    primaryMenuBasics: 'settings.html#classroom-basics',
+    primaryMenuStudents: 'settings.html#student-roster',
+    primaryMenuCalendar: 'settings.html#term-calendar',
+    primaryMenuHolidays: 'settings.html#school-holidays',
+    primaryMenuAttendance: 'modules/attendance.html',
+    primaryMenuStructure: '#subjectWorkspace',
+    primaryMenuSubjects: '#subjectWorkspace',
+    primaryMenuCourseBook: '#subjectWorkspace',
+    primaryMenuReading: '#subjectWorkspace',
+    primaryMenuTraits: '#subjectWorkspace',
+  };
   const document = {
     title: '',
     body: { classList: new Element().classList },
     getElementById(id) {
-      if (!elements.has(id)) elements.set(id, new Element(id === 'hubTerm' ? 'select' : 'div'));
+      if (!elements.has(id)) {
+        const element = new Element(id === 'hubTerm' ? 'select' : 'div');
+        if (menuRoutes[id]) element.dataset.route = menuRoutes[id];
+        elements.set(id, element);
+      }
       return elements.get(id);
     },
     querySelector(selector) {
@@ -80,6 +109,7 @@ async function renderHub(search) {
     location: { search },
     URLSearchParams,
     window: { PP5ClassLevel: globalThis.PP5ClassLevel },
+    localStorage: { setItem(key, value) { if (key === 'hnk_cloud_active_classroom') activeClassroom.id = value; } },
     cloudState: { user: { id: 'teacher-1' }, profile: { role: 'teacher' } },
     cloudClient: { from: cloudQuery },
     startPP5Home: callback => callback(rooms),
@@ -89,7 +119,7 @@ async function renderHub(search) {
   };
   vm.runInNewContext(source, context);
   await Promise.resolve();
-  return { elements, queryElements, document };
+  return { elements, queryElements, document, activeClassroom };
 }
 
 (async () => {
@@ -100,10 +130,15 @@ async function renderHub(search) {
     'ชั้นประถมศึกษาปีที่ 6/2',
   ]);
   assert.equal(primary.document.title, 'ปพ.5 ประถมศึกษา • เลือกชั้นเรียนและวิชา');
+  assert.equal(primary.elements.get('primaryWorkbookMenu').hidden, false);
+  assert.equal(primary.elements.get('primaryMenuBasics').attributes['aria-disabled'], 'true');
   assert.match(primary.queryElements.get('.topbar .brand').href, /level=primary/);
   await primaryCards[0].onclick();
   assert.match(primary.elements.get('hubNew').href, /classroom=primary-4&level=primary/);
   assert.equal(primary.elements.get('hubNew').hidden, false);
+  assert.equal(primary.activeClassroom.id, 'primary-4');
+  assert.equal(primary.elements.get('primaryMenuBasics').href, 'settings.html#classroom-basics');
+  assert.equal(primary.elements.get('primaryMenuAttendance').attributes['aria-disabled'], 'false');
 
   const general = await renderHub('');
   assert.equal(general.elements.get('hubRooms').children.length, 3);
