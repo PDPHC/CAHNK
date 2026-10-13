@@ -83,7 +83,7 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation){const angle=s.rotation>90?180-s.rotation:-s.rotation;cell.dataset.shrink='rotated';Object.assign(span.style,{left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)',transformOrigin:'center center'})}if(s.shrink&&!s.rotation)cell.dataset.shrink='true';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'&&ref==='E4'?32:undefined;
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='CG4'?21:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
@@ -178,3 +178,4 @@
  const ping=setInterval(()=>{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'pp5-print-ready',job},location.origin)},300);
  setTimeout(()=>{if(!received){clearInterval(ping);fail(Error('ยังรับข้อมูลจากเล่มไม่สำเร็จ กรุณาปิดหน้านี้ กลับไปที่เล่ม ปพ.5 แล้วกด “พิมพ์ / PDF” อีกครั้ง'))}},30000);
 })();
+
