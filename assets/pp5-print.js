@@ -81,9 +81,9 @@
      span.textContent=String(v??'').replace(/\s+/g,' ').trim().replace(/ +(?=\*\*|-(?:ช่วงคะแนน|ความหมาย|ระดับผล))/g,'\n');
      cell.classList.add('criteria-notes');cell.style.alignItems='flex-start';
     }
-    if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation)span.style.transform='rotate('+(s.rotation>90?180-s.rotation:-s.rotation)+'deg)';if(s.shrink)cell.dataset.shrink='true';
+    if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation){const angle=s.rotation>90?180-s.rotation:-s.rotation;cell.dataset.shrink='rotated';Object.assign(span.style,{left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)',transformOrigin:'center center'})}if(s.shrink&&!s.rotation)cell.dataset.shrink='true';
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
-    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='BZ4'?11:ref==='CG4'?21:undefined):undefined;
+    const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'&&ref==='E4'?32:undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
     if(page.sheet==='D'&&/^(?:B|O|P|Q|R|S|T)(?:[89]|1\d|2[0-5])$/.test(ref)){Object.assign(cell.style,{alignItems:'center',justifyContent:'center',textAlign:'center'});}
     if(page.sheet==='D'&&/^C(?:[89]|1\d|2[012])$/.test(ref)){cell.style.fontSize=page.indicatorFont+'pt';cell.style.lineHeight='1.2';delete cell.dataset.shrink;}
@@ -97,9 +97,10 @@
      delete cell.dataset.shrink;Object.assign(cell.style,{width:(xs[x+2]-xs[x])+'pt',fontSize:'16pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'3',padding:'0',justifyContent:'center',textAlign:'center'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
     }
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
+    if(page.sheet==='C'&&/^([A-Z]+)(\d+)$/.test(ref)&&Number(ref.match(/\d+$/)[0])>=4&&Number(ref.match(/\d+$/)[0])<=6){cell.style.alignItems='center';if(!s.rotation){cell.style.padding='2pt 3pt';cell.style.justifyContent='center';cell.style.textAlign='center'}}
     if(page.sheet==='C'&&['E4','BZ4','CG4'].includes(ref)){
-     // Let both section titles span the empty template cells, as in the source form.
-     delete cell.dataset.shrink;cell.style.fontSize='12pt';cell.style.fontWeight='bold';cell.style.whiteSpace='nowrap';cell.style.justifyContent='center';cell.style.textAlign='center';cell.style.padding='0';cell.style.display='block';span.style.display='block';span.style.width='100%';span.style.textAlign='center';span.style.whiteSpace='nowrap';span.style.flexShrink='0';span.style.maxWidth='none';
+     // Keep section headings vertically centered, equally weighted, and clear of the borders.
+     delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'12pt',fontWeight:'bold',whiteSpace:'nowrap',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'3pt 4pt',display:'block',boxSizing:'border-box'});Object.assign(span.style,{position:'absolute',left:'0',right:'0',top:'50%',display:'block',width:'100%',textAlign:'center',whiteSpace:'nowrap',flexShrink:'0',maxWidth:'none',transform:'translateY(-50%)',lineHeight:'1.1'});
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
@@ -157,7 +158,7 @@
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
-  for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild;const ratio=Math.min(1,(cell.clientWidth-3)/Math.max(1,span.scrollWidth),(cell.clientHeight-2)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
+  for(const cell of pages.querySelectorAll('[data-shrink]')){const span=cell.firstChild,rotated=cell.dataset.shrink==='rotated';const ratio=rotated?Math.min(1,(cell.clientHeight-6)/Math.max(1,span.scrollWidth),(cell.clientWidth-4)/Math.max(1,span.scrollHeight)):Math.min(1,(cell.clientWidth-6)/Math.max(1,span.scrollWidth),(cell.clientHeight-4)/Math.max(1,span.scrollHeight));if(ratio<1)span.style.fontSize=(parseFloat(cell.style.fontSize)*ratio)+'pt'}
   // Use one shared font size for the six attendance summary headings.
   const attendanceHeads=['DI10','DJ10','DK10','DL10','DM10','DN10'].map(ref=>pages.querySelector('[data-ref="B!'+ref+'"]')).filter(Boolean);
   if(attendanceHeads.length){const size=Math.min(...attendanceHeads.map(cell=>parseFloat(cell.firstChild.style.fontSize||cell.style.fontSize)));attendanceHeads.forEach(cell=>cell.firstChild.style.fontSize=size+'pt')}
