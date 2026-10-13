@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
 const assert = require('assert/strict');
 
@@ -12,7 +13,8 @@ function columnName(number) {
 }
 
 const context = { window: {}, PP5Workbook: { col: columnName } };
-vm.runInNewContext(fs.readFileSync('assets/pp5-tables.js', 'utf8'), context);
+const root = path.resolve(__dirname, '..');
+vm.runInNewContext(fs.readFileSync(path.join(root, 'assets', 'pp5-tables.js'), 'utf8'), context);
 const tables = context.window.PP5Tables;
 const serial = date => Math.round(Date.parse(date + 'T00:00:00Z') / 86400000) + 25569;
 const fromSerial = value => new Date((value - 25569) * 86400000).toISOString().slice(0, 10);
