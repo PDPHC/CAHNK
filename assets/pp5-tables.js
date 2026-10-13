@@ -28,19 +28,98 @@
   function totals(){for(const r of [...rows,24]){const el=panel.querySelector('[data-ind-total="'+r+'"]');if(el)el.textContent=['O','P','Q','R'].reduce((n,c)=>n+Number(value('D',c+r)||0),0)}const sums={};for(const c of ['O','P','Q','R','T'])sums[c]=rows.map(r=>Number(value('D',c+r)||0)).reduce((a,b)=>a+b,0)+Number(value('D',c+'24')||0);sums.S=['O','P','Q','R'].reduce((n,c)=>n+sums[c],0);panel.querySelectorAll('[data-ind-sum]').forEach(el=>el.textContent=Number(sums[el.dataset.indSum].toFixed(10)));const work=practiceScore(value);panel.querySelector('[data-ind-total="24"]').textContent=work.total;}
   function fit(el){el.style.height='auto';el.style.height=Math.max(28,el.scrollHeight)+'px'}panel.querySelectorAll('textarea[data-ref]').forEach(fit);panel.querySelectorAll('input[type=number]').forEach(el=>el.addEventListener('wheel',e=>e.preventDefault(),{passive:false}));panel.oninput=e=>{if(e.target.matches('textarea[data-ref]'))fit(e.target);totals()};totals();
  }
+ function attendanceDates(value,serialToDate){
+  return Array.from({length:100},(_,i)=>{
+   const serial=Number(value('W1',PP5Workbook.col(6+i%5)+'5'));
+   return Number.isFinite(serial)&&serial>0?serialToDate(serial+Math.floor(i/5)*7):'';
+  });
+ }
+ function attendanceSlotIndex(ref){
+  const match=String(ref||'').match(/^([A-Z]+)(\d+)$/);
+  if(!match||Number(match[2])<7||Number(match[2])>66)return -1;
+  let column=0;
+  for(const letter of match[1])column=column*26+letter.charCodeAt(0)-64;
+  const index=column-7;
+  return index>=0&&index<100?index:-1;
+ }
+ function attendanceSlotConfigured(ref,value){
+  const index=attendanceSlotIndex(ref);
+  if(index<0)return false;
+  const serial=Number(value('W1',PP5Workbook.col(6+index%5)+'5'));
+  return Number.isFinite(serial)&&serial>0;
+ }
+ function attendanceSlots(dates,holidays,all,index){
+  const chosen=dates[Number(index)]||'';
+  const candidates=all?Array.from({length:dates.length},(_,i)=>i):chosen?dates.map((date,i)=>i).filter(i=>i===Number(index)||dates[i]===chosen):[];
+  return candidates.filter(i=>dates[i]&&!holidays.has(dates[i]));
+ }
  function attendance(panel,{value,put,editable,blockedCell,render,serialToDate,room}){
   const pupils=Array.from({length:60},(_,i)=>i).filter(i=>value('IN','C'+(i+4))||value('IN','D'+(i+4)));
-  const dates=Array.from({length:100},(_,i)=>{const serial=Number(value('W1',PP5Workbook.col(6+i%5)+'5'));return serial?serialToDate(serial+Math.floor(i/5)*7):''});
-  const shortDate=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('th-TH',{day:'numeric',month:'short',timeZone:'UTC'}):'';const holidays=new Map((room.use_thai_holidays===false?[]:room.holidays||[]).map(h=>[h.date,h.name]));
-  panel.innerHTML='<h2>เช็กการมาเรียนทั้งภาคเรียน</h2><p>20 สัปดาห์ × 5 ช่องเรียนตามต้นฉบับ • เลื่อนแนวนอนเพื่อดูทุกสัปดาห์ • / มา, ป ป่วย, ล ลา, ส สาย, ข ขาด, - ไม่มีคาบ</p><div class="attendance-tools"><button id="markTerm" type="button" class="btn primary">เช็กมาทั้งเทอม</button><label>วันที่ / ช่องเรียน <select id="attendanceDay" class="cloud-allow">'+dates.map((d,i)=>'<option value="'+i+'">สัปดาห์ '+(Math.floor(i/5)+1)+' ช่อง '+(i%5+1)+(d?' • '+esc(shortDate(d))+(holidays.has(d)?' • '+esc(holidays.get(d)):''):' • ยังไม่ตั้งวันที่')+'</option>').join('')+'</select></label><button id="markDay" type="button" class="btn">เช็กมาเฉพาะวันนี้ / ช่องนี้</button></div><div class="table-wrap term-attendance"><table class="pp5-table"><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">ชื่อ–สกุล</th>'+Array.from({length:20},(_,i)=>'<th colspan="5">สัปดาห์ '+(i+1)+'</th>').join('')+'<th colspan="7">สรุปทั้งเทอม</th></tr><tr>'+dates.map((d,i)=>'<th class="'+(holidays.has(d)?'pp5-holiday':'')+'">'+(d?esc(shortDate(d)):'ช่อง '+(i%5+1))+(holidays.has(d)?'':'<br><button type="button" class="mark-date" data-mark-date="'+i+'" '+(!editable()?'disabled':'')+'>มาทุกคน</button>')+'</th>').join('')+['มา','ป่วย','ลา','สาย','ขาด','รวม','ผลเวลาเรียน'].map(s=>'<th>'+s+'</th>').join('')+'</tr></thead><tbody>'+pupils.map(i=>'<tr class="'+(blockedCell('CH','G'+(i+7))?'pp5-blocked-row':'')+'"><td>'+(i+1)+'</td><td class="pp5-student-name">'+esc(value('IN','D'+(i+4)))+'</td>'+dates.map((d,k)=>{const ref=PP5Workbook.col(7+k)+(i+7);if(holidays.has(d))return i===pupils[0]?'<td class="pp5-holiday" rowspan="'+pupils.length+'"><span class="holiday-label">'+esc(holidays.get(d))+'</span></td>':'';return '<td><select data-sheet="CH" data-ref="'+ref+'" aria-label="เลขที่ '+(i+1)+' สัปดาห์ '+(Math.floor(k/5)+1)+' ช่อง '+(k%5+1)+'" '+(!editable()||blockedCell('CH',ref)?'disabled':'')+'>'+['','/','-','ป','ล','ส','ข'].map(v=>'<option value="'+v+'" '+(value('CH',ref)===v?'selected':'')+'>'+esc(v||'·')+'</option>').join('')+'</select></td>'}).join('')+['DD','DE','DF','DG','DH','DI','DJ'].map(c=>'<td class="pp5-result" data-ch-result="'+c+(i+7)+'"></td>').join('')+'</tr>').join('')+'</tbody></table></div><p>ปุ่มเช็กมาจะแทนที่ข้อมูลในช่วงที่เลือก และข้ามนักเรียนย้ายออก / ไม่มีตัวตน กดบันทึกบนคลาวด์เมื่อเสร็จแล้ว</p>';
-  const summary=document.createElement('section');summary.innerHTML='<h3>สรุปการมาเรียนทั้งเทอม</h3><div class="table-wrap"><table class="pp5-table"><thead><tr><th>ชื่อ–สกุล</th>'+['มา','ป่วย','ลา','สาย','ขาด','รวม','ผลเวลาเรียน'].map(s=>'<th>'+s+'</th>').join('')+'</tr></thead><tbody>'+pupils.map(i=>'<tr class="'+(blockedCell('CH','G'+(i+7))?'pp5-blocked-row':'')+'"><td class="pp5-student-name">'+esc(value('IN','D'+(i+4)))+'</td>'+['DD','DE','DF','DG','DH','DI','DJ'].map(c=>'<td data-ch-result="'+c+(i+7)+'"></td>').join('')+'</tr>').join('')+'</tbody></table></div>';panel.append(summary);
-  function bulk(all,index){if(!editable())return;const chosen=index??Number(panel.querySelector('#attendanceDay').value),slots=(all?Array.from({length:100},(_,i)=>i):dates.map((d,i)=>i).filter(i=>i===chosen||dates[chosen]&&dates[i]===dates[chosen])).filter(i=>!holidays.has(dates[i]));const dialog=document.createElement('dialog');dialog.className='attendance-confirm';dialog.innerHTML='<h3>ยืนยันเช็กมา '+slots.length+' ช่องเรียน</h3><p>เปลี่ยนค่าที่เคยกรอกในช่วงนี้เป็นมาเรียน สำหรับนักเรียนที่กรอกข้อมูลได้ทุกคน</p><button type="button" class="btn primary" data-confirm-attendance>ยืนยันเช็กมา</button> <button type="button" class="btn" data-cancel-attendance>ยกเลิก</button>';panel.append(dialog);dialog.querySelector('[data-cancel-attendance]').onclick=()=>{dialog.close();dialog.remove()};dialog.querySelector('[data-confirm-attendance]').onclick=()=>{if(!editable())return;for(const i of pupils)for(const k of slots){const ref=PP5Workbook.col(7+k)+(i+7);if(!blockedCell('CH',ref))put('CH',ref,'/')}dialog.close();dialog.remove();render()};dialog.showModal();}
+  const dates=attendanceDates(value,serialToDate);
+  const shortDate=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('th-TH',{day:'numeric',month:'short',timeZone:'UTC'}):'';
+  const holidays=new Map((room.use_thai_holidays===false?[]:room.holidays||[]).map(h=>[h.date,h.name]));
+  const options=dates.map((d,i)=>{
+   const available=!!d&&!holidays.has(d);
+   const note=!d?' • ไม่มีวันสอนตามตาราง':holidays.has(d)?' • '+esc(holidays.get(d)):'';
+   return '<option value="'+i+'" '+(available?'':'disabled ')+'>สัปดาห์ '+(Math.floor(i/5)+1)+' ช่อง '+(i%5+1)+(d?' • '+esc(shortDate(d)):'')+note+'</option>';
+  }).join('');
+  const headers=dates.map((d,i)=>{
+   const unavailable=!d||holidays.has(d);
+   const className=holidays.has(d)?'pp5-holiday':!d?'pp5-non-teaching':'';
+   const label=d?esc(shortDate(d)):'คาบ '+(i%5+1)+'<br><small>ไม่มีวันสอน</small>';
+   const title=holidays.has(d)?esc(holidays.get(d)):!d?'ไม่มีวันสอนตามตารางรายสัปดาห์':'';
+   return '<th class="'+className+'" title="'+title+'">'+label+(unavailable?'':'<br><button type="button" class="mark-date" data-mark-date="'+i+'" '+(!editable()?'disabled':'')+'>มาทุกคน</button>')+'</th>';
+  }).join('');
+  panel.innerHTML='<h2>เช็กการมาเรียนทั้งภาคเรียน</h2><p>ช่องที่ไม่ได้กำหนดวันในเมนู “ตั้งค่ารายสัปดาห์” จะปิดไว้ • 20 สัปดาห์ × 5 ช่องเรียน • / มา, ป ป่วย, ล ลา, ส สาย, ข ขาด, - ไม่มีคาบ</p><div class="attendance-tools"><button id="markTerm" type="button" class="btn primary">เช็กมาทั้งเทอม</button><label>วันที่ / ช่องเรียน <select id="attendanceDay" class="cloud-allow">'+options+'</select></label><button id="markDay" type="button" class="btn">เช็กมาเฉพาะวันนี้ / ช่องนี้</button></div><div class="table-wrap term-attendance"><table class="pp5-table"><thead><tr><th rowspan="2">เลขที่</th><th rowspan="2">ชื่อ–สกุล</th>'+Array.from({length:20},(_,i)=>'<th colspan="5">สัปดาห์ '+(i+1)+'</th>').join('')+'<th colspan="7">สรุปทั้งเทอม</th></tr><tr>'+headers+['มา','ป่วย','ลา','สาย','ขาด','รวม','ผลเวลาเรียน'].map(s=>'<th>'+s+'</th>').join('')+'</tr></thead><tbody>'+pupils.map(i=>{
+   const cells=dates.map((d,k)=>{
+    const ref=PP5Workbook.col(7+k)+(i+7);
+    if(d&&holidays.has(d))return i===pupils[0]?'<td class="pp5-holiday" rowspan="'+pupils.length+'"><span class="holiday-label">'+esc(holidays.get(d))+'</span></td>':'';
+    if(!d)return '<td class="pp5-non-teaching" title="ไม่มีวันสอนตามตารางรายสัปดาห์">—</td>';
+    return '<td><select data-sheet="CH" data-ref="'+ref+'" aria-label="เลขที่ '+(i+1)+' สัปดาห์ '+(Math.floor(k/5)+1)+' ช่อง '+(k%5+1)+'" '+(!editable()||blockedCell('CH',ref)?'disabled':'')+'>'+['','/','-','ป','ล','ส','ข'].map(v=>'<option value="'+v+'" '+(value('CH',ref)===v?'selected':'')+'>'+esc(v||'·')+'</option>').join('')+'</select></td>';
+   }).join('');
+   return '<tr class="'+(blockedCell('CH','G'+(i+7))?'pp5-blocked-row':'')+'"><td>'+(i+1)+'</td><td class="pp5-student-name">'+esc(value('IN','D'+(i+4)))+'</td>'+cells+['DD','DE','DF','DG','DH','DI','DJ'].map(c=>'<td class="pp5-result" data-ch-result="'+c+(i+7)+'"></td>').join('')+'</tr>';
+  }).join('')+'</tbody></table></div><p>ปุ่มเช็กมาจะเปลี่ยนข้อมูลเฉพาะวันที่กำหนดไว้ในตารางรายสัปดาห์ และข้ามวันหยุดกับนักเรียนย้ายออก / ไม่มีตัวตน กดบันทึกบนคลาวด์เมื่อเสร็จแล้ว</p>';
+  const summary=document.createElement('section');
+  summary.innerHTML='<h3>สรุปการมาเรียนทั้งเทอม</h3><div class="table-wrap"><table class="pp5-table"><thead><tr><th>ชื่อ–สกุล</th>'+['มา','ป่วย','ลา','สาย','ขาด','รวม','ผลเวลาเรียน'].map(s=>'<th>'+s+'</th>').join('')+'</tr></thead><tbody>'+pupils.map(i=>'<tr class="'+(blockedCell('CH','G'+(i+7))?'pp5-blocked-row':'')+'"><td class="pp5-student-name">'+esc(value('IN','D'+(i+4)))+'</td>'+['DD','DE','DF','DG','DH','DI','DJ'].map(c=>'<td data-ch-result="'+c+(i+7)+'"></td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  panel.append(summary);
+  const daySelect=panel.querySelector('#attendanceDay'),markDay=panel.querySelector('#markDay'),markTerm=panel.querySelector('#markTerm');
+  const firstAvailable=dates.findIndex((date,i)=>date&&!holidays.has(date));
+  if(firstAvailable>=0)daySelect.value=String(firstAvailable);
+  function updateBulkControls(){
+   markDay.dataset.attendanceUnavailable=String(attendanceSlots(dates,holidays,false,Number(daySelect.value)).length===0);
+   markTerm.dataset.attendanceUnavailable=String(attendanceSlots(dates,holidays,true).length===0);
+   markDay.disabled=!editable()||markDay.dataset.attendanceUnavailable==='true';
+   markTerm.disabled=!editable()||markTerm.dataset.attendanceUnavailable==='true';
+  }
+  daySelect.addEventListener('change',updateBulkControls);
+  function bulk(all,index){
+   if(!editable())return;
+   const slots=attendanceSlots(dates,holidays,all,index);
+   if(!slots.length)return;
+   const dialog=document.createElement('dialog');
+   dialog.className='attendance-confirm';
+   dialog.innerHTML='<h3>ยืนยันเช็กมา '+slots.length+' ช่องเรียน</h3><p>เปลี่ยนค่าที่เคยกรอกในช่วงนี้เป็นมาเรียน สำหรับนักเรียนที่กรอกข้อมูลได้ทุกคน</p><button type="button" class="btn primary" data-confirm-attendance>ยืนยันเช็กมา</button> <button type="button" class="btn" data-cancel-attendance>ยกเลิก</button>';
+   panel.append(dialog);
+   dialog.querySelector('[data-cancel-attendance]').onclick=()=>{dialog.close();dialog.remove()};
+   dialog.querySelector('[data-confirm-attendance]').onclick=()=>{
+    if(!editable())return;
+    for(const i of pupils)for(const k of slots){
+     const ref=PP5Workbook.col(7+k)+(i+7);
+     if(attendanceSlotConfigured(ref,value)&&!blockedCell('CH',ref))put('CH',ref,'/');
+    }
+    dialog.close();dialog.remove();render();
+   };
+   dialog.showModal();
+  }
   panel.querySelectorAll('[data-mark-date]').forEach(button=>button.onclick=()=>bulk(false,Number(button.dataset.markDate)));
-  for(const [id,all] of [['markTerm',true],['markDay',false]]){panel.querySelector('#'+id).disabled=!editable();panel.querySelector('#'+id).onclick=()=>bulk(all)}
+  markTerm.onclick=()=>bulk(true);
+  markDay.onclick=()=>bulk(false,Number(daySelect.value));
+  updateBulkControls();
  }
  function parseIndicators(text){
   const table=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++}else if(quoted||!cell)quoted=!quoted;else cell+=c}else if(!quoted&&(c==='\t'||c==='\n')){row.push(cell.trim());cell='';if(c==='\n'){table.push(row);row=[]}}else if(c!=='\r')cell+=c}if(quoted)throw Error('เครื่องหมายคำพูดในข้อมูลไม่ครบ');row.push(cell.trim());table.push(row);
   const result=[];for(const source of table){if(source.every(v=>!v)||source.every(v=>!v||/^(?:[1-4]|รวม|ชม\.)$/.test(v)))continue;let values=[...source];if(/^\d+$/.test(values[0])&&values.length>1)values.shift();const label=values[0];if(!label||(/^(ข้อที่|ตัวชี้วัด(?:\s*\/\s*ผลการเรียนรู้)?|คะแนนการประเมินผล|รวม)$/.test(label)||/^(ภาคปฏิบัติ|หมายเหตุ)/.test(label)))continue;if(values.length>7)throw Error('จำนวนคอลัมน์ไม่ตรงรูปแบบ กรุณาคัดลอกเฉพาะตารางตัวชี้วัด');const number=v=>{if(!v||v==='-')return 0;const n=Number(v.replace(/,/g,''));if(!Number.isFinite(n)||n<0)throw Error('คะแนนหรือชั่วโมงไม่ถูกต้องในข้อ '+(result.length+1));return n};result.push({text:label,scores:[1,2,3,4].map(i=>number(values[i])),hours:number(values[values.length>=7?6:5])})}if(!result.length)throw Error('ไม่พบข้อมูลตัวชี้วัด');if(result.length>115)throw Error('รองรับได้ไม่เกิน 115 ข้อ');return result;
  }
- window.PP5Tables={indicators,attendance,parseIndicators,practiceScore,indicatorScore};
+ window.PP5Tables={indicators,attendance,attendanceDates,attendanceSlotIndex,attendanceSlotConfigured,attendanceSlots,parseIndicators,practiceScore,indicatorScore};
 })();
+
