@@ -59,6 +59,8 @@ class Calculator{
   }
  }
 }
+function attendanceSummary(statuses){const counted=statuses.filter(status=>status!=='-'),attended=counted.filter(status=>status==='/'||status==='ส').length,total=counted.length;return {attended,total,percentage:total?Math.round(attended*10000/total)/100:null,result:!total?'—':attended*100>=total*80?'ผ่าน':'มส.'}}
 function scoreRatio(get){const during=['E3','F3','H3','I3'].reduce((n,r)=>n+Number(get('IN',r)||0),0),final=Number(get('IN','J3')||0),total=during+final;if(!Number.isFinite(total)||total<=0||during<0||final<0)return null;const first=Math.round(during/total*10000)/100;return [first,Math.round((100-first)*100)/100]}
-globalThis.PP5Calc={Calculator,parse,scoreRatio};if(typeof module!=='undefined')module.exports=globalThis.PP5Calc;
+globalThis.PP5Calc={Calculator,parse,scoreRatio,attendanceSummary};if(typeof module!=='undefined')module.exports=globalThis.PP5Calc;
 })();
+
