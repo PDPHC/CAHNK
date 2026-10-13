@@ -90,7 +90,7 @@
 
     if(page.sheet==='C'&&['E3','Q3','U3','AC3'].includes(ref)){
      // Keep the score-ratio labels readable instead of shrinking them to the source cell width.
-     delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'18pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'2',paddingLeft:'0'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
+     delete cell.dataset.shrink;Object.assign(cell.style,{fontSize:'18pt',whiteSpace:'nowrap',overflow:'visible',zIndex:'2',paddingLeft:'0',width:(xs[(ref==='E3'?15:27)]-xs[x])+'pt'});span.style.whiteSpace='nowrap';span.style.maxWidth='none';span.style.flexShrink='0';
     }
     if(page.sheet==='C'&&['B3','AI3'].includes(ref)){delete cell.dataset.shrink;cell.style.fontSize='12pt'}
     if(page.sheet==='C'&&ref==='CG4'){
