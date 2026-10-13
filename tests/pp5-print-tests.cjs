@@ -7,6 +7,9 @@ const JSZip=require('../assets/vendor/jszip-3.10.1.min.js'),{Calculator,parse}=r
  let formulas=0,checks=0;const ok=(actual,expected)=>{assert.deepEqual(actual,expected);checks++};
  for(const s of Object.values(data.cells))for(const c of Object.values(s))if(c.f){parse(c.f);formulas++}
  const pupil={'IN!C4':'00001','IN!D4':'นักเรียนทดสอบ'};
+ ok(PP5Calc.attendanceSummary(['/','/','/','/','']).result,'ผ่าน');
+ ok(PP5Calc.attendanceSummary(['/','/','/','','']).result,'มส.');
+ ok(PP5Calc.attendanceSummary(['/','ส','-']).percentage,100);
  for(const [score,grade] of [[0,0],[49,0],[50,1],[54,1],[55,1.5],[59,1.5],[60,2],[64,2],[65,2.5],[69,2.5],[70,3],[74,3],[75,3.5],[79,3.5],[80,4],[100,4]]){
   const calc=new Calculator(data.cells,{...pupil,'IN!E4':score});ok(calc.get('IN','M4'),grade);
  }
@@ -36,3 +39,4 @@ const JSZip=require('../assets/vendor/jszip-3.10.1.min.js'),{Calculator,parse}=r
  for(const p of data.pages){const w=p.widths.reduce((a,b)=>a+b,0),h=p.heights.reduce((a,b)=>a+b,0),pw=p.paper==='legal'?612:210*72/25.4,ph=p.paper==='legal'?1008:297*72/25.4,[l,r,t,b]=p.margins,scale=p.fit?Math.min((pw-l-r)/w,(ph-t-b)/h,1):p.scale;assert.ok(w*scale<=pw-l-r+.01,p.area+' width');assert.ok(h*scale<=ph-t-b+.01,p.area+' height');checks++}
  console.log(JSON.stringify({passed:checks,formulasParsed:formulas,pagesRenderedWithoutFormulaErrors:10,rosterBoundary:44}));
 })().catch(e=>{console.error(e);process.exitCode=1});
+
