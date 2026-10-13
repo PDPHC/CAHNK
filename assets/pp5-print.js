@@ -96,6 +96,12 @@
     }
     if(!s.align&&typeof v==='number')cell.style.justifyContent='flex-end';if(s.rotation){const angle=s.rotation>90?180-s.rotation:-s.rotation;cell.dataset.shrink=angle?'rotated':'true';Object.assign(span.style,{left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)',transformOrigin:'center center'})}if(s.shrink&&!s.rotation)cell.dataset.shrink='true';
     if(page.sheet==='B'&&calendarCell(ref)){Object.assign(cell.style,{fontSize:'10pt',fontWeight:'normal',padding:'0',overflow:'visible',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});Object.assign(span.style,{position:'absolute',left:'50%',top:'50%',whiteSpace:'nowrap',maxWidth:'none',flexShrink:'0',lineHeight:'1.1',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center center'});delete cell.dataset.shrink}
+    if(page.sheet==='B'&&['E7','E8','E9','E10'].includes(ref)){
+     // Keep the four attendance row labels horizontal and centered like the printed form.
+     cell.classList.remove('rotated');delete cell.dataset.shrink;
+     Object.assign(cell.style,{fontSize:'14pt',fontWeight:'bold',padding:'0 2pt',overflow:'hidden',justifyContent:'center',alignItems:'center',textAlign:'center',whiteSpace:'nowrap'});
+     Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'nowrap',maxWidth:'100%',flexShrink:'1'});
+    }
     // Excel allows labels to span adjacent empty cells; preserve that space before fitting.
     const labelEnd=page.sheet==='A'?({C36:xs.length-1,C43:11,C49:xs.length-1}[ref]):page.sheet==='D'?(ref==='B27'||ref==='I42'?xs.length-1:/^I(?:34|36|38|40)$/.test(ref)?9:/^K(?:34|35|36|37|38|39|40)$/.test(ref)?xs.length-1:undefined):page.sheet==='C'?(ref==='E4'?32:ref==='CG4'?21:undefined):undefined;
     if(labelEnd!==undefined){cell.style.width=(xs[labelEnd]-xs[x])+'pt';cell.style.fontSize='12pt';cell.style.whiteSpace='pre-wrap';cell.style.alignItems='center';span.textContent=String(v??'').trim();span.style.whiteSpace='pre-wrap';span.style.flexShrink='1';span.style.overflowWrap='anywhere';if(page.sheet==='A'&&ref==='C49'){cell.style.justifyContent='center';cell.style.textAlign='center';}}
