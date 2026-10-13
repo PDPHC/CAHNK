@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const assert = require('assert/strict');
+const attendanceSummary = require('../assets/pp5-calc.js').attendanceSummary;
 
 function columnName(number) {
   let name = '';
@@ -16,6 +17,21 @@ const context = { window: {}, PP5Workbook: { col: columnName } };
 const root = path.resolve(__dirname, '..');
 vm.runInNewContext(fs.readFileSync(path.join(root, 'assets', 'pp5-tables.js'), 'utf8'), context);
 const tables = context.window.PP5Tables;
+let threshold = attendanceSummary(['/', '/', '/', '', '']);
+assert.equal(threshold.attended, 3);
+assert.equal(threshold.total, 5);
+assert.equal(threshold.percentage, 60);
+assert.equal(threshold.result, 'มส.');
+threshold = attendanceSummary(['/', '/', '/', '/', '']);
+assert.equal(threshold.percentage, 80);
+assert.equal(threshold.result, 'ผ่าน');
+threshold = attendanceSummary(['/', 'ส', '-', '-', '']);
+assert.equal(threshold.attended, 2);
+assert.equal(threshold.total, 3);
+assert.equal(threshold.result, 'มส.');
+threshold = attendanceSummary(['-', '-']);
+assert.equal(threshold.percentage, null);
+assert.equal(threshold.result, '—');
 const serial = date => Math.round(Date.parse(date + 'T00:00:00Z') / 86400000) + 25569;
 const fromSerial = value => new Date((value - 25569) * 86400000).toISOString().slice(0, 10);
 const schedule = {
@@ -90,6 +106,8 @@ tables.attendance(panel, {
   serialToDate: fromSerial,
   room: { holidays: [{ date: '2026-09-09', name: 'วันหยุด' }], use_thai_holidays: true }
 });
+assert.ok(panel.appended[0].innerHTML.includes('มาเรียน (%)'));
+assert.ok(panel.appended[0].innerHTML.includes('data-attendance-percent="7"'));
 assert.equal((panel.markup.match(/<td class="pp5-non-teaching"/g) || []).length, 40);
 assert.equal((panel.markup.match(/<select data-sheet="CH"/g) || []).length, 59);
 assert.equal(panel.querySelector('#attendanceDay').value, '0');
