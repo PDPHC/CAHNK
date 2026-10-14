@@ -17,7 +17,7 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
   await page.evaluate(data=>window.__renderPP5Print(data),{report:'D',title:'QA',patches,holidays:[],signatures:{}});
   assert.equal(await page.locator('.paper').count(),1,'23 indicators should fit on one page');
   assert.equal(await page.locator('.indicator-appendix').count(),0,'no continuation page should be added');
-  assert.equal(await page.locator('.print-page-number').innerText(),'หน้า : 1');
+  assert.equal(await page.locator('.print-page-number').count(),0,'the first printed page must hide its number');
   for(let i=0;i<8;i++){
    const cell=page.locator(`[data-ref="D!C${54+i}"]`);
    assert.equal(await cell.innerText(),`ตัวชี้วัดเพิ่มเติม ${i+1}`);
@@ -27,7 +27,6 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
   assert.ok(positions.item15<positions.item16&&positions.item16<positions.item23&&positions.item23<positions.totals,'items 16–23 must continue directly after 15, before the totals');
   assert.ok(positions.effectiveFont>=8.5,'indicator text should remain readable at print scale');
   assert.match(positions.text,/QA-CURRENT-COURSE/);assert.match(positions.text,/ข้อมูลปัจจุบันจากหน้ากรอก/);
-  const printNo=page.locator('.print-page-number');assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).top))>0);assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).right))>0);
   await page.screenshot({path:path.join(__dirname,'pp5-print-layout-qa.png'),fullPage:true});
   const summaryPatches={};for(let i=0;i<22;i++)Object.assign(summaryPatches,{['IN!C'+(i+4)]:'TEST'+(i+1),['IN!D'+(i+4)]:'นักเรียนทดสอบ '+(i+1),['IN!L'+(i+4)]:11,['F!CS'+(i+7)]:[50,57,60][i]??70});
   await page.evaluate(data=>window.__renderPP5Print(data),{report:'E',title:'Grade summary QA',patches:summaryPatches,holidays:[],signatures:{}});
@@ -40,6 +39,11 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
   const coverPatches={};for(let i=0;i<22;i++)Object.assign(coverPatches,{['IN!C'+(i+4)]:'TEST'+(i+1),['IN!D'+(i+4)]:'นักเรียนทดสอบ '+(i+1),['IN!L'+(i+4)]:i<19?70:40,['F!CS'+(i+7)]:i<19?70:40});
   await page.evaluate(data=>window.__renderPP5Print(data),{report:'A',title:'Cover summary QA',patches:coverPatches,holidays:[],signatures:{}});
   assert.deepEqual(await page.locator('[data-ref="A!I25"],[data-ref="A!M25"],[data-ref="A!I26"],[data-ref="A!M26"]').allInnerTexts(),['19','3','86.36','13.64']);
+  for(const column of ['I','M']){
+   const offset=await page.evaluate(c=>{const center=r=>{const b=document.querySelector(`[data-ref="A!${c}${r}"]`).firstChild.getBoundingClientRect();return (b.left+b.right)/2};return Math.abs(center(25)-center(26))},column);
+   assert.ok(offset<1,'percentages must align directly under the corresponding pupil counts');
+  }
+  assert.equal(await page.locator('.print-page-number').count(),0);
   for(const ref of ['I25','M25','I26','M26']){
    const font=await page.locator(`[data-ref="A!${ref}"]`).evaluate(el=>{const scale=Number(el.closest('.sheet').style.transform.match(/scale\(([^)]+)\)/)[1]);return parseFloat(el.firstChild.style.fontSize||el.style.fontSize)*scale});
    assert.ok(font>=12,'pass/fail summary figures must remain readable at print scale');
@@ -53,7 +57,13 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
   for(let week=0;week<20;week++){const c=column(7+week*5);attendancePatches['CH!'+c+'7']=week<16?'/':'';attendancePatches['CH!'+c+'8']=week<15?'/':'';attendancePatches['CH!'+c+'9']='-'}
   await page.evaluate(data=>window.__renderPP5Print(data),{report:'B',title:'Attendance QA',patches:attendancePatches,holidays:[],signatures:{}});
   assert.deepEqual(await page.locator('[data-ref="B!DO11"],[data-ref="B!DO12"],[data-ref="B!DO13"]').allInnerTexts(),['','มส.',''],'80% and exempt attendance stay blank; below 80% prints มส.');
-  assert.equal(await page.locator('.paper').count(),3);assert.deepEqual(await page.locator('.print-page-number').allInnerTexts(),['หน้า : 1','หน้า : 2','หน้า : 3']);
+  assert.equal(await page.locator('.paper').count(),3);assert.deepEqual(await page.locator('.print-page-number').allInnerTexts(),['หน้า : 2','หน้า : 3']);
+  assert.equal(await page.locator('.paper').first().locator('.print-page-number').count(),0);
+  const printNo=page.locator('.print-page-number').first();assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).top))>0);assert.ok(parseFloat(await printNo.evaluate(el=>getComputedStyle(el).right))>0);
+  const remark=page.locator('[data-ref="B!DO6"]');assert.equal(await remark.innerText(),'หมายเหตุ');
+  assert.match(await remark.evaluate(el=>el.firstChild.style.transform),/rotate\(-90deg\)/);
+  const remarkBounds=await remark.evaluate(el=>{const cell=el.getBoundingClientRect(),text=el.firstChild.getBoundingClientRect();return {inside:text.left>=cell.left&&text.right<=cell.right&&text.top>=cell.top&&text.bottom<=cell.bottom,vertical:text.height>text.width}});assert.ok(remarkBounds.inside&&remarkBounds.vertical,'the vertical remarks heading must fit inside its cell');
+  await page.locator('.paper').nth(2).screenshot({path:path.join(__dirname,'pp5-attendance-remark-qa.png')});
   const pdf=await page.pdf({path:path.join(os.tmpdir(),'pp5-print-layout-qa.pdf'),format:'A4',printBackground:true,preferCSSPageSize:true});assert.ok(pdf.byteLength>10000,'PDF should be generated');
   console.log(JSON.stringify({passed:'all',indicators:23,indicatorPages:1,indicatorOrder:'16–23 immediately after 15',indicatorFontPt:positions.effectiveFont,currentDataLinked:true,attendancePages:3,pageNumbers:'consistent top-right',printedGrades:'50→1, 57→1.5, 60→2',summaryFontPt:13,summaryRowGrowth:'capped at 1.5x',pdfBytes:pdf.byteLength}));
  }finally{await browser.close()}

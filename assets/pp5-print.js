@@ -158,7 +158,7 @@
      Object.assign(cell.style,{alignItems:'center',lineHeight:'1.15',padding:'2pt',fontSize:'14pt'});
      if(['I26','M26'].includes(ref)){
       span.textContent=typeof v==='number'&&Number.isFinite(v)?v.toFixed(2):String(v??'');
-      cell.style.width=(xs[x+2]-xs[x])+'pt';cell.style.justifyContent='center';cell.style.textAlign='center';
+      const percentWidth=xs[x+2]-xs[x];cell.style.left=(xs[x]-(percentWidth-cw)/2)+'pt';cell.style.width=percentWidth+'pt';cell.style.justifyContent='center';cell.style.textAlign='center';
       delete cell.dataset.shrink;
      }
      if(['I25','M25'].includes(ref))delete cell.dataset.shrink;
@@ -169,12 +169,10 @@
      }
     }
     if(page.sheet==='B'&&ref==='DO6'){
-     // The template stores a rotated, non-wrapped heading with a manual break.
-     // Render its two words explicitly instead of inheriting rotated nowrap CSS.
-     cell.classList.remove('rotated');cell.dataset.shrink='true';
-     Object.assign(cell.style,{whiteSpace:'pre-line',overflow:'hidden',justifyContent:'center',textAlign:'center',padding:'2pt',lineHeight:'1.2'});
-     Object.assign(span.style,{position:'static',transform:'none',whiteSpace:'pre-line',display:'block',width:'100%',maxWidth:'100%',flexShrink:'1'});
-     span.textContent='หมาย\nเหตุ';
+     cell.classList.add('rotated');cell.dataset.shrink='rotated';
+     Object.assign(cell.style,{fontSize:'13pt',whiteSpace:'nowrap',overflow:'visible',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'2pt',lineHeight:'1.2'});
+     Object.assign(span.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate(-90deg)',transformOrigin:'center center',whiteSpace:'nowrap',width:'auto',maxWidth:'none',flexShrink:'0'});
+     span.textContent='หมายเหตุ';
     }
     if(attendanceName){cell.dataset.attendanceRoster='true';cell.dataset.attendanceScale=String(scale);cell.style.overflow='hidden';delete cell.dataset.shrink;}
     if(page.sheet==='A'&&['E38','E40','E42','E45','L47','E48','C49'].includes(ref)){Object.assign(cell.style,{left:'0pt',width:w+'pt',justifyContent:'center',textAlign:'center',alignItems:'center',padding:'0'});span.textContent=String(span.textContent).trim();}
@@ -224,7 +222,7 @@
    const table=document.createElement('table');table.innerHTML='<colgroup><col style="width:5%"><col style="width:59%">'+Array(6).fill('<col style="width:6%">').join('')+'</colgroup><thead><tr><th rowspan="2">ข้อที่</th><th rowspan="2">ตัวชี้วัด/ผลการเรียนรู้</th><th colspan="6">คะแนนการประเมินผล</th></tr><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>รวม</th><th>ชม.</th></tr></thead>';const body=document.createElement('tbody');
    for(let i=start;i<Math.min(extraCount,start+15);i++){const row=54+i,tr=document.createElement('tr'),scores=['O','P','Q','R'].map(c=>Number(data.patches['D!'+c+row]||0));for(const v of [16+i,data.patches['D!C'+row]||'',...scores,scores.reduce((a,b)=>a+b,0),data.patches['D!T'+row]||0]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}body.append(tr)}table.append(body);paper.append(table);if(appendixAnchor)appendixAnchor.after(paper);else pages.append(paper);appendixAnchor=paper;appendixPages++;
   }
-  [...pages.children].forEach((paper,index)=>{const number=document.createElement('span');number.className='print-page-number';number.textContent='หน้า : '+(index+1);number.setAttribute('aria-label','หน้า '+(index+1));paper.append(number)});
+  [...pages.children].forEach((paper,index)=>{if(index===0)return;const number=document.createElement('span');number.className='print-page-number';number.textContent='หน้า : '+(index+1);number.setAttribute('aria-label','หน้า '+(index+1));paper.append(number)});
   await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   const attendanceNames=[...pages.querySelectorAll('[data-attendance-roster]')];
   if(attendanceNames.length){
