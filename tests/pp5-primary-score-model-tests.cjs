@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');global.window=global;require('../assets/pp5-primary-score-model.js');const M=PrimaryScoreModel;
+const maxima=M.empty().maxima,ratio={collect:40,exam:10},term=()=>({tasks:Array(16).fill(10),mid:null,final:10});
+let result=M.result({terms:[term(),term()]},maxima,ratio);assert.equal(result.terms[0].collect,40);assert.equal(result.terms[1].total,50);assert.equal(result.total,100);assert.equal(result.grade,4);
+const half=()=>({tasks:Array(16).fill(5),mid:null,final:5});result=M.result({terms:[half(),half()]},maxima,ratio);assert.equal(result.total,50);assert.equal(result.grade,1);
+for(const [score,grade] of [[49,0],[50,1],[55,1.5],[60,2],[65,2.5],[70,3],[75,3.5],[80,4]])assert.equal(M.grade(score),grade);
+const withMid=structuredClone(maxima);withMid.forEach(m=>m.mid=10);result=M.result({terms:[{...term(),mid:10},{...term(),mid:10}]},withMid,ratio);assert.equal(result.terms[0].total,60);assert.equal(result.maximum,120);assert.equal(result.total,120);assert.equal(result.grade,4);
+result=M.result({terms:[M.blankTerm(),term()]},maxima,ratio);assert.equal(result.grade,null,'unfinished work must not have a grade');
+result=M.result({terms:[term(),term()]},maxima,{collect:30,exam:20});assert.equal(result.terms[0].collect,30);assert.equal(result.terms[1].maximum,50);assert.equal(result.total,80,'exam marks and collection weights must follow the structure');
+const data=M.empty();data.scores.student={terms:[term(),term()]};assert.ok(M.validate(data,ratio));data.scores.student.terms[0].tasks[0]=11;assert.throws(()=>M.validate(data,ratio),/คะแนนเกิน/);data.scores.student.terms[0].tasks[0]=-1;assert.throws(()=>M.validate(data,ratio),/คะแนนเกิน/);
+assert.deepEqual(M.parseGrid('10\t5\n3\t4'),[['10','5'],['3','4']]);console.log('PASS: both semesters follow structure ratio, midterm is separate, annual grade boundaries, incomplete grades blank, score caps and Excel parsing');

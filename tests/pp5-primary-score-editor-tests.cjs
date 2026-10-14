@@ -1,0 +1,35 @@
+const fs=require('fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
+const root=process.cwd();
+async function mount(browser,permission='editor',saved={}){
+ const p=await browser.newPage({viewport:{width:1440,height:1000}});
+ await p.route('https://qa.test/**',route=>{const url=new URL(route.request().url());if(url.pathname.endsWith('.webp'))return route.fulfill({contentType:'image/webp',body:fs.readFileSync('assets/obec-emblem.webp')});return route.fulfill({contentType:'text/html; charset=utf-8',body:fs.readFileSync('pp5-primary-score-editor.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,'')});});
+ await p.goto('https://qa.test/pp5-primary-score-editor.html?classroom=qa&course='+encodeURIComponent('ท14101'));
+ for(const file of ['pp5-home.css','pp5-primary.css','pp5-primary-score-editor.css','theme.css'])await p.addStyleTag({path:'assets/'+file});
+ for(const file of ['student-status.js','pp5-primary-score-model.js'])await p.addScriptTag({path:'assets/'+file});
+ await p.evaluate(({permission,saved})=>{
+  window.savedByCode=saved;window.conflict=false;window.cloudState={user:{id:'teacher'},profile:{role:'teacher'}};
+  window.cloudClient={from:table=>{let course,values,expected;const q={select:()=>q,eq:(field,value)=>{if(field==='course_code')course=value;if(field==='revision')expected=value;return q},order:()=>q,insert:value=>{values=value;course=value.course_code;return q},update:value=>{values=value;course=value.course_code;return q},single:()=>q.maybeSingle(),maybeSingle:async()=>{
+   if(table==='pp5_primary_structures')return{data:{data:{courses:[{code:'ท14101',name:'ภาษาไทย 4'},{code:'ค14101',name:'คณิตศาสตร์ 4'}],ratio:{collect:40,exam:10}}}};
+   if(table==='classroom_teachers')return{data:{permission}};
+   if(values){if(window.conflict)return{data:null};window.savedByCode[course]={...values,updated_at:new Date().toISOString()};return{data:window.savedByCode[course]};}
+   return{data:window.savedByCode[course]||null};
+  },then:resolve=>resolve({data:[{id:'p1',student_code:'1001',full_name:'เด็กหญิงทดสอบ หนึ่ง',sort_order:1,active:true,record_status:'normal'},{id:'p2',student_code:'1002',full_name:'เด็กชายทดสอบ ย้ายออก',sort_order:2,active:true,record_status:'transferred'},{id:'p3',student_code:'1003',full_name:'เด็กชายทดสอบ ไม่มีตัวตน',sort_order:3,active:true,record_status:'not_present'},{id:'p4',student_code:'1004',full_name:'เด็กหญิงทดสอบ สี่',sort_order:4,active:true,record_status:'special'}]})};return q}};
+  window.startPP5Home=async fn=>{document.body.classList.remove('cloud-protected');await fn([{id:'qa',class_level:'ป.4',room:'1',academic_year:2569,term:1}]);};
+ },{permission,saved});
+ await p.addScriptTag({path:'assets/pp5-primary-score-editor.js'});await p.waitForFunction(()=>document.getElementById('editorCourseTitle').textContent.includes('ท14101'));
+ return p;
+}
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ const p=await mount(browser);assert.equal(await p.locator('#editorCourses button').count(),2);assert.equal(await p.locator('#primaryScoreTable tbody tr').count(),4);assert.equal(await p.locator('.blocked-score-row').count(),2);assert.ok(await p.locator('[data-uid=p2][data-score="0"]').first().isDisabled());
+ const full=[...Array(16).fill('10'),'','10',...Array(16).fill('10'),'','10'].join('\t'),half=[...Array(16).fill('5'),'','5',...Array(16).fill('5'),'','5'].join('\t');
+ const paste=async text=>p.locator('[data-uid=p1][data-term="0"][data-score="0"]').evaluate((el,text)=>{const e=new Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(e,'clipboardData',{value:{getData:()=>text}});el.dispatchEvent(e)},text);
+ await paste([full,full,full,half].join('\n'));assert.equal(await p.locator('tbody tr').first().locator('[data-computed=year]').innerText(),'100');assert.equal(await p.locator('tbody tr').first().locator('[data-computed=grade]').innerText(),'4');assert.equal(await p.locator('tbody tr').nth(3).locator('[data-computed=grade]').innerText(),'1');assert.equal(await p.locator('tbody tr').nth(1).locator('[data-computed=year]').innerText(),'—');
+ await p.locator('[data-max="16"][data-term="0"]').fill('10');await p.locator('[data-max="16"][data-term="0"]').dispatchEvent('change');await p.locator('[data-uid=p1][data-term="0"][data-score="16"]').fill('5');assert.equal(await p.locator('tbody tr').first().locator('[data-computed=year]').innerText(),'105');
+ await p.locator('[data-uid=p1][data-term="0"][data-score="0"]').fill('11');assert.equal(await p.locator('[data-uid=p1][data-term="0"][data-score="0"]').inputValue(),'10');
+ await p.locator('#editorCourses button').nth(1).click();await p.waitForFunction(()=>document.getElementById('editorCourseTitle').textContent.includes('ค14101'));const saved1=await p.evaluate(()=>savedByCode['ท14101']);assert.equal(saved1.data.scores.p1.terms[0].mid,5);assert.ok(!saved1.data.scores.p2&&!saved1.data.scores.p3);
+ await p.locator('[data-uid=p1][data-term="0"][data-score="0"]').fill('3');await p.locator('#editorCourses button').first().click();await p.waitForFunction(()=>document.getElementById('editorCourseTitle').textContent.includes('ท14101'));assert.equal(await p.locator('[data-uid=p1][data-term="0"][data-score="0"]').inputValue(),'10');assert.equal(await p.evaluate(()=>savedByCode['ค14101'].data.scores.p1.terms[0].tasks[0]),3);
+ for(const width of [390,768,1440]){await p.setViewportSize({width,height:1000});for(const dark of [false,true]){await p.evaluate(d=>document.body.classList.toggle('theme-dark',d),dark);assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}}
+ await p.evaluate(()=>{document.body.classList.remove('theme-dark');document.querySelector('.score-editor-scroll').scrollLeft=0;});await p.screenshot({path:'tests/pp5-primary-score-editor-qa.png',fullPage:true});await p.emulateMedia({media:'print'});assert.equal(await p.locator('.score-course-sidebar').evaluate(el=>getComputedStyle(el).display),'none');assert.equal(await p.locator('.identity-2').first().evaluate(el=>getComputedStyle(el).position),'static');await p.emulateMedia({media:'screen'});
+ const viewer=await mount(browser,'viewer',await p.evaluate(()=>savedByCode));assert.ok(await viewer.locator('#savePrimaryScores').isDisabled());assert.ok(await viewer.locator('[data-uid=p1][data-score="0"]').first().isDisabled());await viewer.close();
+ console.log('PASS: two-semester calculations, separate midterm, Excel paste skips blocked pupils, score caps, autosave before course switch, course isolation, viewer locks, mobile/tablet/dark layouts and print layout');
+ }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
