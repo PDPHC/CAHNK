@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -29,6 +30,29 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Wait for uploaded site
+        uses: actions/github-script@v8
+        env:
+          PAGES_ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+        with:
+          script: |
+            const name = process.env.PAGES_ARTIFACT_NAME;
+            for (let attempt = 0; attempt < 20; attempt++) {
+              const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                ...context.repo, run_id: context.runId, per_page: 100
+              });
+              const matches = artifacts.filter(artifact => artifact.name === name && !artifact.expired);
+              if (matches.length === 1) {
+                core.info('Uploaded site is available for deployment.');
+                return;
+              }
+              if (matches.length > 1) throw new Error('Duplicate site artifacts for this attempt.');
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+            throw new Error('Uploaded site is not yet visible in the Actions API.');
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
