@@ -15,7 +15,8 @@ grant select on primary_reading_qa to authenticated;
 set local role authenticated;
 do $$ declare rid uuid;who uuid;sid uuid;bid uuid;payload jsonb;denied bool;i int;bad jsonb;begin
  select room_id,user_id,student_id,blocked_id into rid,who,sid,bid from primary_reading_qa where n=1;
- payload:=jsonb_build_object('method','average','scores',jsonb_build_object(sid::text,to_jsonb(array_fill(4,array[18]))));
+ payload:=jsonb_build_object('scale','0-3','method','average','scores',jsonb_build_object(sid::text,to_jsonb(array_fill(3,array[18]))));
+ payload:=jsonb_set(payload,array['scores',sid::text,'0'],'0');
  insert into public.pp5_primary_reading(classroom_id,data,updated_by) values(rid,payload,who);
  update public.pp5_primary_reading set data=payload,revision=2 where classroom_id=rid and revision=1;
  if not exists(select 1 from public.pp5_primary_reading where classroom_id=rid and revision=2) then raise exception 'Save/reload failed';end if;
@@ -24,8 +25,8 @@ do $$ declare rid uuid;who uuid;sid uuid;bid uuid;payload jsonb;denied bool;i in
  for i in 1..6 loop
  denied:=false;
  begin
- if i=1 then bad:=jsonb_set(payload,array['scores',sid::text,'0'],'5');
- elsif i=2 then bad:=jsonb_set(payload,array['scores',sid::text,'0'],'0');
+ if i=1 then bad:=jsonb_set(payload,array['scores',sid::text,'0'],'4');
+ elsif i=2 then bad:=jsonb_set(payload,array['scores',sid::text,'0'],'-1');
  elsif i=3 then bad:=jsonb_set(payload,array['scores',sid::text,'0'],'2.5');
  elsif i=4 then bad:=jsonb_set(payload,array['scores',bid::text],payload->'scores'->sid::text);
  elsif i=5 then bad:=jsonb_set(payload,array['scores',gen_random_uuid()::text],payload->'scores'->sid::text);
@@ -36,10 +37,10 @@ do $$ declare rid uuid;who uuid;sid uuid;bid uuid;payload jsonb;denied bool;i in
  end loop;
  for i in 2..3 loop
  denied:=false;
- begin insert into public.pp5_primary_reading(classroom_id,data,updated_by) select room_id,jsonb_build_object('method','minimum','scores','{}'::jsonb),user_id from primary_reading_qa where n=i;
+ begin insert into public.pp5_primary_reading(classroom_id,data,updated_by) select room_id,jsonb_build_object('scale','0-3','method','minimum','scores','{}'::jsonb),user_id from primary_reading_qa where n=i;
  exception when others then denied:=true;end;
  if not denied then raise exception 'Secondary/viewer write accepted';end if;
  end loop;
 end $$;
 reset role;rollback;
-select 'PASS: primary reading save/reload, revisions, 1–4 integer bounds, blocked and foreign pupils, secondary/viewer restrictions; fixtures rolled back' as checks;
+select 'PASS: primary reading save/reload, revisions, 0–3 integer bounds, blocked and foreign pupils, secondary/viewer restrictions; fixtures rolled back' as checks;
