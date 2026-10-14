@@ -30,6 +30,8 @@
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
    $('primaryMenuDialog').showModal();
   };
-  $('closePrimaryMenu').onclick=()=>$('primaryMenuDialog').close();
+  $('closePrimaryMenu').onclick=()=>{$('primaryMenuDialog').close();const url=new URL(location.href);url.searchParams.delete('menu');history.replaceState(null,'',url)};
+  if(new URL(location.href).searchParams.get('menu')==='scores')document.querySelector('[data-primary-menu="scores"]').click();
  });
 })();
+
