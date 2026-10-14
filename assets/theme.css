@@ -44,6 +44,22 @@
 .theme-dark .suite-mobile-bar{border-color:#403847!important}
 .theme-dark .signature-preview-wrap{background:repeating-conic-gradient(#292530 0% 25%,#211e28 0% 50%) 0 0/20px 20px!important;border-color:#51465c!important}
 .theme-dark :is(.login-divider,.review-events time,.review-steps small,.role-room-meta,.role-room-teacher){color:#bdb1c8!important}
+.theme-dark :is(.cloud-room,#pp5RoomLabel){background:#392d49!important;color:#eadcf7!important;border-color:#665476!important}
+.theme-dark :is(.pp5-eyebrow,.report-drawer summary){color:#d4b6f1!important}
+.theme-dark :is(.editor-brand small,.pp5-selector small,#bookMeta,.pp5-tabs small,.report-drawer summary span,.pp5-count,.empty-steps,.pp5-form-help){color:#c4b8d0!important}
+.theme-dark #cloudSyncStatus{color:#ded2e8!important}
+.theme-dark #cloudSyncStatus.ok{color:#8ce6bd!important}
+.theme-dark #cloudSyncStatus.warn{color:#f5d191!important}
+.theme-dark #cloudSyncStatus.error{color:#ffbbcc!important}
+.theme-dark .btn:not(.primary):not(.danger){background:#302a37!important;color:#f3edf8!important;border-color:#65566f!important}
+.theme-dark .btn:not(.primary):not(.danger):hover{background:#403448!important;color:#fff!important}
+.theme-dark .btn.primary{background:#7441b5!important;color:#fff!important;border-color:#9869ce!important}
+.theme-dark .btn.primary:hover{background:#66369f!important}
+.theme-dark .btn.danger{background:#462b36!important;color:#ffbbcc!important;border-color:#92516a!important}
+.theme-dark :is(button:disabled,.btn:disabled){opacity:1!important;background:#34303a!important;color:#c5bbce!important;border-color:#65566f!important}
+.theme-dark .pp5-tabs button{background:#302a37!important;color:#e4d7ef!important;border-color:#65566f!important}
+.theme-dark .pp5-tabs button.active{background:#7441b5!important;color:#fff!important}
+.theme-dark .pp5-tabs button.active small{color:#f0e5ff!important}
 .pp5-send-button{font-weight:700!important;min-height:44px;padding-inline:20px!important;box-shadow:0 3px 10px #61329130}
 .pp5-send-button:before{content:'➤';font-size:15px;margin-right:3px}
 @media(max-width:1000px){
