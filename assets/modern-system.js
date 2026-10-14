@@ -5,7 +5,7 @@
  const clean=s=>s.replace(/^[^\p{L}\p{N}]+/u,'').trim();
  const filename=location.pathname.split('/').pop()||'index.html';
  const root=location.pathname.includes('/modules/')?'../':'';
- const labels={'index.html':'ภาพรวมชั้นเรียน','classrooms.html':'ห้องเรียน','settings.html':'ข้อมูลห้องเรียน','homeroom.html':'โฮมรูม','attendance.html':'การมาเรียน','savings.html':'ออมทรัพย์','behavior.html':'พฤติกรรม','health.html':'สุขภาพ','scholarship.html':'รับทุน','volunteer.html':'จิตอาสา','literacy.html':'อ่านออก–เขียนได้','admin.html':'บัญชีผู้ใช้','archive.html':'คลังเล่มธุรการ','signature.html':'ลายเซ็น','academic-dashboard.html':'วิชาการ','deputy-dashboard.html':'รองผู้อำนวยการ','director-dashboard.html':'ผู้อำนวยการ','review.html':'งานส่งตรวจ'};
+ const labels={'index.html':'ภาพรวมชั้นเรียน','classrooms.html':'ห้องเรียน','settings.html':'ข้อมูลห้องเรียน','homeroom.html':'โฮมรูม','attendance.html':'การมาเรียน','savings.html':'ออมทรัพย์','behavior.html':'พฤติกรรม','health.html':'สุขภาพ','scholarship.html':'รับทุน','volunteer.html':'จิตอาสา','literacy.html':'อ่านออก–เขียนได้','admin.html':'บัญชีผู้ใช้','archive.html':'คลังเล่มธุรการ','signature.html':'ลายเซ็น','academic-dashboard.html':'วิชาการ','deputy-dashboard.html':'รองผู้อำนวยการ','director-dashboard.html':'ผู้อำนวยการ','review.html':'งานส่งตรวจ','pp5-home.html':'ปพ.5 มัธยม','pp5-primary.html':'ปพ.5 ประถม'};
  const iconFor=file=>({'index.html':'home','classrooms.html':'rooms','settings.html':'settings','homeroom.html':'book','attendance.html':'attendance','savings.html':'savings','behavior.html':'behavior','health.html':'health','scholarship.html':'scholarship','volunteer.html':'volunteer','admin.html':'users','archive.html':'archive','signature.html':'pen'}[file]||'book');
  document.body.classList.add('modern-system');
  if(filename==='form.html'||filename==='review-book.html'){document.body.classList.add('suite-print-view');return}
@@ -20,7 +20,15 @@
  }
  const sidebar=document.querySelector('.sidebar');
  if(sidebar){
-   const pp5nav=sidebar.querySelector('.nav');if(pp5nav&&!pp5nav.querySelector('a[href$="pp5.html"],a[href$="pp5-home.html"]')){const a=document.createElement('a');a.href=root+'pp5-home.html';a.target='_blank';a.rel='noopener';a.textContent='ปพ.5 ผลการเรียน';pp5nav.append(a)}
+   const pp5nav=sidebar.querySelector('.nav');
+   if(pp5nav){
+    let secondary=pp5nav.querySelector('a[href$="pp5.html"],a[href$="pp5-home.html"]');
+    if(!secondary){secondary=document.createElement('a');pp5nav.append(secondary)}
+    secondary.href=root+'pp5-home.html';secondary.target='_blank';secondary.rel='noopener';secondary.textContent='ปพ.5 มัธยม';
+    let primary=pp5nav.querySelector('a[href$="pp5-primary.html"]');
+    if(!primary)primary=document.createElement('a');
+    primary.href=root+'pp5-primary.html';primary.target='_blank';primary.rel='noopener';primary.textContent='ปพ.5 ประถม';secondary.after(primary);
+   }
    sidebar.id='suiteSidebar';sidebar.setAttribute('aria-label','เมนูหลัก');
    const brand=sidebar.querySelector('.brand');if(brand)brand.innerHTML=icon('rooms')+'<div>ธุรการชั้นเรียน<small>พื้นที่ทำงานของครู</small></div>';
    sidebar.querySelectorAll('.nav a').forEach(a=>{const file=a.getAttribute('href').split('/').pop(),label=labels[file]||clean(a.textContent);a.replaceChildren();a.insertAdjacentHTML('beforeend',icon(iconFor(file)));const span=document.createElement('span');span.textContent=label;a.append(span);if(a.classList.contains('active'))a.setAttribute('aria-current','page')});
