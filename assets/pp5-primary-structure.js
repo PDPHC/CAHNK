@@ -30,6 +30,7 @@
   if(!room){location.replace('pp5-primary.html');return}
   $('structureRoom').textContent=room.class_level+'/'+room.room+' • ปีการศึกษา '+room.academic_year+' • ภาคเรียน '+room.term;
   for(const id of ['structureBack','backDashboard'])$(id).href='pp5-primary.html?classroom='+encodeURIComponent(room.id);
+  $('goPrimaryScores').href='pp5-primary.html?classroom='+encodeURIComponent(room.id)+'&menu=scores';
   const results=await Promise.all([cloudClient.from('pp5_primary_structures').select('*').eq('classroom_id',room.id).maybeSingle(),cloudClient.from('classroom_teachers').select('permission').eq('classroom_id',room.id).eq('teacher_id',cloudState.user.id).maybeSingle(),cloudClient.from('teaching_assignments').select('*,subject_catalog(*)').eq('classroom_id',room.id).eq('active',true)]);
   for(const r of results)if(r.error)throw r.error;
   canEdit=['admin','director','deputy_director'].includes(cloudState.profile?.role)||['owner','editor'].includes(results[1].data?.permission);
@@ -59,3 +60,4 @@
  });
  addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 })();
+
