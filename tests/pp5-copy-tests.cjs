@@ -22,6 +22,15 @@ const root=path.resolve(__dirname,'..'),chrome='C:/Program Files/Google/Chrome/A
    await PP5Copy.open({client,sourceId:'source',sourceRevision:4,values:{}});
   });
   await page.locator('[data-copy-apply]').click();await page.waitForFunction(()=>document.querySelector('[role=status]').textContent==='ข้อมูลเล่มเปลี่ยนแล้ว');assert.ok(await page.locator('[data-copy-apply]').isEnabled());
+  await page.locator('[data-copy-close]').click();
+  await page.evaluate(async()=>{
+   window.calls=[];window.fetch=async()=>({ok:true,json:async()=>({base64:'CLEAN-TEMPLATE'})});
+   const client={rpc:async(name,args)=>{calls.push({name,args});return name==='pp5_indicator_copy_targets'?{data:[{id:'assignment',assignment_id:'assignment',title:'ส21101',class_level:'ม.1',room:'2',revision:0}]}:{data:{revision:2}}}};
+   await PP5Copy.open({client,sourceId:'source',sourceRevision:4,values:{}});
+  });
+  assert.match(await page.locator('select option').innerText(),/สร้างเล่มเมื่อคัดลอก/);
+  await page.locator('[data-copy-apply]').click();await page.waitForFunction(()=>document.querySelector('[role=status]').textContent.includes('คัดลอกสำเร็จ'));
+  const created=await page.evaluate(()=>calls[1]);assert.equal(created.name,'pp5_copy_indicators_to_assignment');assert.equal(created.args.p_assignment,'assignment');assert.equal(created.args.p_template_base64,'CLEAN-TEMPLATE');
   console.log(JSON.stringify({passed:true,snapshotPreservesStudentData:true,extraIndicatorsCopied:8,targetRevisionChecked:true,conflictDisplayed:true,mobileDialog:true}));
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
