@@ -1,0 +1,30 @@
+const fs=require('fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ const page=await browser.newPage();await page.route('https://qa.test/**',r=>r.fulfill({contentType:'text/html',body:fs.readFileSync('pp5-primary-structure.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,'')}));await page.goto('https://qa.test/pp5-primary-structure.html?classroom=qa');
+ for(const file of ['pp5-home.css','pp5-primary.css','pp5-primary-structure.css','theme.css'])await page.addStyleTag({path:'assets/'+file});
+ await page.evaluate(()=>{
+  window.saved=null;window.conflict=false;window.permission='editor';window.cloudState={user:{id:'teacher'},profile:{role:'teacher'}};
+  window.cloudClient={from:table=>{let payload=null,update=false;const q={select:()=>q,eq:()=>q,insert:value=>{payload=value;return q},update:value=>{payload=value;update=true;return q},single:()=>q.maybeSingle(),maybeSingle:async()=>{
+   if(table==='classroom_teachers')return{data:{permission:window.permission}};
+   if(payload){if(window.conflict)return {data:null};window.saved={...payload,updated_at:new Date().toISOString()};return{data:window.saved};}
+   return{data:window.saved};
+  },then:resolve=>resolve({data:[]})};return q}};
+  window.startPP5Home=async fn=>{document.body.classList.remove('cloud-protected');await fn([{id:'qa',class_level:'ป.4',room:'1',academic_year:2569,term:1}])};
+ });
+ await page.addScriptTag({path:'assets/pp5-primary-structure.js'});await page.waitForFunction(()=>!document.getElementById('saveStructure').disabled);
+ const paste=async(selector,text)=>page.locator(selector).evaluate((el,text)=>{const event=new Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(event,'clipboardData',{value:{getData:()=>text}});el.dispatchEvent(event)},text);
+ await paste('#coursesTable input[data-field=code]', 'ที่\tรหัสวิชา\tชื่อวิชา\tประเภท\tชั่วโมง\tน้ำหนัก\tกลุ่มสาระการเรียนรู้\tครูผู้สอน\n1\tท14101\tภาษาไทย 4\tพื้นฐาน\t160\t4\tภาษาไทย\tครูทดสอบ\n2\tค14101\tคณิตศาสตร์ 4\tพื้นฐาน\t160\t4\tคณิตศาสตร์\tครูทดสอบ\n3\tว14101\tวิทยาศาสตร์ 4\tพื้นฐาน\t120\t3\tวิทยาศาสตร์และเทคโนโลยี\tครูทดสอบ');
+ assert.equal(await page.locator('#coursesTable tbody tr').count(),3);assert.equal(await page.locator('#courseHours').innerText(),'440');assert.equal(await page.locator('#courseWeight').innerText(),'11');
+ await paste('#activitiesTable input[data-field=code]', 'ก1\tแนะแนว\tกิจกรรม\t40\nก2\tลูกเสือ เนตรนารี\tกิจกรรม\t40\nก3\tชุมนุม\tกิจกรรม\t30\nก4\tกิจกรรมเพื่อสังคมและสาธารณประโยชน์\tกิจกรรม\t10');assert.equal(await page.locator('#activityHours').innerText(),'120');assert.equal(await page.locator('#ratioTotal').innerText(),'50');
+ await page.locator('#ratioCollect').fill('100');await page.locator('#saveStructure').click();assert.match(await page.locator('#structureState').innerText(),/ไม่เกิน 100/);assert.equal(await page.evaluate(()=>saved),null);await page.locator('#ratioCollect').fill('40');
+ await page.locator('#saveStructure').click();await page.waitForFunction(()=>document.getElementById('structureState').textContent.includes('บันทึกบนคลาวด์สำเร็จ'));assert.equal(await page.evaluate(()=>saved.data.courses.length),3);assert.equal(await page.evaluate(()=>saved.revision),1);
+ for(const width of [390,768,1440]){await page.setViewportSize({width,height:900});for(const dark of [false,true]){await page.evaluate(d=>document.body.classList.toggle('theme-dark',d),dark);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}}
+ await page.evaluate(()=>document.body.classList.remove('theme-dark'));await page.screenshot({path:'tests/pp5-primary-structure-qa.png',fullPage:true});
+ await page.evaluate(()=>window.conflict=true);await page.locator('#coursesTable input[data-field=name]').first().fill('ชื่อที่แก้ใหม่');await page.locator('#saveStructure').click();assert.match(await page.locator('#structureState').innerText(),/หน้าต่างอื่น/);assert.equal(await page.locator('#coursesTable input[data-field=name]').first().inputValue(),'ชื่อที่แก้ใหม่');
+ const result=await page.evaluate(()=>{let denied=false;try{PP5PrimaryStructure.validate({courses:[{code:'a',name:'b',type:'พื้นฐาน',hours:-1,weight:1}],activities:[],ratio:{collect:40,exam:10}})}catch{denied=true}return denied});assert.ok(result);
+ const snapshot=await page.evaluate(()=>saved),fromSource=await page.evaluate(()=>cloudClient.from.toString());
+ const viewer=await browser.newPage();await viewer.route('https://qa.test/**',r=>r.fulfill({contentType:'text/html',body:fs.readFileSync('pp5-primary-structure.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,'')}));await viewer.goto('https://qa.test/pp5-primary-structure.html?classroom=qa');
+ await viewer.evaluate(({snapshot,fromSource})=>{window.saved=snapshot;window.conflict=false;window.permission='viewer';window.cloudState={user:{id:'teacher'},profile:{role:'teacher'}};window.cloudClient={from:eval('('+fromSource+')')};window.startPP5Home=async fn=>{document.body.classList.remove('cloud-protected');await fn([{id:'qa',class_level:'ป.4',room:'1',academic_year:2569,term:1}])}},{snapshot,fromSource});
+ await viewer.addScriptTag({path:'assets/pp5-primary-structure.js'});await viewer.waitForFunction(()=>document.getElementById('structureState').textContent.includes('เปิดดูอย่างเดียว'));assert.ok(await viewer.locator('#saveStructure').isDisabled());assert.equal(await viewer.locator('#coursesTable tbody tr').count(),3);assert.equal(await viewer.locator('#courseHours').innerText(),'440');assert.ok(await viewer.locator('#coursesTable input').first().isDisabled());await viewer.close();
+ console.log('PASS: full Excel tables pasted, hours and weights calculated, 40:10 ratio=50, save and revision conflict preservation, invalid numbers rejected, responsive light/dark layouts');
+ }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

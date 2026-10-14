@@ -26,6 +26,7 @@
   for(const button of document.querySelectorAll('[data-primary-menu]'))button.onclick=()=>{
    const room=rooms.find(room=>room.id===$('primaryRoomSelect').value);
    if(!room){$('primaryStatus').textContent='กรุณาเลือกห้องเรียนประถมศึกษาก่อน';$('primaryRoomSelect').focus();return;}
+   if(button.dataset.primaryMenu==='structure'){location.href='pp5-primary-structure.html?classroom='+encodeURIComponent(room.id);return;}
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
    $('primaryMenuDialog').showModal();
   };
