@@ -24,14 +24,14 @@
   for(let studentRow=4;studentRow<=47;studentRow++){
    if(!sourceCalc.get('IN','C'+studentRow)&&!sourceCalc.get('IN','D'+studentRow))continue;
    const attendanceRow=studentRow+3,name=String(sourceCalc.get('IN','D'+studentRow)||'');
-   if(/[†‡]/.test(name)){printPatches['CH!DJ'+attendanceRow]='—';continue}
+   if(/[†‡]/.test(name)){printPatches['CH!DJ'+attendanceRow]='';continue}
    const statuses=[];
    for(let i=0;i<100;i++){
     const day=Number(sourceCalc.get('W1',columnName(6+i%5)+'5')||0);if(!Number.isFinite(day)||day<=0)continue;
     const date=new Date((day+Math.floor(i/5)*7-25569)*86400000).toISOString().slice(0,10);if(holidayDates.has(date))continue;
     statuses.push(String(sourceCalc.get('CH',columnName(7+i)+attendanceRow)??''));
    }
-   printPatches['CH!DJ'+attendanceRow]=PP5Calc.attendanceSummary(statuses).result;
+   printPatches['CH!DJ'+attendanceRow]=PP5Calc.attendanceSummary(statuses).result==='มส.'?'มส.':'';
   }
   const scoreCalc=new PP5Calc.Calculator(template.cells,printPatches),printColumns=['BG','BH','BI','BJ','BK','BL','BM','BN','BO','BP'];
   for(let studentRow=4;studentRow<=47;studentRow++){
@@ -50,6 +50,11 @@
    if(sourcePage.sheet==='G'){const response=await fetch('../assets/pp5-criteria-page.json?v=1');if(!response.ok)throw Error('โหลดหน้าเกณฑ์การประเมินผลไม่สำเร็จ');const reference=await response.json();const paper=document.createElement('section');paper.className='paper a4';paper.setAttribute('aria-label','กำหนดเกณฑ์การประเมินผล');const image=document.createElement('img');image.src=reference.image;image.alt='กำหนดเกณฑ์การประเมินผล ตามเอกสารของโรงเรียน';image.style.cssText='display:block;width:100%;height:100%;object-fit:contain';paper.append(image);const ratio=PP5Calc.scoreRatio((sheet,ref)=>calc.get(sheet,ref));[92.42,114.26].forEach((top,i)=>{const number=document.createElement('span');number.dataset.criteriaRatio=String(i);number.textContent=ratio?String(ratio[i]):'—';number.setAttribute('aria-label',(i?'คะแนนปลายภาค ':'คะแนนระหว่างเรียน ')+number.textContent);Object.assign(number.style,{position:'absolute',left:(322.01/reference.width*100)+'%',top:(top/reference.height*100)+'%',width:(63.26/reference.width*100)+'%',height:(21.24/reference.height*100)+'%',display:'flex',alignItems:'center',justifyContent:'center',font:'14pt Tahoma,sans-serif',color:'#000'});paper.append(number)});pages.append(paper);continue;}
    const page={...sourcePage,heights:[...sourcePage.heights],cells:[...sourcePage.cells],merges:[...sourcePage.merges]},start={B:11,C:9,E:9}[sourcePage.sheet],firstRow=Number(sourcePage.area.split(':')[0].match(/\d+/)[0]),pageStartColumn=[...sourcePage.area.split(':')[0].match(/^[A-Z]+/)[0]].reduce((n,x)=>n*26+x.charCodeAt(0)-64,0),pageColumnName=x=>columnName(pageStartColumn+x);
    if(start)page.heights=page.heights.map((height,i)=>firstRow+i>=start+lastStudent&&firstRow+i<=({B:55,C:52,E:52}[page.sheet])?0:height);
+   if(page.sheet==='A'){
+    // Give the pass/fail counts and percentages full text height instead of shrinking to narrow template rows.
+    for(const row of [25,26])page.heights[row-firstRow]=22;
+    page.merges=page.merges.map(m=>m[0]===13&&m[1]===20-firstRow?[...m.slice(0,3),24-firstRow]:m);
+   }
    if(page.sheet==='D'){
     for(const row of [28,29,30]){const text=String(calc.get('D','C'+row)||''),lines=text.split('\n').reduce((n,s)=>n+Math.max(1,Math.ceil(s.length/(row<24?65:85))),0);page.heights[row-firstRow]=Math.max(page.heights[row-firstRow],lines*17+5)}
     page.heights[26-firstRow]=38;
@@ -148,6 +153,20 @@
      // Keep the grade summary compact while giving Thai glyphs breathing room inside each row.
      Object.assign(cell.style,{fontSize:'13pt',lineHeight:'1.15',padding:'1pt 2pt',alignItems:'center',overflow:'hidden'});
      if(/^D\d+$/.test(ref)){cell.style.justifyContent='flex-start';cell.style.textAlign='left'}
+    }
+    if(page.sheet==='A'&&sheetRow>=20&&sheetRow<=26){
+     Object.assign(cell.style,{alignItems:'center',lineHeight:'1.15',padding:'2pt',fontSize:'14pt'});
+     if(['I26','M26'].includes(ref)){
+      span.textContent=typeof v==='number'&&Number.isFinite(v)?v.toFixed(2):String(v??'');
+      cell.style.width=(xs[x+2]-xs[x])+'pt';cell.style.justifyContent='center';cell.style.textAlign='center';
+      delete cell.dataset.shrink;
+     }
+     if(['I25','M25'].includes(ref))delete cell.dataset.shrink;
+     if(ref==='O20'){
+      cell.classList.remove('wrap');delete cell.dataset.shrink;
+      Object.assign(cell.style,{fontSize:'16pt',justifyContent:'center',textAlign:'center',whiteSpace:'pre-line'});
+      Object.assign(span.style,{whiteSpace:'pre-line',lineHeight:'1.2',textAlign:'center'});
+     }
     }
     if(page.sheet==='B'&&ref==='DO6'){
      // The template stores a rotated, non-wrapped heading with a manual break.
