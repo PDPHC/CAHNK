@@ -7,7 +7,7 @@
   const value=theme==='dark'?'dark':'light';document.body.classList.toggle('theme-dark',value==='dark');
   const button=document.getElementById('themeToggle');if(button){button.textContent=value==='dark'?'☀️ โหมดสว่าง':'🌙 โหมดมืด';button.setAttribute('aria-label',value==='dark'?'เปลี่ยนเป็นโหมดสว่าง':'เปลี่ยนเป็นโหมดมืด');button.title=value==='dark'?'เปลี่ยนเป็นโหมดสว่าง':'เปลี่ยนเป็นโหมดมืด'}
  };
- const addStyles=()=>{if(document.querySelector('link[data-theme-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href=(location.pathname.includes('/modules/')?'../':'')+'assets/theme.css?v=20261014-dark-contrast';link.dataset.themeStyles='true';document.head.append(link)};
+ const addStyles=()=>{if(document.querySelector('link[data-theme-styles]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href=(location.pathname.includes('/modules/')?'../':'')+'assets/theme.css?v=20261014-dark-tables';link.dataset.themeStyles='true';document.head.append(link)};
  const mount=()=>{
   if(location.pathname.endsWith('/pp5-home.html'))document.body.classList.add('pp5-home');
   if(location.pathname.endsWith('/pp5-review.html'))document.body.classList.add('pp5-review-page');

@@ -60,6 +60,14 @@
 .theme-dark .pp5-tabs button{background:#302a37!important;color:#e4d7ef!important;border-color:#65566f!important}
 .theme-dark .pp5-tabs button.active{background:#7441b5!important;color:#fff!important}
 .theme-dark .pp5-tabs button.active small{color:#f0e5ff!important}
+.theme-dark #pp5Panel .pp5-max{background:#302a37!important;color:#eee8f5!important}
+.theme-dark #pp5Panel [data-delete-indicator]{background:#462b36!important;color:#ffbbcc!important;border-color:#92516a!important}
+.theme-dark #pp5Panel .mark-date{background:#302a37!important;color:#f3edf8!important;border-color:#65566f!important}
+.theme-dark #pp5Panel .term-attendance :is(th,td).pp5-non-teaching{background:#34303a!important;color:#c5bbce!important;border-color:#65566f!important}
+.theme-dark #pp5Panel .term-attendance :is(th,td).pp5-holiday{background:#49372a!important;color:#f2cfaa!important;border-color:#8a7157!important}
+.theme-dark #pp5Panel .term-attendance .holiday-label{color:#f2cfaa!important}
+.pp5-copy-dialog{width:min(640px,94vw);max-height:90vh;overflow:auto;border:1px solid #d9cce6;border-radius:16px;padding:24px}
+.pp5-copy-dialog p{line-height:1.6}.pp5-copy-dialog label{display:grid;gap:8px}.pp5-copy-dialog .actions{margin-top:18px;flex-wrap:wrap}.pp5-copy-dialog [role=status]{min-height:1.6em}
 .pp5-send-button{font-weight:700!important;min-height:44px;padding-inline:20px!important;box-shadow:0 3px 10px #61329130}
 .pp5-send-button:before{content:'➤';font-size:15px;margin-right:3px}
 @media(max-width:1000px){
