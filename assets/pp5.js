@@ -154,6 +154,7 @@
   };
  }
  PP5Entry.enhance(panel,{book,patches,tab,value});
+ PP5Entry.lockStudentRows(panel,blockedCell);
  const departmentSelect=$('pp5Department');if(departmentSelect&&assignment)departmentSelect.disabled=true;if(departmentSelect)departmentSelect.onchange=()=>{if(!editable()||busy||assignment)return;if(centralDirty){departmentSelect.value=String(departmentIndex());message('ยังไม่บันทึกรายชื่อ','กรุณาบันทึกรายชื่อส่วนกลางก่อนเปลี่ยนกลุ่มสาระ');return}const i=Number(departmentSelect.value);if(departmentSelect.value===''||departmentSelect.value==='legacy')return;put('IN','Q17',departments[i]);applyNames();render()};
  if($('saveNames'))$('saveNames').onclick=()=>guard(saveNames);
  panel.querySelectorAll('[data-head],#centralDirector').forEach(el=>el.addEventListener('input',()=>{centralDirty=true;$('centralState').textContent=' มีชื่อที่ยังไม่บันทึก'}));

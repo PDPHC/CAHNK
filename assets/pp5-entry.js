@@ -26,5 +26,18 @@
   refresh();let timer;panel.oninput=()=>{clearTimeout(timer);timer=setTimeout(refresh,150)};panel.onchange=()=>{clearTimeout(timer);timer=setTimeout(refresh,0)};
   panel.querySelectorAll('input[type="number"]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const inputs=[...panel.querySelectorAll('input[type="number"]:not(:disabled):not([readonly])')],i=inputs.indexOf(el);inputs[i+1]?.focus();inputs[i+1]?.select()}));
  }
- window.PP5Entry={load,enhance,compactName,legend,distributeFinalScore,totalScore};
+ function lockStudentRows(panel,blockedCell){
+  for(const row of panel.querySelectorAll('tbody tr')){
+   const blocked=[...row.querySelectorAll('[data-ref],[data-final-score],[data-auto-score],[data-result]')].some(el=>{
+    if(el.dataset.ref)return blockedCell(el.dataset.sheet,el.dataset.ref);
+    if(el.dataset.result)return blockedCell('IN','E'+el.dataset.result.match(/\d+$/)?.[0]);
+    return blockedCell('F',el.dataset.finalScore||el.dataset.autoScore);
+   });
+   if(!blocked)continue;
+   row.classList.add('pp5-blocked-row');row.dataset.pasteIgnore='true';
+   row.title='ย้ายออก / ไม่มีตัวตน — ปิดการกรอกคะแนนและเวลาเรียน';
+   for(const control of row.querySelectorAll('input,select,textarea,button')){control.disabled=true;control.title=row.title;}
+  }
+ }
+ window.PP5Entry={load,enhance,compactName,legend,distributeFinalScore,totalScore,lockStudentRows};
 })();
