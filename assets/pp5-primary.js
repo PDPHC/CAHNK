@@ -12,6 +12,7 @@
    if(room){url.searchParams.set('classroom',room.id);$('primaryStatus').textContent=room.class_level+'/'+room.room+' • ปีการศึกษา '+room.academic_year+' • ภาคเรียน '+room.term;}
    else{url.searchParams.delete('classroom');$('primaryStatus').textContent=rooms.length?'เลือกห้องเรียนก่อนเปิดเมนูบันทึกข้อมูล':'ยังไม่มีห้องประถมศึกษาที่คุณมีสิทธิ์เข้าถึง';}
    history.replaceState(null,'',url);
+   const scores=document.querySelector('[data-primary-menu="scores"]');scores.href='pp5-primary-scores.html'+(room?'?classroom='+encodeURIComponent(room.id):'');
   }
   function renderRooms(){
    const selected=new URL(location.href).searchParams.get('classroom'),filtered=rooms.filter(room=>termKey(room)===$('primaryTerm').value);
@@ -23,11 +24,11 @@
   }
   $('primaryTerm').onchange=renderRooms;$('primaryRoomSelect').onchange=updateRoom;renderRooms();
   const labels={structure:'โครงสร้างรายวิชา',reading:'อ่าน คิดวิเคราะห์ เขียน',attendance1:'เวลาเรียน ภาคเรียนที่ 1',attendance2:'เวลาเรียน ภาคเรียนที่ 2',traits:'คุณลักษณะอันพึงประสงค์',scores:'กรอกคะแนนรายวิชา',activities:'กิจกรรมพัฒนาผู้เรียน',summary:'สรุปผลการเรียน'};
-  for(const button of document.querySelectorAll('[data-primary-menu]'))button.onclick=()=>{
+  for(const button of document.querySelectorAll('[data-primary-menu]'))button.onclick=event=>{
    const room=rooms.find(room=>room.id===$('primaryRoomSelect').value);
-   if(!room){$('primaryStatus').textContent='กรุณาเลือกห้องเรียนประถมศึกษาก่อน';$('primaryRoomSelect').focus();return;}
+   if(!room){event.preventDefault();$('primaryStatus').textContent='กรุณาเลือกห้องเรียนประถมศึกษาก่อน';$('primaryRoomSelect').focus();return;}
    if(button.dataset.primaryMenu==='structure'){location.href='pp5-primary-structure.html?classroom='+encodeURIComponent(room.id);return;}
-   if(button.dataset.primaryMenu==='scores'){location.href='pp5-primary-scores.html?classroom='+encodeURIComponent(room.id);return;}
+   if(button.dataset.primaryMenu==='scores')return;
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
    $('primaryMenuDialog').showModal();
   };
@@ -35,3 +36,4 @@
   if(new URL(location.href).searchParams.get('menu')==='scores')document.querySelector('[data-primary-menu="scores"]').click();
  });
 })();
+
