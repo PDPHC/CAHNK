@@ -27,6 +27,7 @@
    const room=rooms.find(room=>room.id===$('primaryRoomSelect').value);
    if(!room){$('primaryStatus').textContent='กรุณาเลือกห้องเรียนประถมศึกษาก่อน';$('primaryRoomSelect').focus();return;}
    if(button.dataset.primaryMenu==='structure'){location.href='pp5-primary-structure.html?classroom='+encodeURIComponent(room.id);return;}
+   if(button.dataset.primaryMenu==='scores'){location.href='pp5-primary-scores.html?classroom='+encodeURIComponent(room.id);return;}
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
    $('primaryMenuDialog').showModal();
   };
@@ -34,4 +35,3 @@
   if(new URL(location.href).searchParams.get('menu')==='scores')document.querySelector('[data-primary-menu="scores"]').click();
  });
 })();
-

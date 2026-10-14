@@ -30,7 +30,7 @@
   if(!room){location.replace('pp5-primary.html');return}
   $('structureRoom').textContent=room.class_level+'/'+room.room+' • ปีการศึกษา '+room.academic_year+' • ภาคเรียน '+room.term;
   for(const id of ['structureBack','backDashboard'])$(id).href='pp5-primary.html?classroom='+encodeURIComponent(room.id);
-  $('goPrimaryScores').href='pp5-primary.html?classroom='+encodeURIComponent(room.id)+'&menu=scores';
+  $('goPrimaryScores').href='pp5-primary-scores.html?classroom='+encodeURIComponent(room.id);
   const results=await Promise.all([cloudClient.from('pp5_primary_structures').select('*').eq('classroom_id',room.id).maybeSingle(),cloudClient.from('classroom_teachers').select('permission').eq('classroom_id',room.id).eq('teacher_id',cloudState.user.id).maybeSingle(),cloudClient.from('teaching_assignments').select('*,subject_catalog(*)').eq('classroom_id',room.id).eq('active',true)]);
   for(const r of results)if(r.error)throw r.error;
   canEdit=['admin','director','deputy_director'].includes(cloudState.profile?.role)||['owner','editor'].includes(results[1].data?.permission);
@@ -58,6 +58,6 @@
    if(result.error)throw result.error;if(!result.data)throw Error('ข้อมูลถูกแก้ไขจากหน้าต่างอื่น กรุณาเก็บข้อมูลที่กรอกไว้แล้วโหลดหน้าใหม่');revision=result.data.revision;data=structuredClone(result.data.data);dirty=false;render();state('บันทึกบนคลาวด์สำเร็จ '+new Date(result.data.updated_at).toLocaleString('th-TH'));
   }catch(error){state('บันทึกไม่สำเร็จ: '+(error.code==='23505'?'มีข้อมูลที่บันทึกจากหน้าต่างอื่น กรุณาเก็บข้อมูลที่กรอกไว้แล้วโหลดหน้าใหม่':error.message))}finally{busy=false;lock()}};
  });
+ $('goPrimaryScores').onclick=async e=>{if(busy){e.preventDefault();return;}if(canEdit&&(dirty||!revision)){e.preventDefault();await $('saveStructure').onclick();if(!dirty&&revision>0)location.href=$('goPrimaryScores').href;}};
  addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 })();
-
