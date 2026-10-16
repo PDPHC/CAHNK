@@ -20,4 +20,7 @@
  $('printActivities').onclick=async()=>{if(busy)return;try{await auto.flush();busy=true;lock();await load();makePrint();await document.fonts.load('14pt "PP5 TH Sarabun"');await document.fonts.ready;window.print()}catch(error){status('พิมพ์ไม่ได้: '+error.message)}finally{busy=false;lock()}};
  addEventListener('focus',()=>{if(room&&!busy)loadLinked().catch(e=>status('โหลดผลจากเมนูเดิมไม่ได้: '+e.message))});
  addEventListener('beforeprint',()=>{if(room&&!linkError)makePrint()});addEventListener('afterprint',()=>$('activitiesPrint').replaceChildren());addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+
+ // Read-only export uses this menu's existing print renderer for the whole book.
+ window.PrimaryBookSection={ready:()=>!busy&&!!room,prepare:async()=>{if(busy||!room)throw Error('ข้อมูลยังไม่พร้อม');await document.fonts.load('14pt "PP5 TH Sarabun"');await document.fonts.ready;makePrint();return {html:$('activitiesPrint').outerHTML,classes:document.body.className.replace(/cloud-protected|theme-dark/g,''),css:'assets/pp5-primary-activities.css'};}};
 })();

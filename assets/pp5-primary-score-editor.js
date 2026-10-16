@@ -56,4 +56,7 @@
  addEventListener('beforeprint',()=>{if(course&&!$('primarySemesterPrintRoot').childElementCount)PrimaryScorePrint.render($('primarySemesterPrintRoot'),{room,course,roster,data,ratio});});
  addEventListener('afterprint',()=>{$('primarySemesterPrintRoot').replaceChildren();});
  addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+
+ // Read-only export uses this menu's existing print renderer for the whole book.
+ window.PrimaryBookSection={ready:()=>!busy&&!!room,prepare:async()=>{if(busy||!room)throw Error('ข้อมูลยังไม่พร้อม');await document.fonts.load('14pt "PP5 TH Sarabun"');await document.fonts.ready;if(!course)throw Error("ไม่พบรายวิชา");M.validate(data,ratio);PrimaryScorePrint.render($("primarySemesterPrintRoot"),{room,course,roster,data,ratio});return {html:$('primarySemesterPrintRoot').outerHTML,classes:document.body.className.replace(/cloud-protected|theme-dark/g,''),css:'assets/pp5-primary-score-print.css'};}};
 })();
