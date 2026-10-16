@@ -31,6 +31,7 @@
    if(['attendance1','attendance2'].includes(button.dataset.primaryMenu)){location.href='pp5-primary-attendance.html?classroom='+encodeURIComponent(room.id)+'&term='+(button.dataset.primaryMenu==='attendance2'?2:1);return;}
    if(button.dataset.primaryMenu==='reading'){location.href='pp5-primary-reading.html?v=20261016-bulk-both&classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='traits'){location.href='pp5-primary-traits.html?v=20261016-bulk-both&classroom='+encodeURIComponent(room.id);return;}
+   if(button.dataset.primaryMenu==='activities'){location.href='pp5-primary-activities.html?classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='scores')return;
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
    $('primaryMenuDialog').showModal();
