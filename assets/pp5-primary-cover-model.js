@@ -1,0 +1,10 @@
+(()=>{'use strict';
+ const empty=()=>({version:1,transferred:{male:null,female:null},promoted:{male:0,female:0}});
+ function value(raw,nullable=false){const s=String(raw??'').trim().replace(/[๐-๙]/g,c=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(c));if(!s)return nullable?null:0;const n=Number(s);if(!Number.isInteger(n)||n<0||n>9999)throw Error('จำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0–9999');return n;}
+ const exits=s=>['transferred','not_present','resigned'].includes(s.record_status)||/ไม่มีตัวตน|ลาออก/.test(s.status_note||'')||(/ย้าย/.test(s.status_note||'')&&!/ย้ายเข้า/.test(s.status_note||''));
+ function count(rows){const male=rows.filter(s=>/^(เด็กชาย|ด\.ช\.)/.test(s.full_name.trim())).length,female=rows.filter(s=>/^(เด็กหญิง|ด\.ญ\.)/.test(s.full_name.trim())).length;return{male,female,total:rows.length,unknown:rows.length-male-female};}
+ function population(students,data){const roster=students.filter(s=>s.active||exits(s)),first=count(roster),automatic=count(roster.filter(exits)),male=data.transferred.male??automatic.male,female=data.transferred.female??automatic.female,overridden=data.transferred.male!==null||data.transferred.female!==null;return{first,automatic,transferred:{male,female,total:overridden?male+female:automatic.total},promoted:{...data.promoted,total:data.promoted.male+data.promoted.female}};}
+ function validate(data){if(!data||data.version!==1)throw Error('ข้อมูลหน้าปกไม่ถูกต้อง');for(const group of ['transferred','promoted']){if(!data[group]||typeof data[group]!=='object')throw Error('ข้อมูลจำนวนไม่ถูกต้อง');for(const key of ['male','female']){const n=data[group][key];if(n===null&&group==='transferred')continue;if(typeof n!=='number'||!Number.isInteger(n)||n<0||n>9999)throw Error('จำนวนต้องเป็นจำนวนเต็ม 0–9999');}}return data;}
+ function approvalDate(now=new Date()){const year=Number(new Intl.DateTimeFormat('en-US',{year:'numeric',timeZone:'Asia/Bangkok'}).format(now))+543;return '31 มีนาคม '+year;}
+ window.PrimaryCoverModel={empty,value,exits,count,population,validate,approvalDate};
+})();
