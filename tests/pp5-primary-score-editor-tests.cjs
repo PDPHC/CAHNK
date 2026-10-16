@@ -5,7 +5,7 @@ async function mount(browser,permission='editor',saved={}){
  await p.route('https://qa.test/**',route=>{const url=new URL(route.request().url());if(url.pathname.endsWith('.webp'))return route.fulfill({contentType:'image/webp',body:fs.readFileSync('assets/obec-emblem.webp')});return route.fulfill({contentType:'text/html; charset=utf-8',body:fs.readFileSync('pp5-primary-score-editor.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,'')});});
  await p.goto('https://qa.test/pp5-primary-score-editor.html?classroom=qa&course='+encodeURIComponent('ท14101'));
  for(const file of ['pp5-home.css','pp5-primary.css','pp5-primary-score-editor.css','pp5-primary-score-print.css','theme.css'])await p.addStyleTag({path:'assets/'+file});
- for(const file of ['student-status.js','pp5-primary-score-model.js','pp5-primary-score-print.js'])await p.addScriptTag({path:'assets/'+file});
+ for(const file of ['autosave.js','student-status.js','pp5-primary-score-model.js','pp5-primary-score-print.js'])await p.addScriptTag({path:'assets/'+file});
  await p.evaluate(({permission,saved})=>{
   window.savedByCode=saved;window.conflict=false;window.cloudState={user:{id:'teacher'},profile:{role:'teacher'}};
   window.cloudClient={from:table=>{let course,values,expected;const q={select:()=>q,eq:(field,value)=>{if(field==='course_code')course=value;if(field==='revision')expected=value;return q},order:()=>q,insert:value=>{values=value;course=value.course_code;return q},update:value=>{values=value;course=value.course_code;return q},single:()=>q.maybeSingle(),maybeSingle:async()=>{

@@ -122,11 +122,14 @@ function calculateCloseFromTarget(openDate,target){
  }
  return isoLocal(d)
 }
-function saveSettingsForm(){
+let settingsAuto=null,settingsDirty=false,settingsVersion=0;
+async function saveSettingsForm(automatic=false){
  const f=$("#settingsForm"), old=settings(), o={};
+ if(!f.checkValidity()){if(!automatic)f.reportValidity();throw Error('กรุณากรอกข้อมูลห้องเรียนให้ถูกต้องครบถ้วน')}
+ const version=settingsVersion;
  new FormData(f).forEach((v,k)=>o[k]=v);
  o.useThaiHolidays=!!f.elements.useThaiHolidays?.checked;
- set("settings",{...old,...o}); window.cloudSaveSettings?.(); renderTermSummary(); alert("บันทึกข้อมูลห้องเรียนและภาคเรียนแล้ว");
+ set("settings",{...old,...o});await window.cloudSaveSettings?.({throwOnError:true});settingsDirty=settingsVersion!==version;renderTermSummary();
 }
 function calculateTargetClose(){
  const f=$("#settingsForm"), open=f.elements.openDate.value, target=Number(f.elements.targetDays.value||100);
@@ -134,7 +137,7 @@ function calculateTargetClose(){
  set("settings",{...temp,openDate:open,closeDate:"2099-12-31",useThaiHolidays:!!f.elements.useThaiHolidays.checked});
  const end=calculateCloseFromTarget(open,target);
  set("settings",original);
- if(end){f.elements.closeDate.value=end;renderTermSummaryFromForm()}
+ if(end){f.elements.closeDate.value=end;renderTermSummaryFromForm();settingsDirty=true;settingsVersion++;settingsAuto?.schedule()}
 }
 function renderTermSummaryFromForm(){
  const f=$("#settingsForm");if(!f)return;
@@ -175,6 +178,10 @@ function initSettings(){
  f.elements.targetDays?.addEventListener("change",()=>{const n=Number(f.elements.targetDays.value||0);f.elements.targetWeeks.value=n?(n/5).toFixed(n%5?1:0):"";renderTermSummaryFromForm()});
  f.elements.targetWeeks?.addEventListener("change",()=>{const n=Number(f.elements.targetWeeks.value||0);f.elements.targetDays.value=n?Math.round(n*5):"";renderTermSummaryFromForm()});
  f.elements.useThaiHolidays?.addEventListener("change",renderTermSummaryFromForm);
+ f.onsubmit=e=>{e.preventDefault();settingsAuto.flush(true).catch(()=>{})};settingsAuto=HNKAutoSave.create({isDirty:()=>settingsDirty,canSave:()=>!!window.cloudState?.bootstrapped&&cloudState.permission!=='viewer',save:()=>saveSettingsForm(true),onState:text=>{const el=document.getElementById('cloudSyncStatus');if(el)el.textContent=text}});
+ f.addEventListener('input',()=>{settingsDirty=true;settingsVersion++;settingsAuto.schedule()});f.addEventListener('change',()=>{settingsDirty=true;settingsVersion++;settingsAuto.schedule()});
+ const button=f.querySelector('[onclick*="saveSettingsForm"]')||document.querySelector('[onclick*="saveSettingsForm"]');if(button)button.onclick=()=>settingsAuto.flush(true).catch(()=>{});
+ addEventListener('beforeunload',e=>{if(settingsDirty){e.preventDefault();e.returnValue=''}});
  renderRoster();renderHolidayList();renderTermSummary();
 }
 function renderHolidayList(){

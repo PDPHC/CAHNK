@@ -18,7 +18,8 @@
  window.PP5PrimaryStructure={grid,validate,sum};
  let data={courses:[],activities:[],ratio:{collect:40,exam:10}},revision=0,room=null,canEdit=false,dirty=false,busy=false;
  const state=text=>$('structureState').textContent=text;
- function mark(){dirty=true;state('มีการแก้ไขที่ยังไม่บันทึก');totals()}
+ const auto=HNKAutoSave.create({isDirty:()=>dirty,canSave:()=>!busy&&canEdit&&!!room,save:()=>window.savePrimaryStructureNow(true),onState:state});
+ function mark(){auto.schedule();dirty=true;state('มีการแก้ไขที่ยังไม่บันทึก');totals()}
  function totals(){for(const [id,group,key] of [['courseHours','courses','hours'],['courseWeight','courses','weight'],['activityHours','activities','hours']])$(id).textContent=sum(data[group],key);$('courseHours').textContent=Math.round((sum(data.courses,'hours')+sum(data.activities,'hours'))*10000)/10000;$('courseHours').title='รวมชั่วโมงรายวิชาและกิจกรรมพัฒนาผู้เรียน';$('ratioText').textContent=(data.ratio.collect===''?'—':data.ratio.collect)+' : '+(data.ratio.exam===''?'—':data.ratio.exam);$('ratioTotal').textContent=Math.round(((Number(data.ratio.collect)||0)+(Number(data.ratio.exam)||0))*10000)/10000;}
  function lock(){document.querySelectorAll('.structure-panel input,.structure-panel select,.structure-panel button,#saveStructure').forEach(el=>el.disabled=!canEdit||busy)}
  function render(){
@@ -36,7 +37,7 @@
   canEdit=['admin','director','deputy_director'].includes(cloudState.profile?.role)||['owner','editor'].includes(results[1].data?.permission);
   const saved=results[0].data;
   if(saved){data=structuredClone(saved.data);revision=saved.revision;state('บันทึกล่าสุด '+new Date(saved.updated_at).toLocaleString('th-TH')+(!canEdit?' • เปิดดูอย่างเดียว':''));}
-  else{const departments=[...$('departments').options].map(o=>o.value);data.courses=results[2].data.filter(a=>a.subject_catalog?.active).map(a=>({code:a.subject_catalog.code,name:a.subject_catalog.name,type:'พื้นฐาน',hours:Number(a.subject_catalog.total_hours??Number(a.subject_catalog.weekly_hours)*40)||0,weight:Number(a.subject_catalog.credits)||0,department:departments[a.subject_catalog.department]||'',teacher:a.teacher_name||''}));if(!data.courses.length)data.courses.push(blank('courses'));data.activities.push(blank('activities'));state(canEdit?'เล่มใหม่ — กำหนดข้อมูลแล้วกดบันทึกบนคลาวด์':'ยังไม่มีโครงสร้างรายวิชาที่บันทึกไว้ • เปิดดูอย่างเดียว');}
+  else{const departments=[...$('departments').options].map(o=>o.value);data.courses=results[2].data.filter(a=>a.subject_catalog?.active).map(a=>({code:a.subject_catalog.code,name:a.subject_catalog.name,type:'พื้นฐาน',hours:Number(a.subject_catalog.total_hours??Number(a.subject_catalog.weekly_hours)*40)||0,weight:Number(a.subject_catalog.credits)||0,department:departments[a.subject_catalog.department]||'',teacher:a.teacher_name||''}));if(!data.courses.length)data.courses.push(blank('courses'));data.activities.push(blank('activities'));state(canEdit?'เล่มใหม่ — บันทึกอัตโนมัติเมื่อกรอกข้อมูลครบ':'ยังไม่มีโครงสร้างรายวิชาที่บันทึกไว้ • เปิดดูอย่างเดียว');}
   render();
   for(const group of Object.keys(fields)){
    const table=$(group+'Table');table.addEventListener('input',e=>{if(!canEdit||busy||!e.target.dataset.field)return;const row=data[group][Number(e.target.closest('tr').dataset.row)],k=e.target.dataset.field;row[k]=['hours','weight'].includes(k)?(e.target.value===''?'':Number(e.target.value)):e.target.value;mark()});table.addEventListener('change',e=>{if(e.target.tagName==='SELECT')e.target.dispatchEvent(new Event('input',{bubbles:true}))});
@@ -45,19 +46,21 @@
     const control=e.target.closest('[data-field]');if(!control||!canEdit||busy)return;const text=e.clipboardData?.getData('text/plain')||'';if(!/[\t\r\n]/.test(text))return;e.preventDefault();
     try{const rows=grid(text),next=structuredClone(data[group]);let index=Number(control.closest('tr').dataset.row),start=fields[group].indexOf(control.dataset.field);let changed=0;
      for(let cells of rows){if(cells.some(v=>/^(รหัสวิชา|รหัสกิจกรรม|ชื่อวิชา|ชื่อกิจกรรม)$/.test(v.trim()))||cells.some(v=>/^รวมเวลาเรียน/.test(v.trim())))continue;if(start===0&&cells.length===fields[group].length+1&&/^\d+$/.test(cells[0].trim()))cells=cells.slice(1);if(index>=100)throw Error('รองรับไม่เกิน 100 แถว');if(cells.length>fields[group].length-start)throw Error('จำนวนคอลัมน์ไม่ตรง กรุณาวางเริ่มที่รหัสวิชาหรือรหัสกิจกรรม');next[index]??=blank(group);cells.forEach((v,i)=>{const k=fields[group][start+i];if(['hours','weight'].includes(k)){const raw=v.trim().replace(/,/g,''),n=raw===''?'':Number(raw);if(raw!==''&&(!Number.isFinite(n)||n<0||n>10000))throw Error('ชั่วโมงหรือน้ำหนักไม่ถูกต้อง');next[index][k]=n;}else if(k==='type'&&group==='courses'&&!['พื้นฐาน','เพิ่มเติม'].includes(v.trim()))throw Error('ประเภทวิชาต้องเป็น พื้นฐาน หรือ เพิ่มเติม');else next[index][k]=v.trim();changed++});index++;}
-     data[group]=next;mark();render();state('วางข้อมูลจาก Excel แล้ว '+changed+' ช่อง — ยังไม่บันทึก');
+     data[group]=next;mark();render();state('วางข้อมูลจาก Excel แล้ว '+changed+' ช่อง — รอบันทึกอัตโนมัติ');
     }catch(error){state(error.message)}
    });
   }
   document.querySelectorAll('[data-add]').forEach(button=>button.onclick=()=>{if(!canEdit||busy)return;const group=button.dataset.add;if(data[group].length>=100)return state('รองรับไม่เกิน 100 แถว');data[group].push(blank(group));mark();render();$(group+'Table').querySelector('tbody tr:last-child input')?.focus()});
   for(const [id,key] of [['ratioCollect','collect'],['ratioExam','exam']])$(id).oninput=e=>{if(!canEdit||busy)return;data.ratio[key]=e.target.value===''?'':Number(e.target.value);mark()};
-  $('saveStructure').onclick=async()=>{if(!canEdit||busy)return;try{
+  async function saveStructure(automatic=false){if(!canEdit||busy)throw Error('ยังไม่พร้อมบันทึก');try{
    const payload=structuredClone(data);for(const group of Object.keys(fields)){payload[group]=payload[group].filter(row=>row.code||row.name||Number(row.hours)||Number(row.weight)||row.department||row.teacher);for(const row of payload[group]){row.code=row.code.trim();row.name=row.name.trim();}}validate(payload);
    busy=true;lock();state('กำลังบันทึก…');const values={classroom_id:room.id,data:payload,revision:revision+1,updated_by:cloudState.user.id};
    const result=revision?await cloudClient.from('pp5_primary_structures').update(values).eq('classroom_id',room.id).eq('revision',revision).select('*').maybeSingle():await cloudClient.from('pp5_primary_structures').insert(values).select('*').single();
-   if(result.error)throw result.error;if(!result.data)throw Error('ข้อมูลถูกแก้ไขจากหน้าต่างอื่น กรุณาเก็บข้อมูลที่กรอกไว้แล้วโหลดหน้าใหม่');revision=result.data.revision;data=structuredClone(result.data.data);dirty=false;render();state('บันทึกบนคลาวด์สำเร็จ '+new Date(result.data.updated_at).toLocaleString('th-TH'));
-  }catch(error){state('บันทึกไม่สำเร็จ: '+(error.code==='23505'?'มีข้อมูลที่บันทึกจากหน้าต่างอื่น กรุณาเก็บข้อมูลที่กรอกไว้แล้วโหลดหน้าใหม่':error.message))}finally{busy=false;lock()}};
+   if(result.error)throw result.error;if(!result.data)throw Error('ข้อมูลถูกแก้ไขจากหน้าต่างอื่น กรุณาเก็บข้อมูลที่กรอกไว้แล้วโหลดหน้าใหม่');revision=result.data.revision;if(!automatic)data=structuredClone(result.data.data);dirty=false;if(!automatic)render();state('บันทึกบนคลาวด์สำเร็จ '+new Date(result.data.updated_at).toLocaleString('th-TH'));
+  }finally{busy=false;lock()}};
+  window.savePrimaryStructureNow=saveStructure;
+  $('saveStructure').onclick=async()=>{try{await auto.flush(true);}catch{}};
  });
- $('goPrimaryScores').onclick=async e=>{if(busy){e.preventDefault();return;}if(canEdit&&(dirty||!revision)){e.preventDefault();await $('saveStructure').onclick();if(!dirty&&revision>0)location.href=$('goPrimaryScores').href;}};
+ $('goPrimaryScores').onclick=async e=>{if(!revision&&!dirty){e.preventDefault();try{await auto.flush(true);location.href=$('goPrimaryScores').href;}catch{}}};
  addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 })();

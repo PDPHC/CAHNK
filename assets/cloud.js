@@ -180,16 +180,17 @@
     if(error){syncStatus("บันทึกไม่สำเร็จ","error");throw error}
     syncStatus("บันทึกบน Cloud แล้ว","ok");
   }
-  const saveChains=new Map(),saveErrors=new Map();
+  const saveChains=new Map(),saveErrors=new Map(),latestModuleData=new Map();let activeModuleSaves=0;
   function runModuleSave(name,data){
     const previous=saveChains.get(name)||Promise.resolve();
-    const job=previous.catch(()=>{}).then(()=>saveModuleNow(name,data)).then(()=>{saveErrors.delete(name)},e=>{saveErrors.set(name,e);throw e});
+    activeModuleSaves++;
+    const job=previous.catch(()=>{}).then(()=>saveModuleNow(name,data)).then(()=>{saveErrors.delete(name)},e=>{saveErrors.set(name,e);throw e}).finally(()=>{activeModuleSaves--});
     saveChains.set(name,job);job.catch(()=>{});return job;
   }
   window.cloudQueueModuleSave=(name,data)=>{
     if(!state.bootstrapped||!state.classroom?.id)return;
     const old=state.pending.get(name);if(old?.timer)clearTimeout(old.timer);
-    const item={data,timer:null};
+    const item={data:structuredClone(data),timer:null};latestModuleData.set(name,item.data);
     item.timer=setTimeout(async()=>{
       state.pending.delete(name);
       try{await runModuleSave(name,item.data)}catch(e){console.error(e)}
@@ -197,17 +198,20 @@
     state.pending.set(name,item);
   };
   window.cloudFlushPending=async()=>{
+    for(const name of saveErrors.keys())if(!state.pending.has(name))runModuleSave(name,latestModuleData.get(name));
+    do{
     for(const [name,item] of state.pending.entries()){
       if(item.timer)clearTimeout(item.timer);
       runModuleSave(name,item.data);
     }
     state.pending.clear();
     await Promise.allSettled(Array.from(saveChains.values()));
+    }while(state.pending.size||activeModuleSaves);
     if(saveErrors.size)throw new Error("ยังมีข้อมูลบันทึกบนคลาวด์ไม่สำเร็จ กรุณาบันทึกข้อมูลใหม่ก่อนส่ง");
   };
   window.cloudSaveHomeroomTimes=data=>window.cloudQueueModuleSave?.("homeroom_times",data||{});
 
-  window.cloudSaveSettings=async()=>{
+  window.cloudSaveSettings=async({throwOnError=false}={})=>{
     if(!state.bootstrapped||!state.classroom?.id||typeof window.settings!=="function")return;
     const s=window.settings(),hs=typeof window.holidays==="function"?window.holidays():[];
     syncStatus("กำลังบันทึก...","saving");
@@ -219,7 +223,7 @@
       use_thai_holidays:s.useThaiHolidays!==false&&s.useThaiHolidays!=="false",holidays:hs||[],updated_at:new Date().toISOString()
     };
     const {data,error}=await sb.from("classrooms").update(payload).eq("id",state.classroom.id).select().single();
-    if(error){syncStatus("บันทึกไม่สำเร็จ","error");alert("บันทึกบน Cloud ไม่สำเร็จ: "+error.message);return}
+    if(error){syncStatus("บันทึกไม่สำเร็จ: "+error.message,"error");if(throwOnError)throw error;return}
     state.classroom=data;syncStatus("บันทึกบน Cloud แล้ว","ok");
   };
 
@@ -281,12 +285,15 @@
   }
   function installFlushNavigation(){
     document.addEventListener("click",async e=>{
-      const a=e.target.closest("a[href]");if(!a||!state.pending.size)return;
+      const a=e.target.closest("a[href]");if(!a||e.defaultPrevented||e.ctrlKey||e.metaKey||e.shiftKey||a.download||(!state.pending.size&&!activeModuleSaves&&!saveErrors.size))return;
       const href=a.getAttribute("href");
-      if(!href||href.startsWith("#")||href.startsWith("http")||a.target==="_blank")return;
+      if(!href||href.startsWith("#")||new URL(a.href,location.href).origin!==location.origin||a.target==="_blank")return;
       e.preventDefault();
-      try{await window.cloudFlushPending()}finally{location.href=href}
+      try{await window.cloudFlushPending();location.href=href}catch(error){syncStatus(error.message+" • ยังไม่เปลี่ยนหน้าเพื่อป้องกันข้อมูลสูญหาย","error")}
     });
+    window.addEventListener('beforeunload',e=>{if(state.pending.size||activeModuleSaves||saveErrors.size){e.preventDefault();e.returnValue=''}});
+    window.addEventListener('online',()=>{window.cloudFlushPending().catch(()=>{})});
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')window.cloudFlushPending().catch(()=>{})});
   }
 
   window.startPP5Home=async initFn=>{try{if(!await getSessionUser()){go('login.html');return}await loadProfile();const rooms=await listClassrooms();showBody();await initFn(rooms)}catch(e){fatal(e.message||String(e))}};
@@ -462,7 +469,7 @@
     document.getElementById("loginPassword")?.addEventListener("keydown",e=>{if(e.key==="Enter")window.cloudLogin()});
   };
   window.cloudLogout=async()=>{
-    try{await window.cloudFlushPending?.()}catch{}
+    try{await window.HNKAutoSave?.flushAll();await window.cloudFlushPending?.()}catch(error){syncStatus('ยังออกจากระบบไม่ได้: '+error.message,'error');return}
     await sb.auth.signOut();localStorage.removeItem(ACTIVE_KEY);
     Object.keys(localStorage).forEach(k=>{if(k.startsWith("hnk_admin_v3_")||k.startsWith("hnk_admin_v2_"))localStorage.removeItem(k)});
     go("login.html");
