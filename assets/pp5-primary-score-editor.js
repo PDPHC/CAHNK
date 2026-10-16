@@ -50,7 +50,7 @@
    const structure=results[1].data?.data;if(!structure?.courses.some(c=>c.code===course.code))throw Error('รายวิชาถูกเปลี่ยนในโครงสร้าง กรุณาเปิดวิชาใหม่');
    if(results[0].data){data=structuredClone(results[0].data.data);revision=results[0].data.revision;}
    course=structure.courses.find(c=>c.code===course.code);ratio={collect:Number(structure.ratio.collect),exam:Number(structure.ratio.exam)};roster=results[2].data.filter(s=>s.active||blocked(s));render();
-   PrimaryScorePrint.render($('primarySemesterPrintRoot'),{room,course,roster,data,ratio});await Promise.all([...$('primarySemesterPrintRoot').querySelectorAll('img')].map(img=>img.decode()));window.print();
+   await document.fonts.load('13pt "PP5 TH Sarabun"');await document.fonts.ready;PrimaryScorePrint.render($('primarySemesterPrintRoot'),{room,course,roster,data,ratio});await Promise.all([...$('primarySemesterPrintRoot').querySelectorAll('img')].map(img=>img.decode()));window.print();
   }catch(error){status('พิมพ์ไม่ได้: '+error.message);}finally{busy=false;lock();}};
  });
  addEventListener('beforeprint',()=>{if(course&&!$('primarySemesterPrintRoot').childElementCount)PrimaryScorePrint.render($('primarySemesterPrintRoot'),{room,course,roster,data,ratio});});
