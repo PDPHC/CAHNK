@@ -15,7 +15,7 @@
  .reading-print-page thead tr:first-child th{height:8mm}
  .reading-print-page tbody td{height:6mm}
  .reading-print-page .print-name{text-align:left;padding-inline:.6mm;overflow-wrap:anywhere}
- .reading-print-page .print-vertical{height:38mm;vertical-align:bottom}
+ .reading-print-page .print-vertical{height:38mm;vertical-align:middle}
  .print-vertical span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:1.2mm 0;font-size:13pt}
  .reading-print-page tr{break-inside:avoid}
  .primary-reading.primary-workspace .reading-print-root .reading-blocked td{background:#ddd!important;color:#555!important}
