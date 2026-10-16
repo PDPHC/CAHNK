@@ -7,3 +7,22 @@
 #attendanceTable .attendance-date-labels{display:flex;align-items:center;justify-content:center;gap:8px;min-height:180px}#attendanceTable .date-heading .attendance-holiday-name{font-size:12px;line-height:1.6;white-space:normal;max-height:180px;max-width:66px;overflow-wrap:anywhere}#attendanceTable .attendance-check-day{display:block;font-size:11px;line-height:1.3;min-height:44px;width:100%;padding:5px 2px;margin-top:5px;border-color:#bd9dd6;background:#f1e7fa;color:#65348b;border-radius:8px}.primary-attendance.theme-dark #attendanceTable .attendance-check-day{background:#493258;color:#f3e3ff;border-color:#a381bb}@media print{.attendance-print-page .attendance-print-holidays{font:normal 12pt/1.1 "PP5 TH Sarabun",serif;margin:2mm 0 0}.attendance-print-page .print-date{height:28mm}.attendance-print-page table{line-height:1}}
 
 #attendanceTable .attendance-holiday-merged{text-align:center;vertical-align:middle;padding:12px 8px}#attendanceTable .attendance-holiday-label{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;font-size:14px;font-weight:600;line-height:1.8}.primary-attendance #attendanceTable .attendance-blocked .attendance-holiday-merged{background:#fff0b2!important;color:#725817!important}.primary-attendance.theme-dark #attendanceTable .attendance-blocked .attendance-holiday-merged{background:#504325!important;color:#ffe5a0!important}
+
+@page{size:A4 portrait;margin:18mm 12mm}@media print{
+ .primary-attendance .attendance-print-page{width:186mm;break-inside:avoid;break-after:page}
+ .primary-attendance .attendance-print-page:last-child{break-after:auto}
+ .primary-attendance .attendance-print-page+.attendance-print-page{break-before:page}
+ .attendance-print-page h2{font:normal 17pt/1.3 "PP5 TH Sarabun",serif;margin:0 0 5mm;text-align:center}
+ .attendance-print-page table{width:186mm;font:normal 12pt/1.1 "PP5 TH Sarabun",serif}
+ .attendance-print-page :is(th,td){padding:.5mm .15mm}
+ .attendance-print-page tbody td{height:6.5mm}
+ .attendance-print-page .print-name{font-size:11.5pt;padding-inline:.5mm}
+ .attendance-print-page .print-date{height:26mm;font-size:10pt}
+ .attendance-print-page thead tr:nth-child(2) th{height:6mm;font-size:10.5pt}
+ .primary-attendance.primary-workspace .attendance-print-root .attendance-outside{background:#f0f0f0!important}
+ .primary-attendance.primary-workspace .attendance-print-root .weekend{background:#ff3030!important}
+ .primary-attendance.primary-workspace .attendance-print-root .holiday{background:#ffff00!important}
+ .attendance-print-page .attendance-print-holidays,.attendance-print-page .attendance-print-note{font:normal 11pt/1.1 "PP5 TH Sarabun",serif;margin:2mm 0 0}
+ .attendance-print-summary table{width:160mm;margin-inline:auto}
+ .attendance-print-summary .summary-title{height:26mm;font-size:15pt}
+}
