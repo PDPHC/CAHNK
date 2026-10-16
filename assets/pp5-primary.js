@@ -28,6 +28,7 @@
    const room=rooms.find(room=>room.id===$('primaryRoomSelect').value);
    if(!room){event.preventDefault();$('primaryStatus').textContent='กรุณาเลือกห้องเรียนประถมศึกษาก่อน';$('primaryRoomSelect').focus();return;}
    if(button.dataset.primaryMenu==='structure'){location.href='pp5-primary-structure.html?classroom='+encodeURIComponent(room.id);return;}
+   if(button.dataset.primaryMenu==='attendance1'){location.href='pp5-primary-attendance.html?classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='reading'){location.href='pp5-primary-reading.html?classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='scores')return;
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;

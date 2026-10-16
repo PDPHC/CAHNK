@@ -1,0 +1,10 @@
+(()=>{'use strict';
+ const parse=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s||''))throw Error('กรุณาเลือกวันที่ให้ถูกต้อง');const d=new Date(s+'T00:00:00Z');if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==s)throw Error('วันที่ไม่ถูกต้อง');return d;};
+ function calendar(start,holidays=[]){const d=parse(start),map=new Map(holidays.map(h=>[h.date,h.name])),days=[];let count=0;while(count<100){if(days.length>=400)throw Error('วันหยุดมากเกินไป ไม่สามารถจัด 100 วันเรียนได้');const date=d.toISOString().slice(0,10),wd=d.getUTCDay(),weekend=wd===0||wd===6,holiday=map.get(date)||'',off=weekend||!!holiday;days.push({date,wd,weekend,holiday,off,number:off?null:++count});d.setUTCDate(d.getUTCDate()+1);}return days;}
+ const symbols={'/':'มา','ป':'ป่วย','ล':'ลา','ข':'ขาด'};
+ function mark(raw){const v=String(raw??'').trim();if(!v)return '';if(!Object.hasOwn(symbols,v))throw Error('ใช้ / มา, ป ป่วย, ล ลา หรือ ข ขาด');return v;}
+ function summary(marks={}){const r={present:0,sick:0,leave:0,absent:0,filled:0,percent:'0.00'};for(const v of Object.values(marks)){const key={'/':'present','ป':'sick','ล':'leave','ข':'absent'}[v];if(key){r[key]++;r.filled++;}}r.percent=(r.present/100*100).toFixed(2);return r;}
+ function validate(data){if(data?.version!==1||!Array.isArray(data.holidays)||data.holidays.length>400||!data.marks||typeof data.marks!=='object'||Array.isArray(data.marks))throw Error('ข้อมูลเวลาเรียนไม่ถูกต้อง');for(const h of data.holidays){parse(h.date);if(typeof h.name!=='string'||!h.name.trim()||h.name.length>500)throw Error('ข้อมูลวันหยุดไม่ถูกต้อง');}const dates=new Set(calendar(data.start,data.holidays).filter(d=>!d.off).map(d=>d.date));for(const marks of Object.values(data.marks)){if(!marks||typeof marks!=='object'||Array.isArray(marks))throw Error('ข้อมูลการมาเรียนไม่ถูกต้อง');for(const [date,value] of Object.entries(marks)){if(!dates.has(date)||mark(value)!==value||!value)throw Error('บันทึกได้เฉพาะวันเรียนและสถานะที่กำหนด');}}}
+ const empty=()=>({version:1,start:'',holidays:[],marks:{}});
+ window.PrimaryAttendanceModel={parse,calendar,mark,summary,symbols,validate,empty};
+})();
