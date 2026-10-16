@@ -1,6 +1,6 @@
 create table public.pp5_primary_attendance (
  classroom_id uuid not null references public.classrooms(id) on delete cascade,
- term int not null check(term=1),
+ term int not null check(term in (1,2)),
  data jsonb not null,
  revision int not null default 1 check(revision>0),
  updated_by uuid not null references auth.users(id),

@@ -31,6 +31,9 @@ do $$ declare rid uuid;who uuid;sid uuid;bid uuid;aid uuid;payload jsonb;bad jso
  exception when others then denied:=true;end;if not denied then raise exception 'Expected rejection %',i;end if;end loop;
  for i in 2..3 loop denied:=false;begin insert into public.pp5_primary_attendance(classroom_id,term,data,updated_by) select room_id,1,jsonb_build_object('version',1,'start','2026-05-18','holidays','[]'::jsonb,'marks','{}'::jsonb),user_id from attendance_qa where n=i;
  exception when others then denied:=true;end;if not denied then raise exception 'Secondary/viewer write accepted';end if;end loop;
+insert into public.pp5_primary_attendance(classroom_id,term,data,updated_by) values(rid,2,jsonb_build_object('version',1,'start','2026-11-01','holidays',jsonb_build_array(jsonb_build_object('date','2027-01-01','name','New Year')),'marks',jsonb_build_object(sid::text,jsonb_build_object('2026-11-02','ป'))),who);
+ if not exists(select 1 from public.pp5_primary_attendance where classroom_id=rid and term=1 and data=payload and revision=2) then raise exception 'Term 1 was changed by term 2';end if;
+ if not exists(select 1 from public.pp5_primary_attendance where classroom_id=rid and term=2 and revision=1) then raise exception 'Term 2 missing';end if;
 end $$;
 reset role;rollback;
 select 'PASS: primary attendance save/reload, revisions, symbols, holidays/weekends/outside 100 days, transferred/not-present/foreign pupil, secondary/viewer restrictions; fixtures rolled back' as checks;
