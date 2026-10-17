@@ -33,6 +33,7 @@
    if(button.dataset.primaryMenu==='traits'){location.href='pp5-primary-traits.html?v=20261016-bulk-both&classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='activities'){location.href='pp5-primary-activities.html?v=20261016-pass-all&classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='summary'){location.href='pp5-primary-summary.html?classroom='+encodeURIComponent(room.id);return;}
+   if(button.dataset.primaryMenu==='printpp6'){location.href='pp6-primary.html?classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='printbook'){location.href='pp5-primary-book-print.html?classroom='+encodeURIComponent(room.id);return;}
    if(button.dataset.primaryMenu==='scores')return;
    $('primaryMenuTitle').textContent=labels[button.dataset.primaryMenu];$('primaryMenuRoom').textContent=room.class_level+'/'+room.room;
