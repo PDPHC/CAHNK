@@ -11,7 +11,7 @@
    const room=rooms.find(room=>room.id===$('primaryRoomSelect').value),url=new URL(location.href);
    if(room){url.searchParams.set('classroom',room.id);$('primaryStatus').textContent=room.class_level+'/'+room.room+' • ปีการศึกษา '+room.academic_year+' • ภาคเรียน '+room.term;}
    else{url.searchParams.delete('classroom');$('primaryStatus').textContent=rooms.length?'เลือกห้องเรียนก่อนเปิดเมนูบันทึกข้อมูล':'ยังไม่มีห้องประถมศึกษาที่คุณมีสิทธิ์เข้าถึง';}
-   history.replaceState(null,'',url);
+   history.replaceState(null,'',url);window.HNKEntryWindows?.use(room);
    const scores=document.querySelector('[data-primary-menu="scores"]');scores.href='pp5-primary-scores.html'+(room?'?classroom='+encodeURIComponent(room.id):'');
   }
   function renderRooms(){

@@ -23,11 +23,13 @@
  async function freshNames(){if(workflowLocked())return;if(centralDirty)throw Error('กรุณาบันทึกรายชื่อส่วนกลางก่อนส่งออก');await loadNames();applyNames()}
  async function saveNames(automatic=false){if(!manageNames())throw Error('ไม่มีสิทธิ์แก้ไขรายชื่อส่วนกลาง');const director=$('centralDirector').value.trim(),heads=Array.from(document.querySelectorAll('[data-head]'),el=>el.value.trim());if(heads.length!==8)throw Error('รายชื่อไม่ครบ 8 ช่อง');const {data,error}=await cloudClient.from('school_signatories').update({director_name:director,department_heads:heads,revision:signatories.revision+1,updated_at:new Date().toISOString()}).eq('id',1).eq('revision',signatories.revision).select('*').maybeSingle();if(error)throw error;if(!data)throw Error('รายชื่อถูกแก้ไขจากหน้าต่างอื่น กรุณาจดชื่อที่กรอกไว้แล้วรีเฟรชหน้า');signatories=data;centralDirty=false;applyNames();if(!automatic)render();status('บันทึกรายชื่อส่วนกลางแล้ว — ทุกห้องใช้รายชื่อชุดนี้')}
  const columns=['E','F','G','H','I','J'],names=['ก่อนกลางภาค','กลางภาค','แก้','หลังกลางภาค','ชิ้นงาน','ปลายภาค'];
- const editable=()=>!workflowLocked()&&['owner','editor'].includes(window.cloudState?.permission);
+ const permissionEditable=()=>!workflowLocked()&&['owner','editor'].includes(window.cloudState?.permission);
+ const editable=()=>permissionEditable()&&(window.HNKEntryWindows?.termOpen(cloudState.classroom?.term)??true);
+ addEventListener('hnk:entry-access',()=>{if(book)lock(busy);});
  const value=(s,r)=>book.value(s,r,patches);
  const message=(title,text)=>{$('dialogTitle').textContent=title;$('dialogMessage').textContent=text;$('pp5Dialog').showModal()};
  function status(text){$('pp5Status').textContent=text}
- const auto=HNKAutoSave.create({isDirty:()=>dirty||centralDirty,canSave:()=>!busy&&!!record&&!!book&&(editable()||centralDirty&&manageNames()),save:async()=>{lock(true);try{if(centralDirty)await saveNames(true);if(dirty)await save(true);}finally{lock(false);}},onState:text=>{$('saveState').textContent=text}});
+ const auto=HNKAutoSave.create({isDirty:()=>dirty||centralDirty,canSave:()=>!busy&&!!record&&!!book&&(permissionEditable()||centralDirty&&manageNames()),save:async()=>{lock(true);try{if(centralDirty)await saveNames(true);if(dirty)await save(true);}finally{lock(false);}},onState:text=>{$('saveState').textContent=text}});
  function mark(){auto.schedule();dirty=true;$('saveState').textContent='มีการแก้ไขที่ยังไม่บันทึก';updateHeading()}
  function syncIndicatorLimits(){if(!book)return;const scores=PP5Tables.indicatorScore(value,patches),next={E:scores.byCategory.O,F:scores.byCategory.P,G:scores.byCategory.P,H:scores.byCategory.Q,I:PP5Tables.practiceScore(value).max,J:scores.byCategory.R};let changed=false;for(const [column,max] of Object.entries(next)){const ref=column+'3',current=Number(value('IN',ref)||0);if(current!==max){patches['IN!'+ref]=max;changed=true}}if(changed&&editable())mark()}
  function clearAutoMetricPatches(){let changed=false;for(const key of Object.keys(patches))if(/^F!(?:CV|CW|CX|CY|DC|DD|DE|DF|DG|DH|DI|DJ)(?:[7-9]|[1-5][0-9]|6[0-6])$/.test(key)){delete patches[key];changed=true}if(changed&&editable())mark()}
@@ -39,7 +41,7 @@
   busy=on;
   if($('submitBook'))$('submitBook').disabled=on||!editable()||assignment?.teacher_id!==cloudState.user.id;
   document.querySelectorAll('#copyIndicators,#addIndicator,#pasteIndicators,[data-delete-indicator],#addCondition,[data-mark-date],#markDay,#markTerm,[data-condition]').forEach(el=>el.disabled=on||!editable()||el.dataset.attendanceUnavailable==='true');
-  for(const id of ['saveBook','newBook','exportBook','exportPdf','bookSelect'])$(id).disabled=on||(id==='saveBook'&&!editable())||(id==='newBook'&&!['owner','editor'].includes(cloudState.permission));
+  for(const id of ['saveBook','newBook','exportBook','exportPdf','bookSelect'])$(id).disabled=on||(id==='saveBook'&&!editable())||(id==='newBook'&&(!['owner','editor'].includes(cloudState.permission)||!(window.HNKEntryWindows?.termOpen(cloudState.classroom?.term)??true)));
   document.querySelectorAll('#pp5Panel [data-ref],#pp5Panel [data-head],#pp5Department').forEach(el=>{
    const offSchedule=el.dataset.sheet==='CH'&&!PP5Tables.attendanceSlotConfigured(el.dataset.ref,value);
    el.disabled=on||!editable()||blockedCell(el.dataset.sheet,el.dataset.ref)||offSchedule;
@@ -59,7 +61,7 @@
  const toBase64=bytes=>{let s='';for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s)};
  const fromBase64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
  const serialToDate=n=>n===''?'':new Date((Number(n)-25569)*86400000).toISOString().slice(0,10);
- async function createFromRoom(){workflow={status:'draft'};submission=null;await loadNames();centralDirty=false;
+ async function createFromRoom(){if(!(window.HNKEntryWindows?.termOpen(cloudState.classroom?.term)??true))throw Error('ปิดรับข้อมูลภาคเรียนนี้ตามกำหนดของ Admin');workflow={status:'draft'};submission=null;await loadNames();centralDirty=false;
   const roster=students();if(!roster.length)throw Error('ยังไม่มีนักเรียนในห้องนี้ กรุณาเพิ่มรายชื่อในข้อมูลห้องเรียนก่อน');
   if(roster.length>60)throw Error('แม่แบบรองรับไม่เกิน 60 คน');
   const response=await fetch('../assets/pp5-template.json?v=2');if(!response.ok)throw Error('โหลดแม่แบบไม่สำเร็จ กรุณาลองอีกครั้ง');
