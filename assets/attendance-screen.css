@@ -1,0 +1,46 @@
+/* Attendance workspace: readable screen tables, independent of printed ledgers. */
+@media screen {
+ body.attendance-workspace .table-wrap table,
+ body.attendance-workspace .table-wrap th,
+ body.attendance-workspace .table-wrap td,
+ body.attendance-workspace .table-wrap button,
+ body.attendance-workspace .table-wrap select {
+  font-family:'Leelawadee UI','Noto Sans Thai',Tahoma,system-ui,sans-serif!important;
+  line-height:1.6;
+ }
+ body.attendance-workspace .table-wrap th {font-size:16px!important;color:#49365e!important;vertical-align:middle;}
+ body.attendance-workspace .table-wrap td {font-size:18px!important;color:#302344;vertical-align:middle;}
+ body.attendance-workspace .attendance-daily-table {min-width:880px;}
+ body.attendance-workspace .attendance-daily-table th,
+ body.attendance-workspace .attendance-daily-table td {padding:12px 16px!important;}
+ body.attendance-workspace .attendance-daily-table :is(th,td):nth-child(1) {width:76px;text-align:center;white-space:nowrap;}
+ body.attendance-workspace .attendance-daily-table :is(th,td):nth-child(2) {width:140px;text-align:center;white-space:nowrap;}
+ body.attendance-workspace .attendance-daily-table :is(th,td):nth-child(3),
+ body.attendance-workspace .attendance-monthly-table .name {
+  min-width:300px;width:300px;white-space:nowrap!important;word-break:normal;overflow-wrap:normal;text-align:left;
+ }
+ body.attendance-workspace .daily-status {display:flex;flex-wrap:nowrap;gap:6px;}
+ body.attendance-workspace .table-wrap .status-btn {font-size:16px!important;min-width:48px;min-height:44px;padding:7px 10px;white-space:nowrap;}
+ body.attendance-workspace .attendance-monthly-table {width:max-content!important;min-width:100%;table-layout:auto;}
+ body.attendance-workspace .attendance-monthly-table th,
+ body.attendance-workspace .attendance-monthly-table td {min-width:64px;padding:8px!important;}
+ body.attendance-workspace .attendance-monthly-table :is(th,td):first-child {min-width:64px;}
+ body.attendance-workspace .attendance-monthly-table :is(th,td):nth-child(2) {min-width:120px;white-space:nowrap;}
+ body.attendance-workspace .attendance-monthly-table thead tr:first-child {height:48px;}
+ body.attendance-workspace .attendance-monthly-table thead tr:nth-child(2),
+ body.attendance-workspace .attendance-monthly-table thead tr:nth-child(2) th {height:104px!important;min-height:104px!important;}
+ body.attendance-workspace .attendance-monthly-table thead th .day-number {
+  display:block!important;height:26px!important;font-family:inherit!important;font-size:17px!important;line-height:26px!important;margin:0 0 4px!important;
+ }
+ body.attendance-workspace .attendance-monthly-table .day-note {
+  display:block;font-size:14px;line-height:1.45;max-width:64px;white-space:normal;overflow-wrap:break-word;margin:0 auto;
+ }
+ body.attendance-workspace .attendance-monthly-table td select {font-size:18px!important;width:54px;min-width:54px;min-height:44px;height:44px;padding:6px!important;}
+ body.attendance-workspace .holiday-merged-label {font-family:inherit;font-size:16px!important;}
+ body.attendance-workspace .suite-table-search input {font-size:16px!important;}
+ body.attendance-workspace .suite-table-search>span {font-size:14px;}
+ body.attendance-workspace.theme-dark .table-wrap :is(td,th) {color:#f2eafa!important;}
+ body.attendance-workspace.theme-dark .attendance-monthly-table thead th .day-number {color:#f2eafa!important;}
+ body.attendance-workspace.theme-dark .attendance-monthly-table th.holiday-special,
+ body.attendance-workspace.theme-dark .attendance-monthly-table td.holiday-merged-cell {background:#393240!important;color:#f2eafa!important;}
+}
